@@ -8,6 +8,7 @@ const { appConfig } = require('../config');
 const { log } = require('./audit.service');
 const speakeasy = require('speakeasy');
 const { getRefreshExpiryMs } = require('../config/jwt.config');
+const { ROLES, ROLE_PERMISSIONS } = require('../constants/roles');
 
 /**
  * DỊCH VỤ XÁC THỰC & QUẢN LÝ NGƯỜI DÙNG
@@ -25,8 +26,8 @@ const { getRefreshExpiryMs } = require('../config/jwt.config');
  * @returns {Promise<string>} Raw refresh token
  */
 async function createRefreshToken(userId, { ip, device }) {
-  const raw = randomTokenHex(48); // Tạo token ngẫu nhiên
-  const hash = sha256(raw); // Mã hóa token để lưu trữ
+  const raw = randomTokenHex(48);
+  const hash = sha256(raw);
   const expiresAt = new Date(Date.now() + getRefreshExpiryMs());
   
   await RefreshToken.create({
@@ -37,7 +38,7 @@ async function createRefreshToken(userId, { ip, device }) {
     expiresAt,
   });
   
-  return raw; // Trả về raw token (chỉ gửi cho client)
+  return raw;
 }
 
 /**
@@ -90,50 +91,37 @@ async function rotateRefreshToken(oldTokenRaw, userId, opts) {
  * @param {Object} userData - Thông tin đăng ký
  * @returns {Promise<Object>} User object
  */
+/**
+ * Đăng ký user mới với RBAC
+ */
 async function registerUser({ email, name, password, role, creatorId, ip, userAgent }) {
-  // 🔍 KIỂM TRA EMAIL ĐÃ TỒN TẠI
   const exists = await User.findOne({ email });
   if (exists) {
     throw new Error('Email đã được sử dụng');
   }
 
-  // 🔐 MÃ HÓA MẬT KHẨU
   const pwdHash = await hashPassword(password);
   
-  // 🎯 XÁC ĐỊNH QUYỀN ĐƯỢC TẠO USER
-  const canCreate = (() => {
-    switch (role) {
-      case 'SUPER_ADMIN':
-        return ['ADMIN', 'MANAGER', 'DOCTOR', 'STAFF', 'PATIENT'];
-      case 'ADMIN':
-        return ['MANAGER', 'DOCTOR', 'STAFF', 'PATIENT'];
-      case 'MANAGER':
-        return ['DOCTOR', 'STAFF'];
-      default:
-        return [];
-    }
-  })();
-
-  // 📝 TẠO USER MỚI
+  // User sẽ tự động tính toán canCreate trong pre-save middleware
   const user = new User({
     email,
     name,
     passwordHash: pwdHash,
-    role: role || 'PATIENT',
-    canCreate,
+    role: role || ROLES.PATIENT,
     createdBy: creatorId || null,
-    status: 'ACTIVE', // Kích hoạt ngay nếu được admin tạo
+    status: creatorId ? 'ACTIVE' : 'PENDING_VERIFICATION', // Admin tạo thì active ngay
   });
 
   await user.save();
   
-  // 📊 GHI AUDIT LOG
-  await log(creatorId, 'REGISTER_USER', { 
-    target: user._id, 
-    ip, 
-    userAgent, 
-    meta: { role } 
-  });
+  // Ghi audit log
+  await log(
+    creatorId ? 'REGISTER_USER' : 'SELF_REGISTER',
+    creatorId || user._id,
+    `Đã tạo user: ${email} với role: ${user.role}`,
+    ip,
+    { userAgent, targetUserId: user._id.toString() }
+  );
   
   return user;
 }
@@ -145,34 +133,28 @@ async function registerUser({ email, name, password, role, creatorId, ip, userAg
  * @returns {Promise<Object>} Kết quả đăng nhập
  */
 async function login({ email, password, ip, userAgent, twoFACode }) {
-  // 🔍 TÌM USER THEO EMAIL
   const user = await User.findOne({ email });
   if (!user) {
-    await log(null, 'LOGIN_FAILED', { meta: { email }, ip, userAgent });
+    await log(null, 'LOGIN_FAILED', { email, ip, userAgent });
     throw new Error('Thông tin đăng nhập không chính xác');
   }
 
-  // 🔒 KIỂM TRA TÀI KHOẢN BỊ KHÓA
   if (user.isLocked) {
     await log(user._id, 'LOGIN_LOCKED', { ip, userAgent });
     throw new Error('Tài khoản đã bị khóa do đăng nhập sai nhiều lần');
   }
 
-  // 🔒 KIỂM TRA TRẠNG THÁI TÀI KHOẢN
   if (user.status !== 'ACTIVE') {
     await log(user._id, 'LOGIN_INACTIVE', { ip, userAgent });
     throw new Error('Tài khoản không hoạt động');
   }
 
-  // 🔐 XÁC THỰC MẬT KHẨU
   const ok = await comparePassword(password, user.passwordHash);
   if (!ok) {
-    // ➕ TĂNG SỐ LẦN ĐĂNG NHẬP SAI
     user.failedLoginAttempts += 1;
     
-    // 🔒 KHÓA TÀI KHOẢN NẾU VƯỢT QUÁ SỐ LẦN CHO PHÉP
-    if (user.failedLoginAttempts >= appConfig.security.maxLoginAttempts) {
-      user.lockUntil = new Date(Date.now() + ms(appConfig.security.lockTime));
+    if (user.failedLoginAttempts >= (process.env.MAX_LOGIN_ATTEMPTS || 5)) {
+      user.lockUntil = new Date(Date.now() + (parseInt(process.env.LOCK_TIME_MS) || 15 * 60 * 1000));
       await log(user._id, 'ACCOUNT_LOCKED', { ip, userAgent });
     }
     
@@ -181,7 +163,7 @@ async function login({ email, password, ip, userAgent, twoFACode }) {
     throw new Error('Thông tin đăng nhập không chính xác');
   }
 
-  // 🔐 XÁC THỰC 2 YẾU TỐ (2FA)
+  // Xác thực 2FA
   if (user.twoFA && user.twoFA.enabled) {
     if (!twoFACode) {
       throw new Error('Yêu cầu mã xác thực 2 yếu tố');
@@ -191,7 +173,7 @@ async function login({ email, password, ip, userAgent, twoFACode }) {
       secret: user.twoFA.secret,
       encoding: 'base32',
       token: twoFACode,
-      window: 1, // Cho phép sai số thời gian
+      window: 1,
     });
 
     if (!verified) {
@@ -200,27 +182,34 @@ async function login({ email, password, ip, userAgent, twoFACode }) {
     }
   }
 
-  // 🔄 RESET TRẠNG THÁI ĐĂNG NHẬP SAI
+  // Reset trạng thái đăng nhập
   user.failedLoginAttempts = 0;
   user.lockUntil = null;
   user.lastLogin = { ip, userAgent, at: new Date() };
   await user.save();
 
-  // 🎫 TẠO ACCESS TOKEN & REFRESH TOKEN
+  // Tạo tokens với permissions
   const payload = { 
     sub: user._id, 
     email: user.email, 
     role: user.role, 
-    permissions: user.canCreate || [] 
+    permissions: ROLE_PERMISSIONS[user.role] || [],
+    canCreate: user.canCreate || []
   };
+  
   const accessToken = signAccessToken(payload);
   const refreshRaw = await createRefreshToken(user._id, { ip, device: userAgent });
 
-  // 📊 GHI LOG ĐĂNG NHẬP THÀNH CÔNG
   await log(user._id, 'LOGIN_SUCCESS', { ip, userAgent });
   
   return { 
-    user, 
+    user: {
+      _id: user._id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      canCreate: user.canCreate,
+    }, 
     accessToken, 
     refreshToken: refreshRaw 
   };

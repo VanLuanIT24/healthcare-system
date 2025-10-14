@@ -1,3 +1,4 @@
+// src/constants/roles.js
 /**
  * 🌐 HỆ THỐNG PHÂN QUYỀN RBAC CHUẨN ENTERPRISE CHO AUTH MODULE
  * Author: Senior Dev Team (Enterprise Edition)

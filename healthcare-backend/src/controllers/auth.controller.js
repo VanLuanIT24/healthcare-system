@@ -1,186 +1,190 @@
 // src/controllers/auth.controller.js
 const ms = require('ms');
-const Joi = require('joi');
 const authService = require('../services/auth.service');
 const { registerSchema, loginSchema } = require('../validations/auth.validation');
 const { log } = require('../services/audit.service');
+const { ROLES, PERMISSIONS, hasPermission, canCreateRole } = require('../constants/roles');
 
 /**
- * Tính thời gian sống của Refresh Token dựa trên cấu hình môi trường
- * @returns {number} Thời gian sống tính bằng mili giây
+ * Tính thời gian sống của Refresh Token
  */
 function getRefreshExpiryMs() {
-  const refreshExpiry = process.env.ACCESS_TOKEN_EXPIRES_IN || '7d';
+  const refreshExpiry = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
   return ms(refreshExpiry);
 }
 
 /**
  * [POST] /api/auth/register
- * Đăng ký tài khoản người dùng mới
- * - Public: Cho phép bệnh nhân tự đăng ký (role: PATIENT)
- * - Private: Cho phép ADMIN/SUPER_ADMIN tạo user với các role khác
- * 
- * @param {Object} req - Request object
- * @param {Object} res - Response object
+ * Đăng ký tài khoản người dùng mới với RBAC
  */
 async function register(req, res) {
   try {
-    // Kiểm tra và xác thực dữ liệu đầu vào
+    // Validate input data
     const { error, value } = registerSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ error: error.message });
     }
 
-    const creator = req.user || null; // Người tạo user (có thể là admin hoặc null nếu tự đăng ký)
-    const reqRole = value.role || 'PATIENT'; // Role mặc định là PATIENT
+    const creator = req.user || null;
+    const requestedRole = value.role || ROLES.PATIENT;
 
-    // KIỂM TRA QUYỀN TẠO USER
-    // Nếu có người tạo (admin) => kiểm tra quyền được tạo role
+    // 🔐 RBAC PERMISSION CHECK
     if (creator) {
-      if (!creator.canCreate || !creator.canCreate.includes(reqRole)) {
-        return res.status(403).json({ error: 'Không có quyền tạo user với role này' });
+      // Kiểm tra quyền tạo user với role cụ thể
+      const requiredPermission = getRegisterPermission(requestedRole);
+      if (!hasPermission(creator.role, requiredPermission)) {
+        return res.status(403).json({ 
+          error: 'Không có quyền tạo user với role này' 
+        });
+      }
+
+      // Kiểm tra hierarchy: chỉ được tạo role thấp hơn
+      if (!canCreateRole(creator.role, requestedRole)) {
+        return res.status(403).json({ 
+          error: 'Không được phép tạo user với role cao hơn hoặc bằng' 
+        });
       }
     } else {
-      // Nếu không có creator (tự đăng ký) => chỉ cho phép tạo PATIENT
-      if (reqRole !== 'PATIENT') {
-        return res.status(403).json({ error: 'Chỉ cho phép bệnh nhân tự đăng ký' });
+      // Tự đăng ký: chỉ được tạo PATIENT
+      if (requestedRole !== ROLES.PATIENT) {
+        return res.status(403).json({ 
+          error: 'Chỉ được phép đăng ký tài khoản bệnh nhân' 
+        });
+      }
+
+      // Kiểm tra quyền SELF_REGISTER cho GUEST
+      if (!hasPermission(ROLES.GUEST, PERMISSIONS.SELF_REGISTER)) {
+        return res.status(403).json({ 
+          error: 'Tính năng đăng ký đang bị tạm khóa' 
+        });
       }
     }
 
-    // Gọi service để đăng ký user mới
+    // Gọi service đăng ký
     const user = await authService.registerUser({
       email: value.email,
       name: value.name,
       password: value.password,
-      role: reqRole,
-      creatorId: creator ? creator.sub : null, // ID người tạo (nếu có)
-      ip: req.ip, // Địa chỉ IP của request
-      userAgent: req.headers['user-agent'], // Thông tin trình duyệt/client
+      role: requestedRole,
+      creatorId: creator ? creator.sub : null,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
     });
 
-    // Ghi log sự kiện đăng ký
-    await log('REGISTER', user._id, `Đã đăng ký user mới với role: ${reqRole}`, req.ip);
+    // Ghi audit log
+    await log(
+      creator ? 'REGISTER_USER' : 'SELF_REGISTER',
+      creator ? creator.sub : user._id,
+      `Đã tạo user mới: ${user.email} với role: ${requestedRole}`,
+      req.ip
+    );
 
-    // Trả về response thành công
     res.status(201).json({ 
-      message: 'Đăng ký user thành công', 
-      userId: user._id 
+      message: 'Đăng ký thành công', 
+      userId: user._id,
+      role: user.role
     });
 
   } catch (err) {
-    // Xử lý lỗi và trả về response
     res.status(400).json({ error: err.message });
   }
 }
 
 /**
  * [POST] /api/auth/login
- * Đăng nhập vào hệ thống
- * - Public endpoint
- * 
- * @param {Object} req - Request object
- * @param {Object} res - Response object
+ * Đăng nhập với RBAC permission check
  */
 async function login(req, res) {
   try {
-    // Kiểm tra và xác thực dữ liệu đăng nhập
     const { error, value } = loginSchema.validate(req.body);
     if (error) {
       return res.status(400).json({ error: error.message });
     }
 
-    // Gọi service xử lý đăng nhập
+    // Kiểm tra quyền LOGIN cơ bản (có thể dựa trên IP/rate limiting sau)
+    if (!hasPermission(ROLES.GUEST, PERMISSIONS.LOGIN)) {
+      return res.status(403).json({ error: 'Tính năng đăng nhập tạm thời bị vô hiệu hóa' });
+    }
+
     const result = await authService.login({
       email: value.email,
       password: value.password,
-      twoFACode: value.twoFACode, // Mã xác thực 2 yếu tố (nếu có)
+      twoFACode: value.twoFACode,
       ip: req.ip,
       userAgent: req.headers['user-agent'],
     });
 
-    // THIẾT LẬP REFRESH TOKEN COOKIE (HttpOnly để bảo mật)
+    // Thiết lập refresh token cookie
     res.cookie('refreshToken', result.refreshToken, {
-      httpOnly: true, // Không thể truy cập bằng JavaScript
-      secure: process.env.NODE_ENV === 'production', // Chỉ gửi qua HTTPS trong production
-      sameSite: 'lax', // Chính sách SameSite
-      maxAge: getRefreshExpiryMs(), // Thời gian sống của cookie
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: getRefreshExpiryMs(),
     });
 
-    // Ghi log sự kiện đăng nhập
-    await log('LOGIN', result.user._id, 'User đã đăng nhập thành công', req.ip);
+    // Ghi audit log
+    await log('LOGIN', result.user._id, 'Đăng nhập thành công', req.ip);
 
-    // Trả về thông tin đăng nhập thành công
     res.json({
       accessToken: result.accessToken,
       user: {
         id: result.user._id,
         email: result.user.email,
         role: result.user.role,
+        name: result.user.name,
       },
     });
 
   } catch (err) {
-    // Xử lý lỗi đăng nhập
     res.status(400).json({ error: err.message });
   }
 }
 
 /**
  * [POST] /api/auth/logout
- * Đăng xuất khỏi hệ thống
- * - Private endpoint (yêu cầu xác thực)
- * 
- * @param {Object} req - Request object
- * @param {Object} res - Response object
+ * Đăng xuất với RBAC permission check
  */
 async function logout(req, res) {
   try {
-    const user = req.user; // Thông tin user từ middleware xác thực
-    const refreshToken = req.cookies?.refreshToken; // Lấy refresh token từ cookie
+    const user = req.user;
+    const refreshToken = req.cookies?.refreshToken;
 
-    // Gọi service xử lý đăng xuất
+    // Kiểm tra quyền LOGOUT
+    if (!hasPermission(user.role, PERMISSIONS.LOGOUT)) {
+      return res.status(403).json({ error: 'Không có quyền đăng xuất' });
+    }
+
     await authService.logout(user.sub, refreshToken);
     
-    // XÓA REFRESH TOKEN COOKIE
     res.clearCookie('refreshToken');
 
-    // Ghi log sự kiện đăng xuất
-    await log('LOGOUT', user.sub, 'User đã đăng xuất', req.ip);
+    await log('LOGOUT', user.sub, 'Đã đăng xuất', req.ip);
 
-    // Trả về response thành công
     res.json({ message: 'Đăng xuất thành công' });
 
   } catch (err) {
-    // Xử lý lỗi đăng xuất
     res.status(400).json({ error: err.message });
   }
 }
 
 /**
  * [POST] /api/auth/refresh
- * Làm mới Access Token bằng Refresh Token
- * - Public endpoint (nhưng yêu cầu có cookie refreshToken hợp lệ)
- * 
- * @param {Object} req - Request object
- * @param {Object} res - Response object
+ * Làm mới token
  */
 async function refresh(req, res) {
   try {
     const refreshToken = req.cookies?.refreshToken;
     
-    // Kiểm tra sự tồn tại của refresh token
     if (!refreshToken) {
       return res.status(401).json({ error: 'Không tìm thấy refresh token' });
     }
 
-    // Gọi service làm mới tokens
     const { accessToken, refreshToken: newRefresh } = await authService.refreshTokens(
       refreshToken,
       req.ip,
       req.headers['user-agent']
     );
 
-    // THAY THẾ REFRESH TOKEN COOKIE MỚI
     res.cookie('refreshToken', newRefresh, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -188,13 +192,50 @@ async function refresh(req, res) {
       maxAge: getRefreshExpiryMs(),
     });
 
-    // Trả về access token mới
     res.json({ accessToken });
 
   } catch (err) {
-    // Xử lý lỗi làm mới token
     res.status(401).json({ error: err.message });
   }
+}
+
+/**
+ * [GET] /api/auth/me
+ * Lấy thông tin user hiện tại với permissions
+ */
+async function getCurrentUser(req, res) {
+  try {
+    const user = req.user;
+    
+    const userWithPermissions = {
+      id: user.sub,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      permissions: ROLE_PERMISSIONS[user.role] || [],
+      canCreate: user.canCreate || [],
+    };
+
+    res.json(userWithPermissions);
+
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+}
+
+/**
+ * Hàm hỗ trợ: Ánh xạ role -> permission cần thiết để tạo
+ */
+function getRegisterPermission(role) {
+  const permissionMap = {
+    [ROLES.ADMIN]: PERMISSIONS.REGISTER_ADMIN,
+    [ROLES.MANAGER]: PERMISSIONS.REGISTER_MANAGER,
+    [ROLES.DOCTOR]: PERMISSIONS.REGISTER_DOCTOR,
+    [ROLES.STAFF]: PERMISSIONS.REGISTER_STAFF,
+    [ROLES.PATIENT]: PERMISSIONS.REGISTER_PATIENT,
+  };
+
+  return permissionMap[role] || PERMISSIONS.REGISTER_PATIENT;
 }
 
 /**
@@ -260,12 +301,12 @@ async function enable2FA(req, res) {
   }
 }
 
-// Xuất các hàm controller để sử dụng trong routes
 module.exports = {
   register,
   login,
   logout,
   refresh,
+  getCurrentUser,
   generate2FA,
   enable2FA,
 };

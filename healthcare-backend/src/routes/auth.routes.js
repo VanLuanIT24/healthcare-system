@@ -1,63 +1,43 @@
 // src/routes/auth.routes.js
 const express = require('express');
 const router = express.Router();
-const authCtrl = require('../controllers/auth.controller');
-const { authenticate } = require('../middlewares/auth.middleware');
-const { markPublic } = require('../middlewares/public.middleware');
-const { loginLimiter } = require('../middlewares/rateLimiter');
+const authController = require('../controllers/auth.controller');
+const { authenticate, requirePermission, requireRole } = require('../middlewares/auth.middleware');
+const { PERMISSIONS, ROLES } = require('../constants/roles');
 
-/**
- * ============================================
- * 🎯 ĐỊNH TUYẾN XÁC THỰC (AUTHENTICATION ROUTES)
- * ============================================
- */
+// Public routes
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+router.post('/refresh', authController.refresh);
 
-/**
- * 🔓 PUBLIC ROUTES - KHÔNG YÊU CẦU XÁC THỰC
- * Các endpoint mở cho tất cả người dùng
- */
+// Protected routes
+router.post('/logout', authenticate, authController.logout);
+router.get('/me', authenticate, authController.getCurrentUser);
 
-// 🟢 ĐĂNG KÝ TÀI KHOẢN
-// Cho phép bệnh nhân tự đăng ký hoặc admin tạo user
-router.post('/register', 
-  markPublic, // Đánh dấu public - không cần JWT
-  authCtrl.register
+// 2FA routes - yêu cầu đăng nhập
+router.get('/2fa/generate', authenticate, authController.generate2FA);
+router.post('/2fa/enable', authenticate, authController.enable2FA);
+
+
+// Role-specific registration endpoints
+router.post('/register-staff',
+  authenticate,
+  requirePermission(PERMISSIONS.REGISTER_STAFF),
+  (req, res, next) => {
+    req.body.role = ROLES.STAFF;
+    next();
+  },
+  authController.register
 );
 
-// 🟢 ĐĂNG NHẬP HỆ THỐNG
-router.post('/login', 
-  markPublic, // Public endpoint
-  loginLimiter, // Giới hạn số lần đăng nhập
-  authCtrl.login
-);
-
-// 🟢 LÀM MỚI ACCESS TOKEN
-router.post('/refresh', 
-  markPublic, // Public nhưng yêu cầu refresh token trong cookie
-  authCtrl.refresh
-);
-
-/**
- * 🔐 PRIVATE ROUTES - YÊU CẦU XÁC THỰC JWT
- * Chỉ truy cập được khi đã đăng nhập
- */
-
-// 🔵 ĐĂNG XUẤT KHỎI HỆ THỐNG
-router.post('/logout', 
-  authenticate, // Yêu cầu access token hợp lệ
-  authCtrl.logout
-);
-
-// 🔵 SINH MÃ SECRET CHO 2FA
-router.get('/2fa/generate', 
-  authenticate, 
-  authCtrl.generate2FA
-);
-
-// 🔵 KÍCH HOẠT XÁC THỰC 2 YẾU TỐ
-router.post('/2fa/enable', 
-  authenticate, 
-  authCtrl.enable2FA
+router.post('/register-doctor',
+  authenticate,
+  requirePermission(PERMISSIONS.REGISTER_DOCTOR),
+  (req, res, next) => {
+    req.body.role = ROLES.DOCTOR;
+    next();
+  },
+  authController.register
 );
 
 module.exports = router;

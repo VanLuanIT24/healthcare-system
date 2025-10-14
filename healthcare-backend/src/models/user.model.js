@@ -1,31 +1,25 @@
 // src/models/user.model.js
 const mongoose = require('mongoose');
+const { ROLES } = require('../constants/roles');
 
 /**
- * SCHEMA XÁC THỰC 2 YẾU TỐ (2FA)
+ * Schema 2FA
  */
 const TwoFASchema = new mongoose.Schema({
-  enabled: { 
-    type: Boolean, 
-    default: false 
-  },
-  secret: { 
-    type: String, 
-    default: null // Lưu secret key base32 cho TOTP
-  },
+  enabled: { type: Boolean, default: false },
+  secret: { type: String, default: null },
 });
 
 /**
- * SCHEMA NGƯỜI DÙNG CHÍNH
+ * Schema User với RBAC integration
  */
 const UserSchema = new mongoose.Schema({
-  // THÔNG TIN ĐĂNG NHẬP
   email: { 
     type: String, 
     unique: true, 
     index: true, 
     required: true,
-    lowercase: true, // Chuẩn hóa email
+    lowercase: true,
     trim: true
   },
   
@@ -34,27 +28,25 @@ const UserSchema = new mongoose.Schema({
     required: true 
   },
   
-  // MẬT KHẨU ĐÃ MÃ HÓA
   passwordHash: { 
     type: String, 
     required: true 
   },
   
-  // VAI TRÒ TRONG HỆ THỐNG
   role: { 
     type: String, 
+    enum: Object.values(ROLES),
     required: true, 
-    default: 'PATIENT',
+    default: ROLES.PATIENT,
     index: true
   },
   
-  // DANH SÁCH QUYỀN ĐƯỢC TẠO USER
   canCreate: { 
     type: [String], 
+    enum: Object.values(ROLES),
     default: [] 
   },
   
-  // TRẠNG THÁI TÀI KHOẢN
   status: { 
     type: String, 
     enum: ['PENDING_VERIFICATION', 'ACTIVE', 'LOCKED', 'DEACTIVATED'], 
@@ -62,66 +54,102 @@ const UserSchema = new mongoose.Schema({
     index: true
   },
   
-  // NGƯỜI TẠO TÀI KHOẢN (nếu có)
   createdBy: { 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 
     default: null 
   },
   
-  // BẢO MẬT ĐĂNG NHẬP
   failedLoginAttempts: { 
     type: Number, 
     default: 0 
   },
+  
   lockUntil: { 
     type: Date, 
     default: null 
   },
   
-  // XÁC THỰC 2 YẾU TỐ
   twoFA: { 
     type: TwoFASchema, 
     default: () => ({}) 
   },
   
-  // THÔNG TIN ĐĂNG NHẬP CUỐI
   lastLogin: {
     ip: String,
     userAgent: String,
     at: Date
   },
   
-  // THÔNG TIN BỔ SUNG
-  meta: { 
-    type: Object, 
-    default: {} 
+  profile: {
+    phone: String,
+    address: String,
+    dateOfBirth: Date,
+    gender: { type: String, enum: ['MALE', 'FEMALE', 'OTHER'] }
   }
 }, { 
-  timestamps: true // Tự động thêm createdAt, updatedAt
+  timestamps: true 
 });
 
 /**
- * VIRTUAL FIELD: KIỂM TRA TÀI KHOẢN CÓ ĐANG BỊ KHÓA
+ * Virtual: Kiểm tra tài khoản bị khóa
  */
 UserSchema.virtual('isLocked').get(function() {
   return !!(this.lockUntil && this.lockUntil > Date.now());
 });
 
 /**
- * MIDDLEWARE TRƯỚC KHI LƯU
+ * Method: Kiểm tra quyền của user
+ */
+UserSchema.methods.hasPermission = function(permission) {
+  const { hasPermission } = require('../constants/roles');
+  return hasPermission(this.role, permission);
+};
+
+/**
+ * Method: Kiểm tra có thể tạo role nào
+ */
+UserSchema.methods.canCreateRole = function(targetRole) {
+  const { canCreateRole } = require('../constants/roles');
+  return canCreateRole(this.role, targetRole);
+};
+
+/**
+ * Pre-save middleware: Tự động tính toán canCreate dựa trên role
  */
 UserSchema.pre('save', function(next) {
-  // Chuẩn hóa email trước khi lưu
   if (this.email) {
     this.email = this.email.toLowerCase().trim();
   }
+
+  // Tự động tính toán canCreate dựa trên role hierarchy
+  if (this.isModified('role')) {
+    this.canCreate = calculateCreatableRoles(this.role);
+  }
+
   next();
 });
 
-// 🔹 TẠO INDEX CHO TRUY VẤN HIỆU QUẢ
+/**
+ * Hàm tính toán các role mà user có thể tạo
+ */
+function calculateCreatableRoles(role) {
+  const { ROLES, canCreateRole } = require('../constants/roles');
+  const creatable = [];
+  
+  Object.values(ROLES).forEach(targetRole => {
+    if (canCreateRole(role, targetRole)) {
+      creatable.push(targetRole);
+    }
+  });
+  
+  return creatable;
+}
+
+// Indexes
 UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1, status: 1 });
 UserSchema.index({ createdAt: -1 });
+UserSchema.index({ 'profile.phone': 1 });
 
 module.exports = mongoose.model('User', UserSchema);
