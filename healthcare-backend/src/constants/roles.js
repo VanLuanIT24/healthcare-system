@@ -1,55 +1,137 @@
-// src/constants/roles.js
 /**
- * HẰNG SỐ VAI TRÒ VÀ QUYỀN TRONG HỆ THỐNG
- * Định nghĩa các role và permission cho hệ thống Role-Based Access Control (RBAC)
+ * 🌐 HỆ THỐNG PHÂN QUYỀN RBAC CHUẨN ENTERPRISE CHO AUTH MODULE
+ * Author: Senior Dev Team (Enterprise Edition)
+ * Description:
+ *  - Thiết kế hướng bảo mật và mở rộng
+ *  - Dùng cho Đăng nhập, Đăng ký, Quản lý tài khoản
  */
 
+const ROLES = Object.freeze({
+  SUPER_ADMIN: 'SUPER_ADMIN',  // Toàn quyền hệ thống (God-level)
+  ADMIN: 'ADMIN',              // Quản trị viên (quản lý người dùng, bác sĩ, nhân viên)
+  MANAGER: 'MANAGER',          // Quản lý bộ phận (có thể tạo/staff)
+  DOCTOR: 'DOCTOR',            // Bác sĩ (có thể tạo bệnh nhân)
+  STAFF: 'STAFF',              // Nhân viên hỗ trợ
+  PATIENT: 'PATIENT',          // Bệnh nhân (người dùng cuối)
+  GUEST: 'GUEST',              // Chưa đăng nhập
+});
+
+const PERMISSIONS = Object.freeze({
+  // ===== AUTHENTICATION =====
+  LOGIN: 'AUTH.LOGIN',                     // Đăng nhập
+  LOGOUT: 'AUTH.LOGOUT',                   // Đăng xuất
+  SELF_REGISTER: 'AUTH.SELF_REGISTER',     // Đăng ký tài khoản cho chính mình
+  REGISTER_PATIENT: 'AUTH.REGISTER_PATIENT',
+  REGISTER_STAFF: 'AUTH.REGISTER_STAFF',
+  REGISTER_DOCTOR: 'AUTH.REGISTER_DOCTOR',
+  REGISTER_MANAGER: 'AUTH.REGISTER_MANAGER',
+  REGISTER_ADMIN: 'AUTH.REGISTER_ADMIN',
+
+  // ===== USER MANAGEMENT =====
+  VIEW_USER: 'USER.VIEW',
+  UPDATE_USER: 'USER.UPDATE',
+  DISABLE_USER: 'USER.DISABLE',
+});
+
+const ROLE_PERMISSIONS = Object.freeze({
+  [ROLES.SUPER_ADMIN]: [
+    PERMISSIONS.LOGIN,
+    PERMISSIONS.LOGOUT,
+    PERMISSIONS.REGISTER_ADMIN,
+    PERMISSIONS.REGISTER_MANAGER,
+    PERMISSIONS.REGISTER_DOCTOR,
+    PERMISSIONS.REGISTER_STAFF,
+    PERMISSIONS.REGISTER_PATIENT,
+    PERMISSIONS.VIEW_USER,
+    PERMISSIONS.UPDATE_USER,
+    PERMISSIONS.DISABLE_USER,
+  ],
+
+  [ROLES.ADMIN]: [
+    PERMISSIONS.LOGIN,
+    PERMISSIONS.LOGOUT,
+    PERMISSIONS.REGISTER_MANAGER,
+    PERMISSIONS.REGISTER_DOCTOR,
+    PERMISSIONS.REGISTER_STAFF,
+    PERMISSIONS.REGISTER_PATIENT,
+    PERMISSIONS.VIEW_USER,
+    PERMISSIONS.UPDATE_USER,
+  ],
+
+  [ROLES.MANAGER]: [
+    PERMISSIONS.LOGIN,
+    PERMISSIONS.LOGOUT,
+    PERMISSIONS.REGISTER_DOCTOR,
+    PERMISSIONS.REGISTER_STAFF,
+    PERMISSIONS.REGISTER_PATIENT,
+    PERMISSIONS.VIEW_USER,
+  ],
+
+  [ROLES.DOCTOR]: [
+    PERMISSIONS.LOGIN,
+    PERMISSIONS.LOGOUT,
+    PERMISSIONS.REGISTER_PATIENT,
+    PERMISSIONS.VIEW_USER,
+  ],
+
+  [ROLES.STAFF]: [
+    PERMISSIONS.LOGIN,
+    PERMISSIONS.LOGOUT,
+    PERMISSIONS.REGISTER_PATIENT,
+  ],
+
+  [ROLES.PATIENT]: [
+    PERMISSIONS.LOGIN,
+    PERMISSIONS.LOGOUT,
+  ],
+
+  [ROLES.GUEST]: [
+    PERMISSIONS.LOGIN,
+    PERMISSIONS.SELF_REGISTER, // khách tự đăng ký tài khoản bệnh nhân
+  ],
+});
+
+/**
+ * ===== 🧩 HÀM HỖ TRỢ KIỂM TRA QUYỀN =====
+ * Kiểm tra xem vai trò có quyền thực hiện hành động nào đó không
+ * Có xử lý an toàn khi role hoặc permission không hợp lệ
+ * @param {string} role - Vai trò người dùng
+ * * @param {string} permission - Quyền cần kiểm tra
+ * @returns {boolean}
+ */
+function hasPermission(role, permission) {
+  if (!role || !permission) return false;
+  const allowed = ROLE_PERMISSIONS[role];
+  if (!allowed) return false;
+  return allowed.includes(permission);
+}
+
+/**
+ * ===== ⚡ VALIDATION LOGIC =====
+ * Đảm bảo người dùng chỉ có thể tạo tài khoản cấp thấp hơn mình
+ */
+function canCreateRole(currentRole, targetRole) {
+  const hierarchy = [
+    ROLES.SUPER_ADMIN,
+    ROLES.ADMIN,
+    ROLES.MANAGER,
+    ROLES.DOCTOR,
+    ROLES.STAFF,
+    ROLES.PATIENT,
+    ROLES.GUEST,
+  ];
+
+  const currentIndex = hierarchy.indexOf(currentRole);
+  const targetIndex = hierarchy.indexOf(targetRole);
+
+  // Không được tạo cùng cấp hoặc cấp cao hơn
+  return currentIndex >= 0 && targetIndex > currentIndex;
+}
+
 module.exports = {
-  // ĐỊNH NGHĨA CÁC VAI TRÒ TRONG HỆ THỐNG
-  ROLES: {
-    SUPER_ADMIN: 'SUPER_ADMIN',    // Quản trị viên cấp cao nhất - toàn quyền hệ thống
-    ADMIN: 'ADMIN',                // Quản trị viên - quản lý hệ thống
-    MANAGER: 'MANAGER',            // Quản lý - quản lý nhân sự và hoạt động
-    DOCTOR: 'DOCTOR',              // Bác sĩ - thực hiện khám chữa bệnh
-    STAFF: 'STAFF',                // Nhân viên - hỗ trợ nghiệp vụ
-    PATIENT: 'PATIENT',            // Bệnh nhân - người sử dụng dịch vụ
-  },
-
-  // ĐỊNH NGHĨA CÁC QUYỀN CHI TIẾT TRONG HỆ THỐNG
-  PERMISSIONS: {
-    // Quyền tạo người dùng theo từng vai trò
-    CREATE_ADMIN: 'CREATE_ADMIN',
-    CREATE_MANAGER: 'CREATE_MANAGER',
-    CREATE_DOCTOR: 'CREATE_DOCTOR',
-    CREATE_STAFF: 'CREATE_STAFF',
-    CREATE_PATIENT: 'CREATE_PATIENT',
-    
-    // Quyền đọc và cập nhật thông tin người dùng
-    READ_ANY_USER: 'READ_ANY_USER',
-    UPDATE_ANY_USER: 'UPDATE_ANY_USER',
-    
-    // Quyền xem nhật ký kiểm tra
-    VIEW_AUDIT_LOGS: 'VIEW_AUDIT_LOGS',
-    
-    // Có thể thêm các quyền khác khi cần
-  },
-
-  // ÁNH XẠ VAI TRÒ VỚI CÁC QUYỀN TƯƠNG ỨNG
-  ROLE_PERMISSIONS: {
-    SUPER_ADMIN: [
-      'CREATE_ADMIN', 'CREATE_MANAGER', 'CREATE_DOCTOR', 'CREATE_STAFF', 'CREATE_PATIENT',
-      'READ_ANY_USER', 'UPDATE_ANY_USER', 'VIEW_AUDIT_LOGS'
-    ],
-    ADMIN: [
-      'CREATE_MANAGER', 'CREATE_DOCTOR', 'CREATE_STAFF', 'CREATE_PATIENT', 'READ_ANY_USER'
-    ],
-    MANAGER: [
-      'CREATE_DOCTOR', 'CREATE_STAFF', 'READ_ANY_USER'
-    ],
-    DOCTOR: [
-      'READ_ANY_USER'
-    ],
-    STAFF: [],      // Nhân viên không có quyền đặc biệt
-    PATIENT: [],    // Bệnh nhân không có quyền đặc biệt
-  }
+  ROLES,
+  PERMISSIONS,
+  ROLE_PERMISSIONS,
+  hasPermission,
+  canCreateRole,
 };
