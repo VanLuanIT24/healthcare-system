@@ -10,6 +10,8 @@ const rateLimit = require('express-rate-limit');
 const { appConfig } = require('./src/config');
 const authRoutes = require('./src/routes/auth.routes');
 
+const superAdminRoutes = require('../healthcare-backend/src/routes/superAdmin.routes');
+
 /**
  * ỨNG DỤNG EXPRESS CHÍNH
  * - Cấu hình middleware bảo mật và hiệu năng
@@ -77,6 +79,7 @@ app.get('/health', (req, res) => {
 
 // 🎯 API ROUTES
 app.use('/api/auth', authRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 
 // 🔍 DEBUG ENDPOINT (chỉ trong development)
 if (appConfig.isDev) {
