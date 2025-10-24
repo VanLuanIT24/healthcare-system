@@ -1,132 +1,159 @@
-// src/utils/hash.js
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
-const appConfig = require('../config/app.config');
+const { appConfig } = require('../config');
 
 /**
- * TIỆN ÍCH MÃ HÓA VÀ BẢO MẬT
- * - Mã hóa mật khẩu và so sánh
+ * 🛡️ TIỆN ÍCH MÃ HÓA VÀ BẢO MẬT
+ * - Mã hóa mật khẩu với bcrypt
  * - Tạo token ngẫu nhiên
- * - Hash dữ liệu với SHA256
+ * - Hash dữ liệu cơ bản
  */
 
-// 🔐 SỐ VÒNG MÃ HÓA BCRYPT (lấy từ cấu hình)
 const SALT_ROUNDS = appConfig.security.saltRounds || 12;
 
 /**
- * MÃ HÓA MẬT KHẨU SỬ DỤNG BCRYPT
- * 
- * @param {string} plain - Mật khẩu gốc
- * @returns {Promise<string>} Mật khẩu đã mã hóa
- * 
- * @example
- * const hashedPassword = await hashPassword('password123');
+ * 🎯 MÃ HÓA MẬT KHẨU
  */
-async function hashPassword(plain) {
-  if (!plain || plain.length < 6) {
-    throw new Error('Mật khẩu phải có ít nhất 6 ký tự');
+async function hashPassword(plainPassword) {
+  if (!plainPassword || plainPassword.length < 8) {
+    throw new Error('Mật khẩu phải có ít nhất 8 ký tự');
   }
-  
-  return await bcrypt.hash(plain, SALT_ROUNDS);
+
+  try {
+    const hashed = await bcrypt.hash(plainPassword, SALT_ROUNDS);
+    
+    // Validate kết quả
+    if (!hashed || hashed.length < 60) {
+      throw new Error('Lỗi mã hóa mật khẩu');
+    }
+    
+    return hashed;
+  } catch (error) {
+    console.error('❌ Lỗi mã hóa mật khẩu:', error.message);
+    throw new Error('Không thể mã hóa mật khẩu');
+  }
 }
 
 /**
- * SO SÁNH MẬT KHẨU GỐC VỚI MẬT KHẨU ĐÃ MÃ HÓA
- * 
- * @param {string} plain - Mật khẩu gốc
- * @param {string} hash - Mật khẩu đã mã hóa
- * @returns {Promise<boolean>} Kết quả so sánh
- * 
- * @example
- * const isValid = await comparePassword('password123', storedHash);
+ * 🎯 SO SÁNH MẬT KHẨU
  */
-async function comparePassword(plain, hash) {
-  if (!plain || !hash) {
+async function comparePassword(plainPassword, hashedPassword) {
+  if (!plainPassword || !hashedPassword) {
     return false;
   }
-  
-  return await bcrypt.compare(plain, hash);
+
+  try {
+    return await bcrypt.compare(plainPassword, hashedPassword);
+  } catch (error) {
+    console.error('❌ Lỗi so sánh mật khẩu:', error.message);
+    return false;
+  }
 }
 
 /**
- * TẠO TOKEN NGẪU NHIÊN DẠNG HEX
- * 
- * @param {number} size - Kích thước token (bytes)
- * @returns {string} Token ngẫu nhiên
- * 
- * @example
- * const token = randomTokenHex(32); // 64 ký tự hex
+ * 🎯 KIỂM TRA ĐỘ MẠNH MẬT KHẨU
  */
-function randomTokenHex(size = 48) {
+function validatePasswordStrength(password) {
+  if (!password) {
+    return {
+      isValid: false,
+      score: 0,
+      errors: ['Mật khẩu không được để trống'],
+      suggestions: ['Nhập mật khẩu']
+    };
+  }
+
+  const requirements = {
+    minLength: password.length >= 8,
+    hasUpperCase: /[A-Z]/.test(password),
+    hasLowerCase: /[a-z]/.test(password),
+    hasNumbers: /\d/.test(password),
+  };
+
+  const errors = [];
+
+  if (!requirements.minLength) {
+    errors.push('Mật khẩu phải có ít nhất 8 ký tự');
+  }
+  if (!requirements.hasUpperCase) {
+    errors.push('Mật khẩu phải có ít nhất 1 chữ hoa');
+  }
+  if (!requirements.hasLowerCase) {
+    errors.push('Mật khẩu phải có ít nhất 1 chữ thường');
+  }
+  if (!requirements.hasNumbers) {
+    errors.push('Mật khẩu phải có ít nhất 1 số');
+  }
+
+  const score = Object.values(requirements).filter(Boolean).length;
+  const isStrong = errors.length === 0;
+
+  return {
+    isValid: isStrong,
+    score: score,
+    maxScore: 4,
+    errors: errors,
+    suggestions: isStrong ? [] : [
+      'Thêm ký tự đặc biệt (!@#$%^&*)',
+      'Sử dụng kết hợp chữ hoa và thường',
+      'Thêm số vào mật khẩu'
+    ]
+  };
+}
+
+/**
+ * 🎯 TẠO TOKEN NGẪU NHIÊN DẠNG HEX
+ */
+function randomTokenHex(size = 32) {
   if (size < 16) {
     throw new Error('Kích thước token phải ít nhất 16 bytes');
   }
-  
-  return crypto.randomBytes(size).toString('hex');
+
+  try {
+    return crypto.randomBytes(size).toString('hex');
+  } catch (error) {
+    console.error('❌ Lỗi tạo token:', error.message);
+    throw new Error('Không thể tạo token ngẫu nhiên');
+  }
 }
 
 /**
- * TẠO TOKEN NGẪU NHIÊN DẠNG BASE64
- * 
- * @param {number} size - Kích thước token (bytes)
- * @returns {string} Token base64
+ * 🎯 TẠO TOKEN DẠNG BASE64 URL SAFE
  */
-function randomTokenBase64(size = 32) {
-  return crypto.randomBytes(size).toString('base64url');
+function randomTokenBase64(size = 24) {
+  try {
+    return crypto.randomBytes(size).toString('base64url');
+  } catch (error) {
+    console.error('❌ Lỗi tạo base64 token:', error.message);
+    throw new Error('Không thể tạo token base64');
+  }
 }
 
 /**
- * MÃ HÓA DỮ LIỆU SỬ DỤNG SHA256
- * 
- * @param {string} data - Dữ liệu cần hash
- * @returns {string} Chuỗi hash SHA256
- * 
- * @example
- * const hash = sha256('secret_data');
+ * 🎯 MÃ HÓA DỮ LIỆU VỚI SHA256
  */
 function sha256(data) {
+  if (!data) {
+    throw new Error('Dữ liệu đầu vào không được để trống');
+  }
+
   if (typeof data !== 'string') {
     data = JSON.stringify(data);
   }
-  
-  return crypto.createHash('sha256').update(data).digest('hex');
-}
 
-/**
- * MÃ HÓA DỮ LIỆU SỬ DỤNG HMAC-SHA256
- * 
- * @param {string} data - Dữ liệu cần hash
- * @param {string} secret - Secret key
- * @returns {string} Chuỗi HMAC
- */
-function hmacSha256(data, secret) {
-  return crypto.createHmac('sha256', secret)
-    .update(data)
-    .digest('hex');
-}
-
-/**
- * TẠO MÃ XÁC NHẬN NGẪU NHIÊN (OTP)
- * 
- * @param {number} length - Độ dài mã OTP
- * @returns {string} Mã OTP
- */
-function generateOTP(length = 6) {
-  if (length < 4 || length > 8) {
-    throw new Error('Độ dài OTP phải từ 4 đến 8 ký tự');
+  try {
+    return crypto.createHash('sha256').update(data).digest('hex');
+  } catch (error) {
+    console.error('❌ Lỗi hash SHA256:', error.message);
+    throw new Error('Không thể mã hóa dữ liệu');
   }
-  
-  const min = Math.pow(10, length - 1);
-  const max = Math.pow(10, length) - 1;
-  return Math.floor(min + Math.random() * (max - min + 1)).toString();
 }
 
 module.exports = {
   hashPassword,
   comparePassword,
+  validatePasswordStrength,
   randomTokenHex,
   randomTokenBase64,
   sha256,
-  hmacSha256,
-  generateOTP,
 };
