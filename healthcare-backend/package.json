@@ -10,6 +10,7 @@
     "admin:create": "node src/scripts/superAdminCli.js create",
     "admin:status": "node src/scripts/superAdminCli.js status",
     "admin:reset": "node src/scripts/superAdminCli.js reset",
+    "admin:info": "node src/scripts/superAdminCli.js info",
     "admin:help": "node src/scripts/superAdminCli.js help"
   },
   "keywords": [],
