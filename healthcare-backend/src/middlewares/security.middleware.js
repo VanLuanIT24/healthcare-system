@@ -1,4 +1,3 @@
-// src/middlewares/security.middleware.js
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const xss = require('xss-clean');

@@ -1,4 +1,5 @@
 const AuditLog = require('../models/auditLog.model');
+const { appConfig } = require('../config');
 
 /**
  * 🛡️ MIDDLEWARE AUDIT LOG CHO HEALTHCARE SYSTEM
@@ -17,9 +18,9 @@ const AUDIT_ACTIONS = {
   LOGIN_FAILED: 'LOGIN_FAILED',
   PASSWORD_CHANGE: 'PASSWORD_CHANGE',
   TOKEN_REFRESH: 'TOKEN_REFRESH',
-  USER_CREATE: 'USER_CREATE',
   
   // 👥 USER MANAGEMENT
+  USER_CREATE: 'USER_CREATE',
   USER_UPDATE: 'USER_UPDATE',
   USER_DELETE: 'USER_DELETE',
   USER_DISABLE: 'USER_DISABLE',
@@ -76,8 +77,33 @@ const AUDIT_ACTIONS = {
  */
 function auditLog(action, options = {}) {
   return async (req, res, next) => {
+    // 🎯 BỎ QUA NẾU AUDIT LOG BỊ TẮT
+    if (!appConfig.logging.enableAudit) {
+      return next();
+    }
+
     const startTime = Date.now();
     const originalSend = res.send;
+
+    // 🎯 GHI NHẬN THÔNG TIN REQUEST
+    const auditData = {
+      action,
+      timestamp: new Date(),
+      user: req.user ? {
+        id: req.user.sub,
+        email: req.user.email,
+        role: req.user.role,
+        name: req.user.name,
+      } : null,
+      ip: getClientIP(req),
+      userAgent: req.get('User-Agent'),
+      method: req.method,
+      url: req.originalUrl,
+      params: req.params,
+      query: sanitizeQuery(req.query),
+      body: sanitizeBody(req.body, options.sensitiveFields),
+      ...options.metadata,
+    };
 
     // 🎯 GHI ĐÈ PHƯƠNG THỨC RESPONSE
     res.send = function(data) {
@@ -86,37 +112,21 @@ function auditLog(action, options = {}) {
       // 🎯 GHI LOG BẤT ĐỒNG BỘ (KHÔNG ẢNH HƯỞNG ĐẾN RESPONSE)
       process.nextTick(async () => {
         try {
-          // 🎯 LẤY THÔNG TIN REQUEST
-          const ipAddress = getClientIP(req);
-          
-          const auditData = {
-            action,
-            timestamp: new Date(),
-            userId: req.user ? req.user._id || req.user.sub : null,
-            userRole: req.user ? req.user.role : 'GUEST',
-            userEmail: req.user ? req.user.email : null,
-            userName: req.user ? req.user.name : null,
-            ipAddress: ipAddress,
-            userAgent: req.get('User-Agent'),
-            httpMethod: req.method,
-            endpoint: req.originalUrl,
-            resource: options.resource || 'User',
-            resourceId: req.params.id || req.body._id || null,
-            statusCode: res.statusCode,
+          const finalAuditData = {
+            ...auditData,
             responseTime,
+            statusCode: res.statusCode,
+            responseSize: Buffer.byteLength(data || '', 'utf8'),
             success: res.statusCode < 400,
-            category: options.category || 'USER_MANAGEMENT',
-            metadata: options.metadata || {}
           };
 
-          // ✅ SỬ DỤNG PHƯƠNG THỨC AN TOÀN
-          await AuditLog.logAction(auditData);
+          await AuditLog.create(finalAuditData);
           
           // 🎯 LOG REAL-TIME CHO CÁC SỰ KIỆN QUAN TRỌNG
           if (isCriticalAction(action) || res.statusCode >= 400) {
             console.log('🔍 AUDIT LOG:', {
               action,
-              user: auditData.userEmail,
+              user: auditData.user?.email,
               status: res.statusCode,
               responseTime: `${responseTime}ms`,
             });
@@ -142,7 +152,61 @@ function getClientIP(req) {
          req.connection.remoteAddress || 
          req.socket.remoteAddress ||
          (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
-         '0.0.0.0';
+         'unknown';
+}
+
+/**
+ * 🎯 SANITIZE QUERY PARAMETERS
+ */
+function sanitizeQuery(query) {
+  const sanitized = { ...query };
+  
+  // 🎯 ẨN CÁC THAM SỐ NHẠY CẢM
+  const sensitiveQueryParams = ['password', 'token', 'secret', 'key'];
+  sensitiveQueryParams.forEach(param => {
+    if (sanitized[param]) {
+      sanitized[param] = '***HIDDEN***';
+    }
+  });
+  
+  return sanitized;
+}
+
+/**
+ * 🎯 SANITIZE REQUEST BODY
+ */
+function sanitizeBody(body, sensitiveFields = []) {
+  if (!body || typeof body !== 'object') return body;
+  
+  const sanitized = JSON.parse(JSON.stringify(body));
+  const defaultSensitiveFields = [
+    'password', 
+    'passwordHash', 
+    'token', 
+    'refreshToken',
+    'accessToken',
+    'secret',
+    'creditCard',
+    'ssn',
+    'healthInsuranceNumber',
+  ];
+  
+  const allSensitiveFields = [...defaultSensitiveFields, ...sensitiveFields];
+  
+  function sanitizeObject(obj) {
+    for (const key in obj) {
+      if (allSensitiveFields.some(field => 
+        key.toLowerCase().includes(field.toLowerCase())
+      )) {
+        obj[key] = '***HIDDEN***';
+      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+        sanitizeObject(obj[key]);
+      }
+    }
+  }
+  
+  sanitizeObject(sanitized);
+  return sanitized;
 }
 
 /**
