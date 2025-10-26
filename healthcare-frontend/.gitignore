@@ -1,0 +1,7 @@
+# Tạo file .gitignore
+cat > .gitignore << EOF
+# 🚨 NODE MODULES
+node_modules/
+
+# 🔐 ENVIRONMENT VARIABLES
+.env
