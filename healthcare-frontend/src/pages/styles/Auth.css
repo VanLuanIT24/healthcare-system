@@ -1,0 +1,48 @@
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+}
+
+.auth-card {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auth-card .ant-form-item {
+  margin-bottom: 24px;
+}
+
+.auth-card .ant-input,
+.auth-card .ant-input-password {
+  font-size: 16px;
+}
+
+.auth-card .ant-btn {
+  font-size: 16px;
+  height: 40px;
+  font-weight: 600;
+}
+
+.ant-divider {
+  margin: 24px 0;
+}
+
+/* Loading state */
+.ant-spin {
+  display: inline-block;
+}
