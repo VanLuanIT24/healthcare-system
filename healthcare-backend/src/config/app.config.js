@@ -3,38 +3,35 @@ const dotenv = require('dotenv');
 const path = require('path');
 const Joi = require('joi');
 
-/**
- * CẤU HÌNH ỨNG DỤNG CHÍNH
- * - Load và validate biến môi trường
- * - Cung cấp cấu hình thống nhất cho toàn bộ ứng dụng
- */
+// =============================================
+// 🧠 CẤU HÌNH ỨNG DỤNG CHÍNH
+// =============================================
 
 // 🔹 Load biến môi trường từ file .env
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-/**
- * SCHEMA VALIDATION CHO BIẾN MÔI TRƯỜNG
- * Đảm bảo tất cả biến môi trường cần thiết được khai báo và hợp lệ
- */
+// =============================================
+// ✅ SCHEMA VALIDATION CHO BIẾN MÔI TRƯỜNG
+// =============================================
 const envSchema = Joi.object({
   // MÔI TRƯỜNG ỨNG DỤNG
   NODE_ENV: Joi.string()
     .valid('development', 'production', 'test')
     .default('development'),
 
-  // CẤU HÌNH SERVER
+  // SERVER CONFIG
   PORT: Joi.number().default(5000),
 
-  // CƠ SỞ DỮ LIỆU
-  MONGO_URI: Joi.string().uri().required(),
+  // DATABASE
+  MONGO_URI: Joi.string().uri().default('mongodb://localhost:27017/healthcare_dev'),
 
-  // JWT TOKEN
+  // JWT CONFIG
   JWT_ACCESS_SECRET: Joi.string().required(),
   JWT_REFRESH_SECRET: Joi.string().required(),
   ACCESS_TOKEN_EXPIRES_IN: Joi.string().default('15m'),
   REFRESH_TOKEN_EXPIRES_IN: Joi.string().default('7d'),
 
-  // BẢO MẬT
+  // PASSWORD SECURITY
   SALT_ROUNDS: Joi.number().default(12),
 
   // EMAIL SERVICE
@@ -44,16 +41,33 @@ const envSchema = Joi.object({
   SMTP_USER: Joi.string().required(),
   SMTP_PASS: Joi.string().required(),
 
-  // CORS & SECURITY
+  // SECURITY POLICIES
   CORS_ORIGIN: Joi.string().default('*'),
   CSRF_COOKIE_NAME: Joi.string().default('XSRF-TOKEN'),
   MAX_LOGIN_ATTEMPTS: Joi.number().default(5),
   LOCK_TIME: Joi.string().default('15m'),
 
-  // SUPER ADMIN ACCOUNT
+  // RATE LIMIT
+  RATE_LIMIT_WINDOW_MS: Joi.number().default(900000),
+  RATE_LIMIT_MAX_REQUESTS: Joi.number().default(100),
+
+  // DATABASE CONNECTION POOL
+  DB_MAX_POOL_SIZE: Joi.number().default(20),
+  DB_MIN_POOL_SIZE: Joi.number().default(5),
+
+  // PERFORMANCE
+  REQUEST_TIMEOUT: Joi.number().default(30000),
+  JSON_BODY_LIMIT: Joi.string().default('10mb'),
+
+  // SUPER ADMIN
   SUPER_ADMIN_EMAIL: Joi.string().email().required(),
   SUPER_ADMIN_PASSWORD: Joi.string().required(),
   SUPER_ADMIN_NAME: Joi.string().default('System Root Admin'),
+
+  // HOSPITAL INFO
+  HOSPITAL_NAME: Joi.string().default('Healthcare System Hospital'),
+  SUPPORT_EMAIL: Joi.string().email().default('support@healthcare.vn'),
+  SUPPORT_PHONE: Joi.string().default('+84-28-3829-8149'),
 
   // LOGGING & AUDIT
   LOG_LEVEL: Joi.string()
@@ -61,41 +75,38 @@ const envSchema = Joi.object({
     .default('info'),
   ENABLE_AUDIT_LOG: Joi.boolean().default(true),
   AUDIT_LOG_RETENTION_DAYS: Joi.number().default(90),
-}).unknown(true); // Cho phép các biến môi trường phụ không xác định
+}).unknown(true);
 
-/**
- * VALIDATE VÀ XỬ LÝ LỖI CẤU HÌNH
- */
+// =============================================
+// ⚙️ VALIDATE & XỬ LÝ LỖI
+// =============================================
 const { value: env, error } = envSchema.validate(process.env, {
-  abortEarly: false,  // Hiển thị tất cả lỗi, không dừng ở lỗi đầu tiên
-  allowUnknown: true, // Cho phép biến không xác định
-  stripUnknown: true, // Loại bỏ biến không xác định
+  abortEarly: false,
+  allowUnknown: true,
+  stripUnknown: true,
 });
 
-// 🔴 THOÁT ỨNG DỤNG NẾU CẤU HÌNH KHÔNG HỢP LỆ
 if (error) {
   console.error('❌ Cấu hình môi trường không hợp lệ:\n');
   error.details.forEach((err) => console.error(`- ${err.message}`));
   process.exit(1);
 }
 
-/**
- * ĐỐI TƯỢNG CẤU HÌNH CHUẨN HÓA
- * Tổ chức cấu hình theo nhóm logic để dễ quản lý
- */
+// =============================================
+// 🧩 TẠO ĐỐI TƯỢNG CẤU HÌNH CHUẨN HOÁ
+// =============================================
 const appConfig = {
-  // THÔNG TIN MÔI TRƯỜNG
   env: env.NODE_ENV,
   isDev: env.NODE_ENV === 'development',
   isProd: env.NODE_ENV === 'production',
   port: env.PORT,
 
-  // CƠ SỞ DỮ LIỆU
   db: {
     uri: env.MONGO_URI,
+    maxPoolSize: env.DB_MAX_POOL_SIZE,
+    minPoolSize: env.DB_MIN_POOL_SIZE,
   },
 
-  // JWT & AUTHENTICATION
   jwt: {
     accessSecret: env.JWT_ACCESS_SECRET,
     refreshSecret: env.JWT_REFRESH_SECRET,
@@ -103,12 +114,10 @@ const appConfig = {
     refreshExpiry: env.REFRESH_TOKEN_EXPIRES_IN,
   },
 
-  // CORS CONFIGURATION
   cors: {
     origin: env.CORS_ORIGIN,
   },
 
-  // EMAIL SERVICE
   email: {
     from: env.EMAIL_FROM,
     smtpHost: env.SMTP_HOST,
@@ -117,7 +126,6 @@ const appConfig = {
     smtpPass: env.SMTP_PASS,
   },
 
-  // BẢO MẬT
   security: {
     saltRounds: env.SALT_ROUNDS,
     csrfCookieName: env.CSRF_COOKIE_NAME,
@@ -125,14 +133,29 @@ const appConfig = {
     lockTime: env.LOCK_TIME,
   },
 
-  // TÀI KHOẢN SUPER ADMIN
+  rateLimit: {
+    windowMs: env.RATE_LIMIT_WINDOW_MS,
+    maxRequests: env.RATE_LIMIT_MAX_REQUESTS,
+  },
+
   superAdmin: {
     email: env.SUPER_ADMIN_EMAIL,
     password: env.SUPER_ADMIN_PASSWORD,
     name: env.SUPER_ADMIN_NAME,
+    phone: env.SUPER_ADMIN_PHONE
   },
 
-  // LOGGING & AUDIT TRAIL
+  hospital: {
+    name: env.HOSPITAL_NAME,
+    supportEmail: env.SUPPORT_EMAIL,
+    supportPhone: env.SUPPORT_PHONE,
+  },
+
+  performance: {
+    requestTimeout: env.REQUEST_TIMEOUT,
+    jsonBodyLimit: env.JSON_BODY_LIMIT,
+  },
+
   logging: {
     level: env.LOG_LEVEL,
     enableAudit: env.ENABLE_AUDIT_LOG,
@@ -140,7 +163,10 @@ const appConfig = {
   },
 };
 
+// =============================================
+// ✅ EXPORT
+// =============================================
 module.exports = {
   ...appConfig,
-  config: appConfig, // Export cả dạng spread và nested object
+  config: appConfig,
 };

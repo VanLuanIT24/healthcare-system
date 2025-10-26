@@ -1,180 +1,185 @@
 // src/validations/auth.validation.js
 const Joi = require('joi');
+const { commonSchemas } = require('../middlewares/validation.middleware');
 
 /**
- * SCHEMA VALIDATION CHO XÁC THỰC
- * - Sử dụng Joi để validate dữ liệu đầu vào
- * - Cung cấp thông báo lỗi tiếng Việt rõ ràng
+ * 🛡️ VALIDATION SCHEMAS CHO AUTHENTICATION
+ * - Xác thực dữ liệu đầu vào cho các API auth
+ * - Hiển thị thông báo lỗi rõ ràng, thân thiện
  */
 
-/**
- * SCHEMA ĐĂNG KÝ TÀI KHOẢN
- */
-const registerSchema = Joi.object({
-  email: Joi.string()
-    .email({ 
-      tlds: { allow: false } // Không kiểm tra TLD cụ thể
+const authValidation = {
+  // 🎯 ĐĂNG NHẬP
+  login: {
+    body: Joi.object({
+      email: commonSchemas.email.required()
+        .messages({
+          'any.required': 'Vui lòng nhập email'
+        }),
+      password: Joi.string().min(1).required()
+        .messages({
+          'string.empty': 'Vui lòng nhập mật khẩu',
+          'any.required': 'Vui lòng nhập mật khẩu'
+        })
+    }).options({ abortEarly: false })
+  },
+
+  // 🎯 ĐĂNG KÝ USER - ✅ MESSAGES THÂN THIỆN, RÕ RÀNG
+  registerUser: {
+    body: Joi.object({
+      email: commonSchemas.email.required()
+        .messages({
+          'any.required': 'Vui lòng nhập email'
+        }),
+      
+      password: commonSchemas.password.required()
+        .messages({
+          'any.required': 'Vui lòng nhập mật khẩu'
+        }),
+      
+      confirmPassword: Joi.string().valid(Joi.ref('password')).required()
+        .messages({
+          'any.only': 'Mật khẩu xác nhận không khớp',
+          'any.required': 'Vui lòng xác nhận mật khẩu',
+          'string.empty': 'Vui lòng nhập mật khẩu xác nhận'
+        }),
+      
+      personalInfo: Joi.object({
+        firstName: Joi.string().min(2).max(50).required()
+          .messages({
+            'string.min': 'Họ phải có ít nhất 2 ký tự',
+            'string.max': 'Họ không được dài quá 50 ký tự',
+            'any.required': 'Vui lòng nhập họ',
+            'string.empty': 'Họ không được để trống'
+          }),
+        
+        lastName: Joi.string().min(2).max(50).required()
+          .messages({
+            'string.min': 'Tên phải có ít nhất 2 ký tự',
+            'string.max': 'Tên không được dài quá 50 ký tự', 
+            'any.required': 'Vui lòng nhập tên',
+            'string.empty': 'Tên không được để trống'
+          }),
+        
+        dateOfBirth: commonSchemas.date.required()
+          .max('now')
+          .messages({
+            'date.max': 'Ngày sinh không được ở trong tương lai',
+            'any.required': 'Vui lòng chọn ngày sinh',
+            'date.base': 'Ngày sinh không hợp lệ'
+          }),
+        
+        gender: Joi.string().valid('MALE', 'FEMALE', 'OTHER').required()
+          .messages({
+            'any.only': 'Giới tính phải là: MALE, FEMALE hoặc OTHER',
+            'any.required': 'Vui lòng chọn giới tính'
+          }),
+        
+        phone: commonSchemas.phone.required()
+          .messages({
+            'any.required': 'Vui lòng nhập số điện thoại'
+          })
+      }).required()
+        .messages({
+          'object.base': 'Thông tin cá nhân không hợp lệ',
+          'any.required': 'Vui lòng cung cấp thông tin cá nhân'
+        }),
+      
+      role: Joi.string().valid(
+        'PATIENT', 'DOCTOR', 'NURSE', 'RECEPTIONIST',
+        'PHARMACIST', 'LAB_TECHNICIAN', 'BILLING_STAFF'
+      ).default('PATIENT')
+        .messages({
+          'any.only': 'Vai trò không hợp lệ. Vai trò hợp lệ: PATIENT, DOCTOR, NURSE, RECEPTIONIST, PHARMACIST, LAB_TECHNICIAN, BILLING_STAFF'
+        })
+    }).options({ abortEarly: false })
+  },
+
+  // 🎯 QUÊN MẬT KHẨU
+  forgotPassword: {
+    body: Joi.object({
+      email: commonSchemas.email.required()
+        .messages({
+          'any.required': 'Vui lòng nhập email'
+        })
+    }).options({ abortEarly: false })
+  },
+
+  // 🎯 ĐẶT LẠI MẬT KHẨU
+  resetPassword: {
+    body: Joi.object({
+      token: Joi.string().required()
+        .messages({
+          'string.empty': 'Token không được để trống',
+          'any.required': 'Token là bắt buộc'
+        }),
+      
+      newPassword: commonSchemas.password.required()
+        .messages({
+          'any.required': 'Vui lòng nhập mật khẩu mới'
+        }),
+      
+      confirmPassword: Joi.string().valid(Joi.ref('newPassword')).required()
+        .messages({
+          'any.only': 'Mật khẩu xác nhận không khớp',
+          'any.required': 'Vui lòng xác nhận mật khẩu mới'
+        })
+    }).options({ abortEarly: false })
+  },
+
+  // 🎯 ĐỔI MẬT KHẨU
+  changePassword: {
+    body: Joi.object({
+      currentPassword: Joi.string().min(1).required()
+        .messages({
+          'string.empty': 'Vui lòng nhập mật khẩu hiện tại',
+          'any.required': 'Vui lòng nhập mật khẩu hiện tại'
+        }),
+      
+      newPassword: commonSchemas.password.required()
+        .messages({
+          'any.required': 'Vui lòng nhập mật khẩu mới'
+        }),
+      
+      confirmPassword: Joi.string().valid(Joi.ref('newPassword')).required()
+        .messages({
+          'any.only': 'Mật khẩu xác nhận không khớp',
+          'any.required': 'Vui lòng xác nhận mật khẩu mới'
+        })
+    }).options({ abortEarly: false })
+  },
+
+  // 🎯 REFRESH TOKEN
+  refreshToken: {
+    body: Joi.object({
+      refreshToken: Joi.string().required()
+        .messages({
+          'string.empty': 'Refresh token không được để trống',
+          'any.required': 'Refresh token là bắt buộc'
+        })
     })
-    .required()
-    .messages({
-      'string.email': 'Email không hợp lệ',
-      'string.empty': 'Email không được để trống',
-      'any.required': 'Email là bắt buộc'
-    }),
+  },
 
-  name: Joi.string()
-    .min(2)
-    .max(100)
-    .pattern(/^[a-zA-ZÀ-ỹ\s]+$/)
-    .optional()
-    .messages({
-      'string.min': 'Tên phải có ít nhất 2 ký tự',
-      'string.max': 'Tên không được vượt quá 100 ký tự',
-      'string.pattern.base': 'Tên chỉ được chứa chữ cái và khoảng trắng'
-    }),
-
-  password: Joi.string()
-    .min(6)
-    .max(72) // Giới hạn bcrypt
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .required()
-    .messages({
-      'string.min': 'Mật khẩu phải có ít nhất 6 ký tự',
-      'string.max': 'Mật khẩu không được vượt quá 72 ký tự',
-      'string.pattern.base': 'Mật khẩu phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số',
-      'any.required': 'Mật khẩu là bắt buộc'
-    }),
-
-  role: Joi.string()
-    .valid('PATIENT', 'STAFF', 'DOCTOR', 'MANAGER', 'ADMIN', 'SUPER_ADMIN')
-    .optional()
-    .messages({
-      'any.only': 'Vai trò không hợp lệ'
-    }),
-
-  // Xác nhận mật khẩu
-  confirmPassword: Joi.string()
-    .valid(Joi.ref('password'))
-    .required()
-    .messages({
-      'any.only': 'Mật khẩu xác nhận không khớp',
-      'any.required': 'Vui lòng xác nhận mật khẩu'
+  // 🎯 VERIFY EMAIL
+  verifyEmail: {
+    params: Joi.object({
+      token: Joi.string().required()
+        .messages({
+          'string.empty': 'Token xác thực không được để trống',
+          'any.required': 'Token xác thực là bắt buộc'
+        })
     })
-}).with('password', 'confirmPassword'); // Đảm bảo confirmPassword đi cùng password
+  },
 
-/**
- * SCHEMA ĐĂNG NHẬP
- */
-const loginSchema = Joi.object({
-  email: Joi.string()
-    .email()
-    .required()
-    .messages({
-      'string.email': 'Email không hợp lệ',
-      'string.empty': 'Email không được để trống',
-      'any.required': 'Email là bắt buộc'
-    }),
-
-  password: Joi.string()
-    .required()
-    .messages({
-      'string.empty': 'Mật khẩu không được để trống',
-      'any.required': 'Mật khẩu là bắt buộc'
-    }),
-
-  twoFACode: Joi.string()
-    .length(6)
-    .pattern(/^\d+$/)
-    .optional()
-    .messages({
-      'string.length': 'Mã 2FA phải có 6 chữ số',
-      'string.pattern.base': 'Mã 2FA chỉ được chứa số'
+  // 🎯 RESEND VERIFICATION EMAIL
+  resendVerification: {
+    body: Joi.object({
+      email: commonSchemas.email.required()
+        .messages({
+          'any.required': 'Vui lòng nhập email'
+        })
     })
-});
-
-/**
- * SCHEMA ĐỔI MẬT KHẨU
- */
-const changePasswordSchema = Joi.object({
-  currentPassword: Joi.string()
-    .required()
-    .messages({
-      'any.required': 'Mật khẩu hiện tại là bắt buộc'
-    }),
-
-  newPassword: Joi.string()
-    .min(6)
-    .max(72)
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .required()
-    .messages({
-      'string.min': 'Mật khẩu mới phải có ít nhất 6 ký tự',
-      'string.pattern.base': 'Mật khẩu mới phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số'
-    }),
-
-  confirmNewPassword: Joi.string()
-    .valid(Joi.ref('newPassword'))
-    .required()
-    .messages({
-      'any.only': 'Mật khẩu xác nhận không khớp'
-    })
-}).with('newPassword', 'confirmNewPassword');
-
-/**
- * SCHEMA RESET MẬT KHẨU
- */
-const resetPasswordSchema = Joi.object({
-  token: Joi.string()
-    .required()
-    .messages({
-      'any.required': 'Token reset là bắt buộc'
-    }),
-
-  newPassword: Joi.string()
-    .min(6)
-    .max(72)
-    .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-    .required()
-    .messages({
-      'string.min': 'Mật khẩu mới phải có ít nhất 6 ký tự',
-      'string.pattern.base': 'Mật khẩu mới phải chứa ít nhất 1 chữ hoa, 1 chữ thường và 1 số'
-    }),
-
-  confirmNewPassword: Joi.string()
-    .valid(Joi.ref('newPassword'))
-    .required()
-    .messages({
-      'any.only': 'Mật khẩu xác nhận không khớp'
-    })
-});
-
-/**
- * SCHEMA CẬP NHẬT THÔNG TIN USER
- */
-const updateProfileSchema = Joi.object({
-  name: Joi.string()
-    .min(2)
-    .max(100)
-    .pattern(/^[a-zA-ZÀ-ỹ\s]+$/)
-    .optional()
-    .messages({
-      'string.min': 'Tên phải có ít nhất 2 ký tự',
-      'string.max': 'Tên không được vượt quá 100 ký tự',
-      'string.pattern.base': 'Tên chỉ được chứa chữ cái và khoảng trắng'
-    }),
-
-  email: Joi.string()
-    .email()
-    .optional()
-    .messages({
-      'string.email': 'Email không hợp lệ'
-    })
-}).min(1); // Ít nhất một trường phải được cung cấp
-
-module.exports = {
-  registerSchema,
-  loginSchema,
-  changePasswordSchema,
-  resetPasswordSchema,
-  updateProfileSchema,
+  }
 };
+
+module.exports = authValidation;

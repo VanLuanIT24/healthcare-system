@@ -2,42 +2,93 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
-const { authenticate, requirePermission, requireRole } = require('../middlewares/auth.middleware');
-const { PERMISSIONS, ROLES } = require('../constants/roles');
+const authValidation = require('../validations/auth.validation');
+const { 
+  validateBody,
+  sanitizeInput 
+} = require('../middlewares/validation.middleware');
+const { markPublic } = require('../middlewares/public.middleware');
+const { authenticate } = require('../middlewares/auth.middleware');
+const { loginLimiter } = require('../middlewares/rateLimiter');
 
-// Public routes
-router.post('/register', authController.register);
-router.post('/login', authController.login);
-router.post('/refresh', authController.refresh);
+/**
+ * 🛡️ AUTHENTICATION ROUTES CHO HEALTHCARE SYSTEM
+ * - Định nghĩa routes và middleware cho authentication
+ * - Áp dụng rate limiting và validation phù hợp
+ */
 
-// Protected routes
-router.post('/logout', authenticate, authController.logout);
-router.get('/me', authenticate, authController.getCurrentUser);
+// 🎯 PUBLIC ROUTES (KHÔNG YÊU CẦU AUTHENTICATION)
+router.use(markPublic);
 
-// 2FA routes - yêu cầu đăng nhập
-router.get('/2fa/generate', authenticate, authController.generate2FA);
-router.post('/2fa/enable', authenticate, authController.enable2FA);
-
-
-// Role-specific registration endpoints
-router.post('/register-staff',
-  authenticate,
-  requirePermission(PERMISSIONS.REGISTER_STAFF),
-  (req, res, next) => {
-    req.body.role = ROLES.STAFF;
-    next();
-  },
-  authController.register
+// 🎯 ĐĂNG NHẬP
+router.post(
+  '/login',
+  loginLimiter, // Rate limiting cho đăng nhập
+  sanitizeInput(['email', 'password']),
+  validateBody(authValidation.login.body),
+  authController.login
 );
 
-router.post('/register-doctor',
+// 🎯 ĐĂNG KÝ USER
+router.post(
+  '/register',
+  sanitizeInput(['email', 'password', 'confirmPassword', 'personalInfo', 'role']),
+  validateBody(authValidation.registerUser.body),
+  authController.registerUser
+);
+
+// 🎯 QUÊN MẬT KHẨU
+router.post(
+  '/forgot-password',
+  sanitizeInput(['email']),
+  validateBody(authValidation.forgotPassword.body),
+  authController.forgotPassword
+);
+
+// 🎯 ĐẶT LẠI MẬT KHẨU
+router.post(
+  '/reset-password',
+  sanitizeInput(['token', 'newPassword', 'confirmPassword']),
+  validateBody(authValidation.resetPassword.body),
+  authController.resetPassword
+);
+
+// 🎯 REFRESH TOKEN
+router.post(
+  '/refresh-token',
+  sanitizeInput(['refreshToken']),
+  validateBody(authValidation.refreshToken.body),
+  authController.refreshToken
+);
+
+// 🎯 HEALTH CHECK
+router.get('/health', authController.healthCheck);
+
+// 🎯 PROTECTED ROUTES (YÊU CẦU AUTHENTICATION)
+
+// 🎯 ĐĂNG XUẤT
+router.post(
+  '/logout',
   authenticate,
-  requirePermission(PERMISSIONS.REGISTER_DOCTOR),
-  (req, res, next) => {
-    req.body.role = ROLES.DOCTOR;
-    next();
-  },
-  authController.register
+  sanitizeInput(['refreshToken']),
+  validateBody(authValidation.refreshToken.body),
+  authController.logout
+);
+
+// 🎯 ĐỔI MẬT KHẨU
+router.post(
+  '/change-password',
+  authenticate, 
+  sanitizeInput(['currentPassword', 'newPassword', 'confirmPassword']),
+  validateBody(authValidation.changePassword.body),
+  authController.changePassword
+);
+
+// 🎯 LẤY THÔNG TIN USER HIỆN TẠI
+router.get(
+  '/me',
+  authenticate,
+  authController.getCurrentUser
 );
 
 module.exports = router;
