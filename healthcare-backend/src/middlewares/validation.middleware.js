@@ -2,22 +2,22 @@ const Joi = require('joi');
 const { AppError, ERROR_CODES } = require('./error.middleware');
 
 /**
- * 🛡️ MIDDLEWARE VALIDATION CHO HEALTHCARE SYSTEM - ĐÃ SỬA LỖI
+ * 🛡️ MIDDLEWARE VALIDATION CHO HEALTHCARE SYSTEM
  * - Xác thực dữ liệu đầu vào theo chuẩn y tế
- * - Hiển thị thông báo lỗi rõ ràng, thân thiện
- * - FIXED: schema.validate is not a function
+ * - Hỗ trợ các loại validation đặc thù ngành y
  */
 
-// 🎯 SCHEMAS CƠ BẢN (ĐÃ SỬA MESSAGES THÂN THIỆN)
+// 🎯 SCHEMAS CƠ BẢN (ĐÃ SỬA)
 const commonSchemas = {
   objectId: Joi.string()
     .hex()
     .length(24)
+    .required()
     .messages({
       'string.base': 'ID phải là chuỗi hợp lệ',
-      'string.length': 'ID phải có đúng 24 ký tự',
+      'string.length': 'ID phải có 24 ký tự',
       'string.hex': 'ID phải là dạng hex hợp lệ',
-      'any.required': 'Vui lòng cung cấp ID',
+      'any.required': 'ID không được bỏ trống',
     }),
 
   email: Joi.string()
@@ -26,16 +26,12 @@ const commonSchemas = {
     .trim()
     .messages({
       'string.email': 'Email không hợp lệ',
-      'string.empty': 'Vui lòng nhập email',
-      'any.required': 'Email là bắt buộc'
     }),
 
   phone: Joi.string()
     .pattern(/^\+?[\d\s\-\(\)]{10,}$/)
     .messages({
-      'string.pattern.base': 'Số điện thoại không hợp lệ. Ví dụ: +84123456789',
-      'string.empty': 'Vui lòng nhập số điện thoại',
-      'any.required': 'Số điện thoại là bắt buộc'
+      'string.pattern.base': 'Số điện thoại không hợp lệ',
     }),
 
   password: Joi.string()
@@ -43,9 +39,8 @@ const commonSchemas = {
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .messages({
       'string.min': 'Mật khẩu phải có ít nhất 8 ký tự',
-      'string.pattern.base': 'Mật khẩu phải bao gồm ít nhất 1 chữ hoa, 1 chữ thường và 1 số',
-      'string.empty': 'Vui lòng nhập mật khẩu',
-      'any.required': 'Mật khẩu là bắt buộc'
+      'string.pattern.base':
+        'Mật khẩu phải bao gồm ít nhất 1 chữ hoa, 1 chữ thường và 1 số',
     }),
 
   date: Joi.date()
@@ -53,161 +48,115 @@ const commonSchemas = {
     .messages({
       'date.base': 'Định dạng ngày không hợp lệ',
       'date.format': 'Ngày phải theo định dạng ISO (YYYY-MM-DD)',
-      'any.required': 'Vui lòng chọn ngày'
     }),
 };
 
-/**
- * 🛡️ VALIDATION MIDDLEWARE - ✅ ĐÃ SỬA LỖI
- */
-function validate(schema) {
-  return (req, res, next) => {
-    console.log('🔍 [VALIDATION] Validating request...', {
-      method: req.method,
-      path: req.path,
-      body: req.body ? Object.keys(req.body) : 'no body',
-      params: req.params ? Object.keys(req.params) : 'no params',
-      query: req.query ? Object.keys(req.query) : 'no query'
-    });
 
-    // 🎯 KIỂM TRA XEM SCHEMA CÓ PHẢI LÀ JOI SCHEMA HỢP LỆ KHÔNG
-    if (!schema || typeof schema.validate !== 'function') {
-      console.error('❌ [VALIDATION] Invalid schema provided:', schema);
-      return next(new AppError(
-        'Lỗi cấu hình validation',
-        500,
-        ERROR_CODES.INTERNAL_SERVER_ERROR
-      ));
-    }
 
-    // 🎯 XÁC ĐỊNH LOẠI DỮ LIỆU CẦN VALIDATE
-    let dataToValidate = {};
-    let validationType = '';
+// 🎯 SCHEMAS ĐẶC THÙ Y TẾ
+const medicalSchemas = {
+  patientId: commonSchemas.objectId,
+  doctorId: commonSchemas.objectId,
+  medicalRecordId: commonSchemas.objectId,
+  appointmentId: commonSchemas.objectId,
+  prescriptionId: commonSchemas.objectId,
+  
+  // 🏥 THÔNG TIN BỆNH NHÂN
+  patientInfo: Joi.object({
+    fullName: Joi.string().min(2).max(100).required(),
+    dateOfBirth: commonSchemas.date.required(),
+    gender: Joi.string().valid('MALE', 'FEMALE', 'OTHER').required(),
+    phone: commonSchemas.phone.required(),
+    email: commonSchemas.email.optional(),
+    address: Joi.string().max(500).optional(),
+    emergencyContact: Joi.object({
+      name: Joi.string().required(),
+      phone: commonSchemas.phone.required(),
+      relationship: Joi.string().required(),
+    }).optional(),
+    bloodType: Joi.string().valid('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-').optional(),
+    allergies: Joi.array().items(Joi.string()).optional(),
+    medicalHistory: Joi.array().items(Joi.string()).optional(),
+  }),
 
-    if (schema._ids && schema._ids._byKey) {
-      const keys = Object.keys(schema._ids._byKey);
-      
-      if (keys.includes('body')) {
-        dataToValidate = req.body;
-        validationType = 'body';
-      } else if (keys.includes('params')) {
-        dataToValidate = req.params;
-        validationType = 'params';
-      } else if (keys.includes('query')) {
-        dataToValidate = req.query;
-        validationType = 'query';
-      } else {
-        // 🎯 NẾU KHÔNG XÁC ĐỊNH ĐƯỢC, MẶC ĐỊNH LÀ BODY
-        dataToValidate = req.body;
-        validationType = 'body';
-      }
-    } else {
-      // 🎯 SCHEMA ĐƠN GIẢN - VALIDATE TRỰC TIẾP
-      dataToValidate = req.body;
-      validationType = 'body';
-    }
+  // 🩺 HỒ SƠ BỆNH ÁN
+  medicalRecord: Joi.object({
+    patientId: commonSchemas.objectId.required(),
+    diagnosis: Joi.string().min(5).max(1000).required(),
+    symptoms: Joi.array().items(Joi.string()).min(1).required(),
+    treatmentPlan: Joi.string().max(2000).optional(),
+    medications: Joi.array().items(Joi.object({
+      name: Joi.string().required(),
+      dosage: Joi.string().required(),
+      frequency: Joi.string().required(),
+      duration: Joi.string().required(),
+    })).optional(),
+    notes: Joi.string().max(1000).optional(),
+    followUpDate: commonSchemas.date.optional(),
+  }),
 
-    console.log(`🔍 [VALIDATION] Validating ${validationType}:`, dataToValidate);
+  // 📅 LỊCH HẸN
+  appointment: Joi.object({
+    patientId: commonSchemas.objectId.required(),
+    doctorId: commonSchemas.objectId.required(),
+    appointmentDate: commonSchemas.date.required(),
+    appointmentTime: Joi.string().pattern(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/).required(),
+    reason: Joi.string().max(500).required(),
+    type: Joi.string().valid('CONSULTATION', 'FOLLOW_UP', 'EMERGENCY', 'ROUTINE_CHECKUP').required(),
+    notes: Joi.string().max(1000).optional(),
+  }),
 
-    // 🎯 THỰC HIỆN VALIDATION
-    const { error, value } = schema.validate(dataToValidate, {
-      abortEarly: false, // Hiển thị tất cả lỗi
-      stripUnknown: true, // Loại bỏ trường không xác định
-      allowUnknown: false // Không cho phép trường không xác định
-    });
-
-    if (error) {
-      console.log('❌ [VALIDATION] Validation failed:', error.details);
-      
-      // 🎯 TẠO THÔNG BÁO LỖI THÂN THIỆN, DỄ HIỂU
-      const errorMessages = error.details.map(detail => {
-        // 🎯 LÀM ĐẸP MESSAGE LỖI
-        let message = detail.message;
-        
-        // 🎯 THAY THẾ CÁC TỪ KHÓA JOI MẶC ĐỊNH
-        message = message.replace(/".*?"/, 'trường này');
-        message = message.replace('is required', 'là bắt buộc');
-        message = message.replace('must be', 'phải là');
-        message = message.replace('is not allowed', 'không được phép');
-        message = message.replace('length must be', 'độ dài phải là');
-        message = message.replace('must have at least', 'phải có ít nhất');
-        message = message.replace('must have at most', 'không được vượt quá');
-        
-        return message;
-      });
-      
-      // 🎯 GỘP TẤT CẢ LỖI THÀNH MỘT MESSAGE DỄ ĐỌC
-      let userFriendlyMessage = 'Vui lòng kiểm tra lại thông tin:\n';
-      
-      errorMessages.forEach((msg, index) => {
-        userFriendlyMessage += `\n${index + 1}. ${msg}`;
-      });
-
-      console.error('❌ [VALIDATION] Validation errors:', userFriendlyMessage);
-
-      return res.status(422).json({
-        success: false,
-        message: userFriendlyMessage, // ✅ HIỂN THỊ RÕ RÀNG TỪNG LỖI
-        error: 'VALIDATION_FAILED',
-        errorCode: 'VALIDATION_FAILED',
-        details: error.details.map(detail => ({
-          field: detail.path.join('.'),
-          message: detail.message,
-          type: detail.type
-        })),
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // 🎯 GÁN DỮ LIỆU ĐÃ ĐƯỢC VALIDATE VÀ CLEAN
-    if (validationType === 'body') {
-      req.body = value;
-    } else if (validationType === 'params') {
-      req.params = value;
-    } else if (validationType === 'query') {
-      req.query = value;
-    }
-
-    console.log('✅ [VALIDATION] Validation passed');
-    next();
-  };
-}
+  // 💊 ĐƠN THUỐC
+  prescription: Joi.object({
+    patientId: commonSchemas.objectId.required(),
+    doctorId: commonSchemas.objectId.required(),
+    medications: Joi.array().items(Joi.object({
+      medicationId: commonSchemas.objectId.required(),
+      name: Joi.string().required(),
+      dosage: Joi.string().required(),
+      frequency: Joi.string().required(),
+      duration: Joi.string().required(),
+      instructions: Joi.string().max(500).optional(),
+    })).min(1).required(),
+    diagnosis: Joi.string().max(1000).required(),
+    notes: Joi.string().max(1000).optional(),
+  }),
+};
 
 /**
- * 🎯 VALIDATE BODY (DÀNH CHO POST, PUT, PATCH)
+ * 🎯 MIDDLEWARE VALIDATION CHÍNH
  */
-function validateBody(schema) {
+function validate(schema, source = 'body') {
   return (req, res, next) => {
-    console.log('🔍 [VALIDATION] Validating request body...');
-
-    if (!schema || typeof schema.validate !== 'function') {
-      console.error('❌ [VALIDATION] Invalid body schema');
-      return next(new AppError('Lỗi cấu hình validation', 500));
-    }
-
-    const { error, value } = schema.validate(req.body, {
+    const data = req[source];
+    
+    const { error, value } = schema.validate(data, {
       abortEarly: false,
       stripUnknown: true,
-      allowUnknown: false
+      allowUnknown: true,
     });
 
     if (error) {
-      const errorMessages = error.details.map(detail => detail.message);
-      let userFriendlyMessage = 'Dữ liệu không hợp lệ:\n';
-      
-      errorMessages.forEach((msg, index) => {
-        userFriendlyMessage += `\n${index + 1}. ${msg}`;
-      });
+      const errorDetails = error.details.map(detail => ({
+        field: detail.path.join('.'),
+        message: detail.message,
+        type: detail.type,
+      }));
 
-      return res.status(422).json({
-        success: false,
-        message: userFriendlyMessage,
-        error: 'VALIDATION_FAILED'
-      });
+      const validationError = new AppError(
+        'Dữ liệu không hợp lệ',
+        422,
+        ERROR_CODES.VALIDATION_FAILED
+      );
+      validationError.details = errorDetails;
+      
+      return next(validationError);
     }
 
-    req.body = value;
-    console.log('✅ [VALIDATION] Body validation passed');
+    // 🎯 GÁN DỮ LIỆU ĐÃ ĐƯỢC VALIDATE VÀO REQUEST
+    req[source] = value;
+    req.validatedData = value;
+    
     next();
   };
 }
@@ -216,127 +165,21 @@ function validateBody(schema) {
  * 🎯 VALIDATE PARAMS (URL PARAMETERS)
  */
 function validateParams(schema) {
-  return (req, res, next) => {
-    console.log('🔍 [VALIDATION] Validating request params...');
-
-    const { error, value } = schema.validate(req.params, {
-      abortEarly: false,
-      stripUnknown: true
-    });
-
-    if (error) {
-      const errorMessages = error.details.map(detail => detail.message);
-      let userFriendlyMessage = 'Tham số không hợp lệ:\n';
-      
-      errorMessages.forEach((msg, index) => {
-        userFriendlyMessage += `\n${index + 1}. ${msg}`;
-      });
-
-      return res.status(400).json({
-        success: false,
-        message: userFriendlyMessage,
-        error: 'INVALID_PARAMS'
-      });
-    }
-
-    req.params = value;
-    console.log('✅ [VALIDATION] Params validation passed');
-    next();
-  };
+  return validate(schema, 'params');
 }
 
 /**
  * 🎯 VALIDATE QUERY (URL QUERY PARAMETERS)
  */
 function validateQuery(schema) {
-  return (req, res, next) => {
-    console.log('🔍 [VALIDATION] Validating request query...');
-
-    const { error, value } = schema.validate(req.query, {
-      abortEarly: false,
-      stripUnknown: true
-    });
-
-    if (error) {
-      const errorMessages = error.details.map(detail => detail.message);
-      let userFriendlyMessage = 'Tham số truy vấn không hợp lệ:\n';
-      
-      errorMessages.forEach((msg, index) => {
-        userFriendlyMessage += `\n${index + 1}. ${msg}`;
-      });
-
-      return res.status(400).json({
-        success: false,
-        message: userFriendlyMessage,
-        error: 'INVALID_QUERY'
-      });
-    }
-
-    req.query = value;
-    console.log('✅ [VALIDATION] Query validation passed');
-    next();
-  };
+  return validate(schema, 'query');
 }
 
 /**
- * 🎯 COMBINE VALIDATION (CHO CÁC TRƯỜNG HỢP PHỨC TẠP)
+ * 🎯 VALIDATE BODY (REQUEST BODY)
  */
-function validateCombined(validationSchema) {
-  return (req, res, next) => {
-    console.log('🔍 [VALIDATION] Validating combined schema...');
-
-    const errors = [];
-
-    // 🎯 VALIDATE BODY
-    if (validationSchema.body) {
-      const { error } = validationSchema.body.validate(req.body, {
-        abortEarly: false,
-        stripUnknown: true
-      });
-      if (error) errors.push(...error.details);
-    }
-
-    // 🎯 VALIDATE PARAMS
-    if (validationSchema.params) {
-      const { error } = validationSchema.params.validate(req.params, {
-        abortEarly: false,
-        stripUnknown: true
-      });
-      if (error) errors.push(...error.details);
-    }
-
-    // 🎯 VALIDATE QUERY
-    if (validationSchema.query) {
-      const { error } = validationSchema.query.validate(req.query, {
-        abortEarly: false,
-        stripUnknown: true
-      });
-      if (error) errors.push(...error.details);
-    }
-
-    if (errors.length > 0) {
-      const errorMessages = errors.map(detail => detail.message);
-      let userFriendlyMessage = 'Dữ liệu không hợp lệ:\n';
-      
-      errorMessages.forEach((msg, index) => {
-        userFriendlyMessage += `\n${index + 1}. ${msg}`;
-      });
-
-      return res.status(422).json({
-        success: false,
-        message: userFriendlyMessage,
-        error: 'VALIDATION_FAILED',
-        details: errors.map(detail => ({
-          field: detail.path.join('.'),
-          message: detail.message,
-          type: detail.type
-        }))
-      });
-    }
-
-    console.log('✅ [VALIDATION] Combined validation passed');
-    next();
-  };
+function validateBody(schema) {
+  return validate(schema, 'body');
 }
 
 /**
@@ -371,10 +214,10 @@ function sanitizeInput(allowedFields = []) {
 
 module.exports = {
   validate,
-  validateBody,
   validateParams,
   validateQuery,
-  validateCombined,
+  validateBody,
   sanitizeInput,
-  commonSchemas
+  commonSchemas,
+  medicalSchemas,
 };

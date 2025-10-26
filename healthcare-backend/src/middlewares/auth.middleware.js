@@ -1,4 +1,3 @@
-// src/middlewares/auth.middleware.js
 const { verifyAccessToken } = require('../utils/jwt');
 const User = require('../models/user.model');
 const { ROLES, hasPermission, ROLE_PERMISSIONS } = require('../constants/roles');
@@ -14,102 +13,82 @@ const { AppError, ERROR_CODES } = require('./error.middleware');
 /**
  * MIDDLEWARE XÁC THỰC CHÍNH
  */
-const authenticate = async (req, res, next) => {
+async function authenticate(req, res, next) {
   try {
-    console.log('🔐 [AUTH MIDDLEWARE] Starting authentication...');
-    console.log('🔐 [AUTH MIDDLEWARE] Headers:', req.headers);
-    
-    // 🎯 LẤY TOKEN TỪ HEADER
+    // 🎯 BỎ QUA NẾU ROUTE LÀ PUBLIC
+    if (req.isPublic) {
+      return next();
+    }
+
+    // 🎯 KIỂM TRA AUTHORIZATION HEADER
     const authHeader = req.headers.authorization;
-    console.log('🔐 [AUTH MIDDLEWARE] Authorization header:', authHeader);
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('❌ [AUTH MIDDLEWARE] No Bearer token found');
-      return next(new AppError('Token không tồn tại', 401, 'AUTH_NO_TOKEN'));
+    if (!authHeader) {
+      throw new AppError('Authorization header là bắt buộc', 401, ERROR_CODES.AUTH_INVALID_TOKEN);
     }
 
-    const token = authHeader.substring(7); // Remove "Bearer "
-    console.log('🔐 [AUTH MIDDLEWARE] Token received:', token ? `${token.substring(0, 20)}...` : 'NULL');
-
-    if (!token || token === 'null' || token === 'undefined') {
-      console.log('❌ [AUTH MIDDLEWARE] Empty or invalid token');
-      return next(new AppError('Token không hợp lệ', 401, 'AUTH_INVALID_TOKEN'));
+    // 🎯 KIỂM TRA ĐỊNH DẠNG TOKEN
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+      throw new AppError('Định dạng token không hợp lệ. Sử dụng: Bearer <token>', 401, ERROR_CODES.AUTH_INVALID_TOKEN);
     }
+
+    const token = parts[1];
 
     // 🎯 XÁC THỰC TOKEN
-    try {
-      const payload = verifyAccessToken(token);
-      console.log('✅ [AUTH MIDDLEWARE] Token verified. Payload:', {
-        userId: payload.sub,
-        role: payload.role,
-        email: payload.email
-      });
-
-      // 🎯 TÌM USER TRONG DATABASE ĐỂ ĐẢM BẢO TỒN TẠI
-      const user = await User.findById(payload.sub)
-        .select('-password -resetPasswordToken -resetPasswordExpires -loginAttempts -lockUntil');
-      
-      if (!user) {
-        console.log('❌ [AUTH MIDDLEWARE] User not found in database');
-        return next(new AppError('Người dùng không tồn tại', 401, 'AUTH_USER_NOT_FOUND'));
-      }
-
-      // 🎯 KIỂM TRA TRẠNG THÁI TÀI KHOẢN
-      if (user.status !== 'ACTIVE') {
-        console.log('❌ [AUTH MIDDLEWARE] User account not active:', user.status);
-        return next(new AppError('Tài khoản không hoạt động', 403, 'AUTH_ACCOUNT_INACTIVE'));
-      }
-
-      // 🎯 GẮN USER VÀO REQUEST
-      req.user = {
-        _id: user._id,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-        personalInfo: user.personalInfo
-      };
-
-      console.log('✅ [AUTH MIDDLEWARE] User attached to request:', {
-        userId: req.user._id,
-        email: req.user.email,
-        role: req.user.role
-      });
-
-      next();
-
-    } catch (tokenError) {
-      console.error('❌ [AUTH MIDDLEWARE] Token verification failed:', tokenError.message);
-      return next(new AppError('Token không hợp lệ hoặc đã hết hạn', 401, 'AUTH_INVALID_TOKEN'));
+    const payload = verifyAccessToken(token);
+    
+    // 🎯 TẢI THÔNG TIN NGƯỜI DÙNG TỪ DATABASE
+    const user = await User.findById(payload.sub)
+      .select('-passwordHash -refreshTokens')
+      .lean();
+    
+    if (!user) {
+      throw new AppError('Người dùng không tồn tại', 401, ERROR_CODES.AUTH_INVALID_TOKEN);
     }
+
+    // 🎯 KIỂM TRA TRẠNG THÁI TÀI KHOẢN
+    if (user.status !== 'ACTIVE') {
+      const errorMessage = getAccountStatusMessage(user.status);
+      throw new AppError(errorMessage, 403, ERROR_CODES.AUTH_ACCOUNT_LOCKED);
+    }
+
+    // 🎯 LẤY DANH SÁCH PERMISSIONS THEO ROLE
+    const userPermissions = ROLE_PERMISSIONS[user.role] || [];
+
+    // 🎯 GẮN THÔNG TIN USER ĐẦY ĐỦ VÀO REQUEST
+    req.user = {
+      _id: user._id,
+      sub: user._id,
+      email: user.email,
+      role: user.role,
+      name: user.name,
+      department: user.department,
+      status: user.status,
+      permissions: userPermissions,
+      lastLogin: user.lastLogin,
+      createdAt: user.createdAt,
+    };
+
+    // 🎯 LOG HOẠT ĐỘNG ĐĂNG NHẬP THÀNH CÔNG
+    console.log(`🔐 User authenticated: ${user.email} (${user.role})`);
+
+    next();
 
   } catch (error) {
-    console.error('❌ [AUTH MIDDLEWARE] Unexpected error:', error);
-    next(error);
-  }
-};
-
-/**
- * 🛡️ AUTHORIZATION MIDDLEWARE
- */
-const authorize = (...roles) => {
-  return (req, res, next) => {
-    console.log('🔐 [AUTHORIZE MIDDLEWARE] Checking roles:', roles);
-    console.log('🔐 [AUTHORIZE MIDDLEWARE] User role:', req.user?.role);
+    // 🎯 XỬ LÝ LỖI XÁC THỰC
+    if (error instanceof AppError) {
+      return next(error);
+    }
     
-    if (!req.user) {
-      console.log('❌ [AUTHORIZE MIDDLEWARE] No user found');
-      return next(new AppError('Không tìm thấy thông tin người dùng', 401));
-    }
-
-    if (!roles.includes(req.user.role)) {
-      console.log('❌ [AUTHORIZE MIDDLEWARE] Insufficient permissions');
-      return next(new AppError('Không có quyền truy cập', 403));
-    }
-
-    console.log('✅ [AUTHORIZE MIDDLEWARE] Role authorized');
-    next();
-  };
-};
+    // 🎯 LỖI TỪ JWT HOẶC DATABASE
+    const authError = new AppError(
+      error.message || 'Token không hợp lệ',
+      401,
+      ERROR_CODES.AUTH_INVALID_TOKEN
+    );
+    next(authError);
+  }
+}
 
 /**
  * 🎯 MIDDLEWARE KIỂM TRA PERMISSION
@@ -223,11 +202,11 @@ function allowEmergencyAccess() {
  */
 function getAccountStatusMessage(status) {
   const messages = {
-    ACTIVE: 'Tài khoản đang hoạt động',
     INACTIVE: 'Tài khoản chưa được kích hoạt',
     SUSPENDED: 'Tài khoản đã bị tạm ngưng',
     LOCKED: 'Tài khoản đã bị khóa do đăng nhập sai nhiều lần',
-    PENDING_APPROVAL: 'Tài khoản đang chờ phê duyệt',
+    PENDING: 'Tài khoản đang chờ phê duyệt',
+    EXPIRED: 'Tài khoản đã hết hạn',
   };
   
   return messages[status] || 'Tài khoản không hoạt động';
@@ -239,5 +218,4 @@ module.exports = {
   requireRole,
   requirePatientAccess,
   allowEmergencyAccess,
-  authorize,
 };
