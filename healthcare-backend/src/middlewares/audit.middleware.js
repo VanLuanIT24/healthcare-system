@@ -1,3 +1,4 @@
+// src/middlewares/audit.middleware.js
 const AuditLog = require('../models/auditLog.model');
 const { appConfig } = require('../config');
 
@@ -11,19 +12,24 @@ const { appConfig } = require('../config');
 /**
  * 🎯 ACTION TYPES CHO HEALTHCARE
  */
-const AUDIT_ACTIONS = {
+const AUDIT_ACTIONS = Object.freeze({
   // 🔐 AUTHENTICATION
   LOGIN: 'LOGIN',
   LOGOUT: 'LOGOUT',
   LOGIN_FAILED: 'LOGIN_FAILED',
   PASSWORD_CHANGE: 'PASSWORD_CHANGE',
   TOKEN_REFRESH: 'TOKEN_REFRESH',
+  FORGOT_PASSWORD: 'FORGOT_PASSWORD',
+  RESET_PASSWORD: 'RESET_PASSWORD',
   
   // 👥 USER MANAGEMENT
   USER_CREATE: 'USER_CREATE',
   USER_UPDATE: 'USER_UPDATE',
   USER_DELETE: 'USER_DELETE',
   USER_DISABLE: 'USER_DISABLE',
+  USER_ENABLE: 'USER_ENABLE',
+  USER_RESTORE: 'USER_RESTORE',
+  ROLE_ASSIGN: 'ROLE_ASSIGN',
   
   // 🏥 PATIENT DATA ACCESS (QUAN TRỌNG)
   PATIENT_VIEW: 'PATIENT_VIEW',
@@ -70,7 +76,8 @@ const AUDIT_ACTIONS = {
   SUSPICIOUS_ACTIVITY: 'SUSPICIOUS_ACTIVITY',
   DATA_EXPORT: 'DATA_EXPORT',
   DATA_DELETION: 'DATA_DELETION',
-};
+  PERMISSION_CHECK: 'PERMISSION_CHECK',
+});
 
 /**
  * 🎯 MIDDLEWARE AUDIT LOG CHÍNH
@@ -90,10 +97,10 @@ function auditLog(action, options = {}) {
       action,
       timestamp: new Date(),
       user: req.user ? {
-        id: req.user.sub,
+        id: req.user._id || req.user.sub,
         email: req.user.email,
         role: req.user.role,
-        name: req.user.name,
+        name: req.user.name || `${req.user.personalInfo?.firstName} ${req.user.personalInfo?.lastName}`,
       } : null,
       ip: getClientIP(req),
       userAgent: req.get('User-Agent'),
@@ -129,6 +136,7 @@ function auditLog(action, options = {}) {
               user: auditData.user?.email,
               status: res.statusCode,
               responseTime: `${responseTime}ms`,
+              timestamp: new Date().toISOString(),
             });
           }
         } catch (error) {
@@ -152,6 +160,7 @@ function getClientIP(req) {
          req.connection.remoteAddress || 
          req.socket.remoteAddress ||
          (req.connection.socket ? req.connection.socket.remoteAddress : null) ||
+         req.headers['x-forwarded-for'] ||
          'unknown';
 }
 
@@ -159,10 +168,12 @@ function getClientIP(req) {
  * 🎯 SANITIZE QUERY PARAMETERS
  */
 function sanitizeQuery(query) {
+  if (!query || typeof query !== 'object') return {};
+  
   const sanitized = { ...query };
   
   // 🎯 ẨN CÁC THAM SỐ NHẠY CẢM
-  const sensitiveQueryParams = ['password', 'token', 'secret', 'key'];
+  const sensitiveQueryParams = ['password', 'token', 'secret', 'key', 'authorization'];
   sensitiveQueryParams.forEach(param => {
     if (sanitized[param]) {
       sanitized[param] = '***HIDDEN***';
@@ -189,6 +200,9 @@ function sanitizeBody(body, sensitiveFields = []) {
     'creditCard',
     'ssn',
     'healthInsuranceNumber',
+    'currentPassword',
+    'newPassword',
+    'confirmPassword',
   ];
   
   const allSensitiveFields = [...defaultSensitiveFields, ...sensitiveFields];
@@ -221,6 +235,9 @@ function isCriticalAction(action) {
     'UNAUTHORIZED_ACCESS',
     'DATA_EXPORT',
     'USER_DELETE',
+    'USER_DISABLE',
+    'PASSWORD_CHANGE',
+    'ROLE_ASSIGN',
   ];
   
   return criticalActions.includes(action);
@@ -247,6 +264,13 @@ function getActionFromRoute(req) {
   
   // 🎯 MAP ROUTE TO ACTION
   const routePatterns = {
+    // USER ROUTES
+    'POST:/api/users': 'USER_CREATE',
+    'GET:/api/users': 'USER_VIEW',
+    'PUT:/api/users/': 'USER_UPDATE',
+    'DELETE:/api/users/': 'USER_DELETE',
+    'PATCH:/api/users/': 'USER_UPDATE',
+    
     // PATIENT ROUTES
     'GET:/api/patients': 'PATIENT_VIEW',
     'POST:/api/patients': 'PATIENT_CREATE',
@@ -269,6 +293,9 @@ function getActionFromRoute(req) {
     'POST:/api/auth/login': 'LOGIN',
     'POST:/api/auth/logout': 'LOGOUT',
     'POST:/api/auth/refresh': 'TOKEN_REFRESH',
+    'POST:/api/auth/change-password': 'PASSWORD_CHANGE',
+    'POST:/api/auth/forgot-password': 'FORGOT_PASSWORD',
+    'POST:/api/auth/reset-password': 'RESET_PASSWORD',
   };
   
   const routeKey = `${method}:${originalUrl.split('?')[0]}`;
@@ -283,9 +310,37 @@ function getActionFromRoute(req) {
   return null;
 }
 
+/**
+ * 🎯 GHI LOG THỦ CÔNG CHO CÁC SỰ KIỆN ĐẶC BIỆT
+ */
+async function manualAuditLog(auditData) {
+  try {
+    if (!appConfig.logging.enableAudit) {
+      return;
+    }
+
+    const logEntry = {
+      ...auditData,
+      timestamp: new Date(),
+    };
+
+    await AuditLog.create(logEntry);
+    console.log('🔍 MANUAL AUDIT LOG:', {
+      action: auditData.action,
+      user: auditData.user?.email,
+      timestamp: logEntry.timestamp,
+    });
+
+  } catch (error) {
+    console.error('❌ Lỗi ghi manual audit log:', error.message);
+  }
+}
+
 module.exports = {
   auditLog,
   autoAuditMiddleware,
+  manualAuditLog,
   AUDIT_ACTIONS,
   getClientIP,
+  isCriticalAction,
 };

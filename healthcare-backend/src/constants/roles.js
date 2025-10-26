@@ -52,7 +52,10 @@ const PERMISSIONS = Object.freeze({
   VIEW_USER: 'USER.VIEW',
   UPDATE_USER: 'USER.UPDATE',
   DISABLE_USER: 'USER.DISABLE',
+  DELETE_USER: 'USER.DELETE',
   VIEW_USER_SENSITIVE: 'USER.VIEW_SENSITIVE', // Xem thông tin nhạy cảm
+  ENABLE_USER: 'USER.ENABLE', // Kích hoạt lại user
+  RESTORE_USER: 'USER.RESTORE', // Khôi phục user đã xóa
 
   // ===== HỒ SƠ BỆNH ÁN ===== (Quan trọng nhất)
   VIEW_MEDICAL_RECORDS: 'MEDICAL.VIEW_RECORDS',
@@ -111,6 +114,8 @@ const PERMISSIONS = Object.freeze({
   // ===== HỆ THỐNG =====
   SYSTEM_CONFIG: 'SYSTEM.CONFIG',
   AUDIT_LOG_VIEW: 'SYSTEM.VIEW_AUDIT_LOG',
+  BACKUP_DATA: 'SYSTEM.BACKUP_DATA',
+  RESTORE_DATA: 'SYSTEM.RESTORE_DATA',
 });
 
 /**
@@ -130,8 +135,9 @@ const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.REGISTER_DEPARTMENT_HEAD, PERMISSIONS.REGISTER_DOCTOR,
     PERMISSIONS.REGISTER_NURSE, PERMISSIONS.REGISTER_PHARMACIST,
     PERMISSIONS.REGISTER_LAB_TECHNICIAN, PERMISSIONS.REGISTER_BILLING_STAFF,
-    PERMISSIONS.REGISTER_RECEPTIONIST,
+    PERMISSIONS.REGISTER_RECEPTIONIST, PERMISSIONS.REGISTER_PATIENT,
     PERMISSIONS.VIEW_USER, PERMISSIONS.UPDATE_USER, PERMISSIONS.DISABLE_USER,
+    PERMISSIONS.DELETE_USER, PERMISSIONS.ENABLE_USER, PERMISSIONS.RESTORE_USER,
     PERMISSIONS.VIEW_USER_SENSITIVE,
     PERMISSIONS.VIEW_MEDICAL_RECORDS, PERMISSIONS.EXPORT_MEDICAL_RECORDS,
     PERMISSIONS.VIEW_APPOINTMENTS, PERMISSIONS.VIEW_SCHEDULE,
@@ -139,6 +145,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.VIEW_FINANCIAL_REPORTS, PERMISSIONS.VIEW_REPORTS,
     PERMISSIONS.GENERATE_REPORTS, PERMISSIONS.EXPORT_REPORTS,
     PERMISSIONS.EMERGENCY_ACCESS, PERMISSIONS.AUDIT_LOG_VIEW,
+    PERMISSIONS.SYSTEM_CONFIG, PERMISSIONS.BACKUP_DATA,
   ],
 
   [ROLES.DEPARTMENT_HEAD]: [
@@ -146,7 +153,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.LOGIN, PERMISSIONS.LOGOUT,
     PERMISSIONS.REGISTER_DOCTOR, PERMISSIONS.REGISTER_NURSE,
     PERMISSIONS.REGISTER_LAB_TECHNICIAN,
-    PERMISSIONS.VIEW_USER, PERMISSIONS.UPDATE_USER,
+    PERMISSIONS.VIEW_USER, PERMISSIONS.UPDATE_USER, PERMISSIONS.ENABLE_USER,
     PERMISSIONS.VIEW_MEDICAL_RECORDS, PERMISSIONS.CREATE_MEDICAL_RECORDS,
     PERMISSIONS.UPDATE_MEDICAL_RECORDS, PERMISSIONS.EXPORT_MEDICAL_RECORDS,
     PERMISSIONS.CREATE_DIAGNOSIS, PERMISSIONS.UPDATE_DIAGNOSIS,
@@ -288,8 +295,25 @@ function canCreateRole(currentRole, targetRole) {
   const currentIndex = ROLE_HIERARCHY.indexOf(currentRole);
   const targetIndex = ROLE_HIERARCHY.indexOf(targetRole);
 
-  // Không được tạo cùng cấp hoặc cấp cao hơn
-  return currentIndex >= 0 && targetIndex > currentIndex;
+  if (currentIndex < 0 || targetIndex < 0) return false;
+
+  // SUPER_ADMIN có thể tạo mọi role (trừ chính nó trong logic khác)
+  if (currentRole === ROLES.SUPER_ADMIN) {
+    return targetRole !== ROLES.SUPER_ADMIN;
+  }
+
+  // HOSPITAL_ADMIN có thể tạo DEPARTMENT_HEAD, DOCTOR và các role thấp hơn
+  if (currentRole === ROLES.HOSPITAL_ADMIN) {
+    return targetIndex >= 2; // Từ DEPARTMENT_HEAD trở xuống
+  }
+
+  // DEPARTMENT_HEAD có thể tạo DOCTOR, NURSE, LAB_TECHNICIAN
+  if (currentRole === ROLES.DEPARTMENT_HEAD) {
+    return [ROLES.DOCTOR, ROLES.NURSE, ROLES.LAB_TECHNICIAN].includes(targetRole);
+  }
+
+  // Mặc định: không được tạo cùng cấp hoặc cao hơn
+  return targetIndex > currentIndex;
 }
 
 /**
@@ -348,6 +372,79 @@ function hasModuleAccess(role, module) {
   return modulePermissions.some(permission => hasPermission(role, permission));
 }
 
+/**
+ * 🎯 LẤY DANH SÁCH PERMISSIONS THEO ROLE
+ * @param {string} role - Vai trò
+ * @returns {string[]}
+ */
+function getRolePermissions(role) {
+  return ROLE_PERMISSIONS[role] || [];
+}
+
+/**
+ * 🔄 KIỂM TRA QUYỀN QUẢN LÝ USER
+ * @param {string} currentRole - Vai trò hiện tại
+ * @param {string} targetRole - Vai trò mục tiêu
+ * @returns {boolean}
+ */
+function canManageUser(currentRole, targetRole) {
+  const currentIndex = ROLE_HIERARCHY.indexOf(currentRole);
+  const targetIndex = ROLE_HIERARCHY.indexOf(targetRole);
+
+  if (currentIndex < 0 || targetIndex < 0) return false;
+
+  // SUPER_ADMIN có thể quản lý mọi role (trừ chính nó trong logic khác)
+  if (currentRole === ROLES.SUPER_ADMIN) {
+    return targetRole !== ROLES.SUPER_ADMIN;
+  }
+
+  // Các role khác chỉ có thể quản lý role thấp hơn
+  return targetIndex > currentIndex;
+}
+
+/**
+ * 📋 LẤY DANH SÁCH PERMISSIONS THEO NHÓM
+ * @returns {Object}
+ */
+function getPermissionsByGroup() {
+  const groups = {};
+  
+  Object.values(PERMISSIONS).forEach(permission => {
+    const [group] = permission.split('.');
+    if (!groups[group]) {
+      groups[group] = [];
+    }
+    groups[group].push(permission);
+  });
+  
+  return groups;
+}
+
+/**
+ * 🎯 KIỂM TRA QUYỀN XEM THÔNG TIN NHẠY CẢM
+ * @param {string} role - Vai trò
+ * @returns {boolean}
+ */
+function canViewSensitiveInfo(role) {
+  return hasPermission(role, PERMISSIONS.VIEW_USER_SENSITIVE);
+}
+
+/**
+ * 🔐 KIỂM TRA QUYỀN HỆ THỐNG
+ * @param {string} role - Vai trò
+ * @returns {boolean}
+ */
+function hasSystemAccess(role) {
+  const systemPermissions = [
+    PERMISSIONS.SYSTEM_CONFIG,
+    PERMISSIONS.AUDIT_LOG_VIEW,
+    PERMISSIONS.BACKUP_DATA,
+    PERMISSIONS.RESTORE_DATA
+  ];
+  
+  return systemPermissions.some(permission => hasPermission(role, permission));
+}
+
 module.exports = {
   ROLES,
   PERMISSIONS,
@@ -358,4 +455,9 @@ module.exports = {
   canAccessPatientData,
   getCreatableRoles,
   hasModuleAccess,
+  getRolePermissions,
+  canManageUser,
+  getPermissionsByGroup,
+  canViewSensitiveInfo,
+  hasSystemAccess,
 };

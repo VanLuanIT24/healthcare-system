@@ -13,23 +13,36 @@ const { loginLimiter } = require('../middlewares/rateLimiter');
 
 /**
  * 🛡️ AUTHENTICATION ROUTES CHO HEALTHCARE SYSTEM
- * - Định nghĩa routes và middleware cho authentication
- * - Áp dụng rate limiting và validation phù hợp
  */
 
-// 🎯 PUBLIC ROUTES (KHÔNG YÊU CẦU AUTHENTICATION)
-router.use(markPublic);
+// 🎯 ÁP DỤNG markPublic CHO CÁC ROUTE CỤ THỂ THAY VÌ TẤT CẢ
+const publicRoutes = [
+  '/login',
+  '/register', 
+  '/forgot-password',
+  '/reset-password',
+  '/refresh-token',
+  '/health'
+];
 
-// 🎯 ĐĂNG NHẬP
+router.use((req, res, next) => {
+  // Kiểm tra nếu route hiện tại nằm trong danh sách public
+  if (publicRoutes.some(route => req.path.includes(route))) {
+    req.isPublic = true;
+  }
+  next();
+});
+
+// 🎯 ĐĂNG NHẬP (PUBLIC)
 router.post(
   '/login',
-  loginLimiter, // Rate limiting cho đăng nhập
+  loginLimiter,
   sanitizeInput(['email', 'password']),
   validateBody(authValidation.login.body),
   authController.login
 );
 
-// 🎯 ĐĂNG KÝ USER
+// 🎯 ĐĂNG KÝ USER (PUBLIC)
 router.post(
   '/register',
   sanitizeInput(['email', 'password', 'confirmPassword', 'personalInfo', 'role']),
@@ -37,7 +50,7 @@ router.post(
   authController.registerUser
 );
 
-// 🎯 QUÊN MẬT KHẨU
+// 🎯 QUÊN MẬT KHẨU (PUBLIC)
 router.post(
   '/forgot-password',
   sanitizeInput(['email']),
@@ -45,7 +58,7 @@ router.post(
   authController.forgotPassword
 );
 
-// 🎯 ĐẶT LẠI MẬT KHẨU
+// 🎯 ĐẶT LẠI MẬT KHẨU (PUBLIC)
 router.post(
   '/reset-password',
   sanitizeInput(['token', 'newPassword', 'confirmPassword']),
@@ -53,7 +66,7 @@ router.post(
   authController.resetPassword
 );
 
-// 🎯 REFRESH TOKEN
+// 🎯 REFRESH TOKEN (PUBLIC)
 router.post(
   '/refresh-token',
   sanitizeInput(['refreshToken']),
@@ -61,7 +74,7 @@ router.post(
   authController.refreshToken
 );
 
-// 🎯 HEALTH CHECK
+// 🎯 HEALTH CHECK (PUBLIC)
 router.get('/health', authController.healthCheck);
 
 // 🎯 PROTECTED ROUTES (YÊU CẦU AUTHENTICATION)
@@ -78,7 +91,7 @@ router.post(
 // 🎯 ĐỔI MẬT KHẨU
 router.post(
   '/change-password',
-  authenticate, 
+  authenticate,
   sanitizeInput(['currentPassword', 'newPassword', 'confirmPassword']),
   validateBody(authValidation.changePassword.body),
   authController.changePassword

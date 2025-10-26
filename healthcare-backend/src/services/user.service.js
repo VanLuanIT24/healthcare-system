@@ -504,6 +504,342 @@ class UserService {
       throw error;
     }
   }
+
+  async enableUser(userId, currentUser) {
+  try {
+    console.log('🎯 [USER SERVICE] Enabling user:', userId);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('Không tìm thấy user', 404, ERROR_CODES.USER_NOT_FOUND);
+    }
+
+    // 🛡️ KIỂM TRA QUYỀN KÍCH HOẠT
+    if (user.role === ROLES.SUPER_ADMIN && currentUser.role !== ROLES.SUPER_ADMIN) {
+      throw new AppError(
+        'Không có quyền kích hoạt Super Admin',
+        403,
+        ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
+      );
+    }
+
+    // 🛡️ KIỂM TRA QUYỀN KÍCH HOẠT ROLE CAO HƠN
+    if (ROLE_HIERARCHY.indexOf(user.role) < ROLE_HIERARCHY.indexOf(currentUser.role)) {
+      throw new AppError(
+        'Không có quyền kích hoạt user có role cao hơn',
+        403,
+        ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
+      );
+    }
+
+    // 🎯 KIỂM TRA TRẠNG THÁI HIỆN TẠI
+    if (user.status === 'ACTIVE') {
+      throw new AppError(
+        'User đã ở trạng thái hoạt động',
+        400,
+        ERROR_CODES.OPERATION_NOT_ALLOWED
+      );
+    }
+
+    // 🎯 CẬP NHẬT TRẠNG THÁI
+    user.status = 'ACTIVE';
+    user.isActive = true;
+    user.lastModifiedBy = currentUser._id;
+    user.activatedAt = new Date();
+    
+    // 🎯 RESET LOGIN ATTEMPTS NẾU USER BỊ LOCKED
+    if (user.status === 'LOCKED') {
+      user.loginAttempts = 0;
+      user.lockUntil = undefined;
+    }
+
+    await user.save();
+
+    // 📧 GỬI EMAIL THÔNG BÁO KÍCH HOẠT
+    try {
+      await EmailService.sendAccountActivatedEmail(user);
+      console.log('✅ [USER SERVICE] Account activated email sent to:', user.email);
+    } catch (emailError) {
+      console.error('❌ [USER SERVICE] Failed to send activation email:', emailError.message);
+    }
+
+    console.log('✅ [USER SERVICE] User enabled successfully:', userId);
+    
+    const updatedUser = user.toObject();
+    delete updatedUser.password;
+    return updatedUser;
+
+  } catch (error) {
+    console.error('❌ [USER SERVICE] Enable user error:', error);
+    throw error;
+  }
 }
+
+/**
+ * 🎯 XÓA USER (SOFT DELETE)
+ */
+async deleteUser(userId, reason, currentUser) {
+  try {
+    console.log('🎯 [USER SERVICE] Deleting user:', userId);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('Không tìm thấy user', 404, ERROR_CODES.USER_NOT_FOUND);
+    }
+
+    // 🛡️ KHÔNG CHO XÓA CHÍNH MÌNH
+    if (user._id.toString() === currentUser._id.toString()) {
+      throw new AppError(
+        'Không thể xóa tài khoản của chính bạn',
+        400,
+        ERROR_CODES.OPERATION_NOT_ALLOWED
+      );
+    }
+
+    // 🛡️ KHÔNG CHO XÓA SUPER ADMIN
+    if (user.role === ROLES.SUPER_ADMIN) {
+      throw new AppError(
+        'Không thể xóa Super Admin',
+        403,
+        ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
+      );
+    }
+
+    // 🛡️ KIỂM TRA QUYỀN XÓA ROLE CAO HƠN
+    if (ROLE_HIERARCHY.indexOf(user.role) < ROLE_HIERARCHY.indexOf(currentUser.role)) {
+      throw new AppError(
+        'Không có quyền xóa user có role cao hơn',
+        403,
+        ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
+      );
+    }
+
+    // 🎯 KIỂM TRA NẾU USER ĐÃ BỊ XÓA
+    if (user.isDeleted) {
+      throw new AppError(
+        'User đã bị xóa trước đó',
+        400,
+        ERROR_CODES.OPERATION_NOT_ALLOWED
+      );
+    }
+
+    // 🎯 THỰC HIỆN SOFT DELETE
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+    user.deletedBy = currentUser._id;
+    user.deletionReason = reason;
+    user.status = 'DELETED';
+    user.isActive = false;
+    
+    // 🎯 ẨN EMAIL ĐỂ CÓ THỂ TÁI SỬ DỤNG
+    user.email = `deleted_${Date.now()}_${user.email}`;
+    
+    await user.save();
+
+    // 🎯 XÓA CÁC DỮ LIỆU LIÊN QUAN (TÙY THEO YÊU CẦU)
+    await this.cleanupUserData(userId);
+
+    console.log('✅ [USER SERVICE] User deleted successfully:', userId);
+    return { success: true };
+
+  } catch (error) {
+    console.error('❌ [USER SERVICE] Delete user error:', error);
+    throw error;
+  }
+}
+
+/**
+ * 🎯 DỌN DẸP DỮ LIỆU USER SAU KHI XÓA
+ */
+async cleanupUserData(userId) {
+  try {
+    console.log('🧹 [USER SERVICE] Cleaning up user data:', userId);
+    
+    // 🎯 CẬP NHẬT CÁC BẢNG LIÊN QUAN
+    // Ví dụ: đánh dấu các bản ghi liên quan là deleted
+    const cleanupTasks = [];
+
+    // 🎯 CẬP NHẬT PATIENT PROFILE (NẾU CÓ)
+    try {
+      const patientUpdate = await Patient.findOneAndUpdate(
+        { userId: userId },
+        { 
+          isDeleted: true,
+          deletedAt: new Date(),
+          status: 'DELETED'
+        }
+      );
+      if (patientUpdate) {
+        console.log('✅ [USER SERVICE] Patient profile cleaned up');
+      }
+    } catch (patientError) {
+      console.error('❌ [USER SERVICE] Patient cleanup error:', patientError.message);
+    }
+
+    // 🎯 CÓ THỂ THÊM CÁC BẢNG KHÁC Ở ĐÂY:
+    // - Medical records
+    // - Appointments
+    // - Prescriptions
+    // - Lab results
+    // - Bills
+
+    await Promise.all(cleanupTasks);
+    console.log('✅ [USER SERVICE] User data cleanup completed');
+
+  } catch (error) {
+    console.error('❌ [USER SERVICE] User data cleanup error:', error);
+    // Không throw error để không ảnh hưởng đến quá trình xóa user chính
+  }
+}
+
+/**
+ * 🎯 KHÔI PHỤC USER ĐÃ XÓA
+ */
+async restoreUser(userId, currentUser) {
+  try {
+    console.log('🎯 [USER SERVICE] Restoring user:', userId);
+
+    const user = await User.findOne({ 
+      _id: userId, 
+      isDeleted: true 
+    });
+    
+    if (!user) {
+      throw new AppError(
+        'Không tìm thấy user đã xóa hoặc user chưa bị xóa',
+        404,
+        ERROR_CODES.USER_NOT_FOUND
+      );
+    }
+
+    // 🛡️ KIỂM TRA QUYỀN KHÔI PHỤC
+    if (!hasPermission(currentUser.role, PERMISSIONS.UPDATE_USER)) {
+      throw new AppError(
+        'Bạn không có quyền khôi phục user',
+        403,
+        ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
+      );
+    }
+
+    // 🎯 KHÔI PHỤC USER
+    const originalEmail = user.email.replace(/^deleted_\d+_/, '');
+    
+    // 🎯 KIỂM TRA EMAIL CÓ CÒN TỒN TẠI KHÔNG
+    const emailExists = await User.findOne({ 
+      email: originalEmail, 
+      isDeleted: false 
+    });
+    
+    if (emailExists) {
+      throw new AppError(
+        'Email đã được sử dụng bởi user khác, không thể khôi phục',
+        400,
+        ERROR_CODES.USER_EMAIL_EXISTS
+      );
+    }
+
+    user.email = originalEmail;
+    user.isDeleted = false;
+    user.deletedAt = undefined;
+    user.deletedBy = undefined;
+    user.deletionReason = undefined;
+    user.status = 'ACTIVE';
+    user.isActive = true;
+    user.restoredAt = new Date();
+    user.restoredBy = currentUser._id;
+    user.lastModifiedBy = currentUser._id;
+
+    await user.save();
+
+    // 🎯 KHÔI PHỤC CÁC DỮ LIỆU LIÊN QUAN
+    await this.restoreUserData(userId);
+
+    console.log('✅ [USER SERVICE] User restored successfully:', userId);
+    
+    const restoredUser = user.toObject();
+    delete restoredUser.password;
+    return restoredUser;
+
+  } catch (error) {
+    console.error('❌ [USER SERVICE] Restore user error:', error);
+    throw error;
+  }
+}
+
+/**
+ * 🎯 KHÔI PHỤC DỮ LIỆU USER LIÊN QUAN
+ */
+async restoreUserData(userId) {
+  try {
+    console.log('🔄 [USER SERVICE] Restoring user data:', userId);
+    
+    // 🎯 KHÔI PHỤC PATIENT PROFILE
+    try {
+      const patientRestore = await Patient.findOneAndUpdate(
+        { userId: userId },
+        { 
+          isDeleted: false,
+          deletedAt: undefined,
+          status: 'ACTIVE'
+        }
+      );
+      if (patientRestore) {
+        console.log('✅ [USER SERVICE] Patient profile restored');
+      }
+    } catch (patientError) {
+      console.error('❌ [USER SERVICE] Patient restore error:', patientError.message);
+    }
+
+    console.log('✅ [USER SERVICE] User data restoration completed');
+
+  } catch (error) {
+    console.error('❌ [USER SERVICE] User data restoration error:', error);
+  }
+}
+
+/**
+ * 🎯 LẤY DANH SÁCH USER ĐÃ XÓA
+ */
+async listDeletedUsers(options = {}) {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'deletedAt',
+      sortOrder = 'desc'
+    } = options;
+
+    const skip = (page - 1) * limit;
+    const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
+
+    const query = { isDeleted: true };
+
+    const users = await User.find(query)
+      .select('-password -resetPasswordToken -resetPasswordExpires')
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    const total = await User.countDocuments(query);
+
+    return {
+      users: users,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    };
+
+  } catch (error) {
+    console.error('❌ [USER SERVICE] List deleted users error:', error);
+    throw error;
+  }
+}
+}
+
+
 
 module.exports = new UserService();

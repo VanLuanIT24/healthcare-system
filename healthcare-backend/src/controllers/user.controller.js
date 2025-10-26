@@ -261,6 +261,114 @@ class UserController {
       next(error);
     }
   }
+
+  async enableUser(req, res, next) {
+  try {
+    const { userId } = req.params;
+    
+    const user = await userService.enableUser(userId, req.user);
+    
+    await auditLog(AUDIT_ACTIONS.USER_ENABLE, {
+      metadata: { 
+        enabledUserId: userId, 
+        enabledBy: req.user._id,
+        newStatus: 'ACTIVE'
+      }
+    })(req, res, () => {});
+    
+    res.json({
+      success: true,
+      message: 'Kích hoạt user thành công',
+      data: user
+    });
+  } catch (error) {
+    next(error);
+  }
 }
+
+/**
+ * 🎯 XÓA USER (SOFT DELETE)
+ */
+async deleteUser(req, res, next) {
+  try {
+    const { userId } = req.params;
+    const { reason } = req.body;
+    
+    await userService.deleteUser(userId, reason, req.user);
+    
+    await auditLog(AUDIT_ACTIONS.USER_DELETE, {
+      metadata: { 
+        deletedUserId: userId, 
+        reason,
+        deletedBy: req.user._id,
+        deletionType: 'SOFT_DELETE'
+      }
+    })(req, res, () => {});
+    
+    res.json({
+      success: true,
+      message: 'Xóa user thành công'
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 🎯 KHÔI PHỤC USER ĐÃ XÓA
+ */
+async restoreUser(req, res, next) {
+  try {
+    const { userId } = req.params;
+    
+    const user = await userService.restoreUser(userId, req.user);
+    
+    await auditLog(AUDIT_ACTIONS.USER_RESTORE, {
+      metadata: { 
+        restoredUserId: userId, 
+        restoredBy: req.user._id
+      }
+    })(req, res, () => {});
+    
+    res.json({
+      success: true,
+      message: 'Khôi phục user thành công',
+      data: user
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 🎯 LẤY DANH SÁCH USER ĐÃ XÓA
+ */
+async listDeletedUsers(req, res, next) {
+  try {
+    const { 
+      page = 1, 
+      limit = 10,
+      sortBy = 'deletedAt',
+      sortOrder = 'desc'
+    } = req.query;
+    
+    const result = await userService.listDeletedUsers({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      sortBy,
+      sortOrder
+    });
+    
+    res.json({
+      success: true,
+      data: result.users,
+      pagination: result.pagination
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+}
+
 
 module.exports = new UserController();

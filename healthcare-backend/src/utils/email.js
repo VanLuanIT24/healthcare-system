@@ -565,6 +565,31 @@ class EmailService {
   }
 
   /**
+ * 🎯 GỬI EMAIL THÔNG BÁO KÍCH HOẠT TÀI KHOẢN
+ */
+async sendAccountActivatedEmail(user) {
+  try {
+    const mailOptions = {
+      to: user.email,
+      subject: 'Tài khoản của bạn đã được kích hoạt - Healthcare System',
+      template: 'account-activated',
+      context: {
+        name: `${user.personalInfo.firstName} ${user.personalInfo.lastName}`,
+        activationDate: new Date().toLocaleDateString('vi-VN'),
+        loginUrl: `${process.env.FRONTEND_URL}/login`,
+        supportEmail: process.env.SUPPORT_EMAIL
+      }
+    };
+
+    await this.sendEmail(mailOptions);
+    console.log('✅ [EMAIL] Account activated email sent to:', user.email);
+  } catch (error) {
+    console.error('❌ [EMAIL] Send account activated email error:', error);
+    throw error;
+  }
+}
+
+  /**
    * 🎯 HIỂN THỊ TÊN VAI TRÒ
    */
   getRoleDisplayName(role) {

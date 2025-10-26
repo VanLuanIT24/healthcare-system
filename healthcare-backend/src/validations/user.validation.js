@@ -180,6 +180,15 @@ const checkUserPermissionBody = Joi.object({
   })
 });
 
+const deleteUserBody = Joi.object({
+  reason: Joi.string().min(5).max(500).required().messages({
+    'string.min': 'Lý do phải có ít nhất 5 ký tự',
+    'string.max': 'Lý do không được vượt quá 500 ký tự',
+    'string.empty': 'Vui lòng nhập lý do xóa',
+    'any.required': 'Lý do xóa là bắt buộc'
+  })
+});
+
 // 🎯 EXPORT CÁC SCHEMAS CHO TỪNG ROUTE
 module.exports = {
   // 🎯 CHO CREATE USER
@@ -214,6 +223,10 @@ module.exports = {
   getUserById: {
     params: userIdParams
   },
+  deleteUser: {
+    params: userIdParams,
+    body: deleteUserBody
+  },
 
   // 🎯 CHO LIST USERS
   listUsers: {
@@ -225,6 +238,8 @@ module.exports = {
     params: userIdParams,
     body: checkUserPermissionBody
   },
+
+  
 
   // 🎯 EXPORT CÁC SCHEMAS RIÊNG LẺ (CHO LINH HOẠT)
   schemas: {

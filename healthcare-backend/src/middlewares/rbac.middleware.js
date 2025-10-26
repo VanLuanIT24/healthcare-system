@@ -47,30 +47,53 @@ function requireRole(...allowedRoles) {
 /**
  * 🎯 MIDDLEWARE KIỂM TRA QUYỀN CỤ THỂ
  */
-function requirePermission(permission) {
+const requirePermission = (permission) => {
   return (req, res, next) => {
-    if (!req.user) {
-      return next(new AppError('Yêu cầu xác thực', 401, ERROR_CODES.AUTH_INVALID_TOKEN));
-    }
+    try {
+      console.log('🔐 [RBAC] Checking permission:', {
+        userId: req.user?._id,
+        userRole: req.user?.role,
+        requiredPermission: permission,
+        path: req.path,
+        method: req.method
+      });
 
-    // 🎯 CHO PHÉP TRUY CẬP KHẨN CẤP
-    if (req.isEmergency && hasPermission(req.user.role, PERMISSIONS.EMERGENCY_ACCESS)) {
-      console.log(`🚨 Emergency permission override for ${permission}`);
-      return next();
-    }
+      // Kiểm tra user đã được xác thực
+      if (!req.user) {
+        console.error('❌ [RBAC] No user found in request');
+        throw new AppError('Không tìm thấy thông tin xác thực', 401, 'UNAUTHORIZED');
+      }
 
-    // 🎯 KIỂM TRA QUYỀN
-    if (!hasPermission(req.user.role, permission)) {
-      return next(new AppError(
-        `Không có quyền: ${permission}`,
-        403,
-        ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
-      ));
-    }
+      const userRole = req.user.role;
+      
+      // SUPER_ADMIN có toàn quyền
+      if (userRole === 'SUPER_ADMIN') {
+        console.log('✅ [RBAC] SUPER_ADMIN - Bypass all permissions');
+        return next();
+      }
 
-    next();
+      // Kiểm tra permission
+      if (!hasPermission(userRole, permission)) {
+        console.error('❌ [RBAC] Permission denied:', {
+          userRole,
+          requiredPermission: permission,
+          availablePermissions: ROLE_PERMISSIONS[userRole]
+        });
+        
+        throw new AppError(
+          'Bạn không có quyền thực hiện hành động này', 
+          403, 
+          'FORBIDDEN'
+        );
+      }
+
+      console.log('✅ [RBAC] Permission granted');
+      next();
+    } catch (error) {
+      next(error);
+    }
   };
-}
+};
 
 /**
  * 🎯 MIDDLEWARE KIỂM TRA QUYỀN TẠO ROLE
@@ -204,6 +227,157 @@ function rbacLogger(action) {
   };
 }
 
+const requireAnyPermission = (permissions = []) => {
+  return (req, res, next) => {
+    try {
+      if (!req.user) {
+        throw new AppError('Không tìm thấy thông tin xác thực', 401, 'UNAUTHORIZED');
+      }
+
+      const userRole = req.user.role;
+      
+      // SUPER_ADMIN có toàn quyền
+      if (userRole === 'SUPER_ADMIN') {
+        return next();
+      }
+
+      // Kiểm tra nếu có ít nhất một permission
+      const hasAnyPermission = permissions.some(permission => 
+        hasPermission(userRole, permission)
+      );
+
+      if (!hasAnyPermission) {
+        throw new AppError(
+          'Bạn không có quyền thực hiện hành động này', 
+          403, 
+          'FORBIDDEN'
+        );
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+const requireAllPermissions = (permissions = []) => {
+  return (req, res, next) => {
+    try {
+      if (!req.user) {
+        throw new AppError('Không tìm thấy thông tin xác thực', 401, 'UNAUTHORIZED');
+      }
+
+      const userRole = req.user.role;
+      
+      // SUPER_ADMIN có toàn quyền
+      if (userRole === 'SUPER_ADMIN') {
+        return next();
+      }
+
+      // Kiểm tra nếu có tất cả permissions
+      const hasAllPermissions = permissions.every(permission => 
+        hasPermission(userRole, permission)
+      );
+
+      if (!hasAllPermissions) {
+        throw new AppError(
+          'Bạn không có đủ quyền để thực hiện hành động này', 
+          403, 
+          'FORBIDDEN'
+        );
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+/**
+ * Middleware kiểm tra role hierarchy
+ * Cho phép user có role cao hơn truy cập tài nguyên của role thấp hơn
+ */
+const requireHigherRole = (targetRole) => {
+  return (req, res, next) => {
+    try {
+      if (!req.user) {
+        throw new AppError('Không tìm thấy thông tin xác thực', 401, 'UNAUTHORIZED');
+      }
+
+      const userRole = req.user.role;
+      const userRoleIndex = ROLE_HIERARCHY.indexOf(userRole);
+      const targetRoleIndex = ROLE_HIERARCHY.indexOf(targetRole);
+
+      if (userRoleIndex === -1 || targetRoleIndex === -1) {
+        throw new AppError('Role không hợp lệ', 400, 'INVALID_ROLE');
+      }
+
+      // SUPER_ADMIN có toàn quyền
+      if (userRole === 'SUPER_ADMIN') {
+        return next();
+      }
+
+      // Kiểm tra nếu user role cao hơn target role
+      if (userRoleIndex > targetRoleIndex) {
+        throw new AppError(
+          'Bạn không có quyền truy cập tài nguyên này', 
+          403, 
+          'FORBIDDEN'
+        );
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
+/**
+ * Middleware kiểm tra quyền sở hữu hoặc permission
+ * Cho phép user truy cập tài nguyên của chính họ hoặc có permission
+ */
+const requireOwnershipOrPermission = (permission, idField = '_id') => {
+  return (req, res, next) => {
+    try {
+      if (!req.user) {
+        throw new AppError('Không tìm thấy thông tin xác thực', 401, 'UNAUTHORIZED');
+      }
+
+      const userRole = req.user.role;
+      const userId = req.user._id.toString();
+      const resourceId = req.params[idField] || req.body[idField];
+
+      // SUPER_ADMIN có toàn quyền
+      if (userRole === 'SUPER_ADMIN') {
+        return next();
+      }
+
+      // Cho phép truy cập nếu là tài nguyên của chính họ
+      if (resourceId && userId === resourceId) {
+        console.log('✅ [RBAC] Ownership access granted');
+        return next();
+      }
+
+      // Kiểm tra permission
+      if (!hasPermission(userRole, permission)) {
+        throw new AppError(
+          'Bạn không có quyền thực hiện hành động này', 
+          403, 
+          'FORBIDDEN'
+        );
+      }
+
+      console.log('✅ [RBAC] Permission-based access granted');
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+};
+
 module.exports = {
   requireRole,
   requirePermission,
@@ -214,4 +388,8 @@ module.exports = {
   requireAuditLogAccess,
   requireSystemConfigAccess,
   rbacLogger,
+  requireAnyPermission,
+  requireAllPermissions,
+  requireHigherRole,
+  requireOwnershipOrPermission,
 };
