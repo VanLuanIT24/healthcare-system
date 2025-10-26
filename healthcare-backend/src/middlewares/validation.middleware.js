@@ -212,6 +212,79 @@ function sanitizeInput(allowedFields = []) {
   };
 }
 
+/**
+ * 🎯 VALIDATE COMBINED (BODY + PARAMS)
+ */
+function validateCombined(schemas = {}) {
+  return (req, res, next) => {
+    try {
+      // Validate params
+      if (schemas.params) {
+        const { error: paramsError } = schemas.params.validate(req.params);
+        if (paramsError) {
+          const errorDetails = paramsError.details.map(detail => ({
+            field: `params.${detail.path.join('.')}`,
+            message: detail.message,
+            type: detail.type,
+          }));
+          
+          const validationError = new AppError(
+            'Tham số không hợp lệ',
+            422,
+            ERROR_CODES.VALIDATION_FAILED
+          );
+          validationError.details = errorDetails;
+          return next(validationError);
+        }
+      }
+
+      // Validate body
+      if (schemas.body) {
+        const { error: bodyError } = schemas.body.validate(req.body);
+        if (bodyError) {
+          const errorDetails = bodyError.details.map(detail => ({
+            field: `body.${detail.path.join('.')}`,
+            message: detail.message,
+            type: detail.type,
+          }));
+          
+          const validationError = new AppError(
+            'Dữ liệu không hợp lệ',
+            422,
+            ERROR_CODES.VALIDATION_FAILED
+          );
+          validationError.details = errorDetails;
+          return next(validationError);
+        }
+      }
+
+      // Validate query
+      if (schemas.query) {
+        const { error: queryError } = schemas.query.validate(req.query);
+        if (queryError) {
+          const errorDetails = queryError.details.map(detail => ({
+            field: `query.${detail.path.join('.')}`,
+            message: detail.message,
+            type: detail.type,
+          }));
+          
+          const validationError = new AppError(
+            'Query parameters không hợp lệ',
+            422,
+            ERROR_CODES.VALIDATION_FAILED
+          );
+          validationError.details = errorDetails;
+          return next(validationError);
+        }
+      }
+
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
+
 module.exports = {
   validate,
   validateParams,
@@ -219,5 +292,6 @@ module.exports = {
   validateBody,
   sanitizeInput,
   commonSchemas,
+  validateCombined,
   medicalSchemas,
 };
