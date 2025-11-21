@@ -17,7 +17,11 @@ import {
   Row,
   Col,
   Statistic,
-  Tooltip
+  Tooltip,
+  Divider,
+  Switch,
+  Empty,
+  DatePicker
 } from 'antd';
 import {
   UserOutlined,
@@ -31,9 +35,15 @@ import {
   EyeOutlined,
   MailOutlined,
   PhoneOutlined,
-  IdcardOutlined
+  IdcardOutlined,
+  SafetyOutlined,
+  RestOutlined,
+  UndoOutlined
 } from '@ant-design/icons';
-import axios from 'axios';
+import { apiClient } from '../utils/api';
+import RoleAssignmentModal from './RoleAssignmentModal';
+import PermissionsViewer from './PermissionsViewer';
+import dayjs from 'dayjs';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -41,6 +51,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
+  const [deletedUsers, setDeletedUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -49,6 +60,10 @@ const UserManagement = () => {
   const [searchText, setSearchText] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [roleModalVisible, setRoleModalVisible] = useState(false);
+  const [permissionsDrawerVisible, setPermissionsDrawerVisible] = useState(false);
+  const [viewDeletedModalVisible, setViewDeletedModalVisible] = useState(false);
+  const [selectedFormRole, setSelectedFormRole] = useState(null);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -56,6 +71,26 @@ const UserManagement = () => {
   });
 
   const [form] = Form.useForm();
+
+  // Password validator - must have: 8+ chars, 1 uppercase, 1 lowercase, 1 digit
+  const validatePassword = (_, value) => {
+    if (!value) {
+      return Promise.reject(new Error('Vui lòng nhập mật khẩu'));
+    }
+    if (value.length < 8) {
+      return Promise.reject(new Error('Mật khẩu phải có ít nhất 8 ký tự'));
+    }
+    if (!/[A-Z]/.test(value)) {
+      return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 chữ cái viết hoa'));
+    }
+    if (!/[a-z]/.test(value)) {
+      return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 chữ cái viết thường'));
+    }
+    if (!/[0-9]/.test(value)) {
+      return Promise.reject(new Error('Mật khẩu phải chứa ít nhất 1 chữ số'));
+    }
+    return Promise.resolve();
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -79,10 +114,7 @@ const UserManagement = () => {
         ...(searchText && { search: searchText })
       };
 
-      console.log('Fetching users with token:', token.substring(0, 20) + '...');
-
-      const response = await axios.get(`${API_BASE_URL}/users`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await apiClient.get(`/users`, {
         params
       });
 
@@ -96,13 +128,7 @@ const UserManagement = () => {
       }
     } catch (err) {
       console.error('Error fetching users:', err);
-      if (err.response?.status === 401) {
-        message.error('Token hết hạn. Vui lòng đăng nhập lại');
-        // Optionally redirect to login
-        // window.location.href = '/superadmin/login';
-      } else {
-        message.error('Không thể tải danh sách người dùng');
-      }
+      message.error('Không thể tải danh sách người dùng');
     } finally {
       setLoading(false);
     }
@@ -120,13 +146,19 @@ const UserManagement = () => {
   const handleEditUser = (user) => {
     setSelectedUser(user);
     setEditMode(true);
+    setSelectedFormRole(user.role);
     form.setFieldsValue({
       email: user.email,
       firstName: user.personalInfo?.firstName,
       lastName: user.personalInfo?.lastName,
       phone: user.personalInfo?.phone,
+      dateOfBirth: user.personalInfo?.dateOfBirth ? dayjs(user.personalInfo.dateOfBirth) : null,
+      gender: user.personalInfo?.gender,
       role: user.role,
-      status: user.status
+      status: user.status,
+      licenseNumber: user.professionalInfo?.licenseNumber,
+      specialization: user.professionalInfo?.specialization,
+      department: user.professionalInfo?.department
     });
     setModalVisible(true);
   };
@@ -134,21 +166,9 @@ const UserManagement = () => {
   const handleCreateUser = () => {
     setSelectedUser(null);
     setEditMode(false);
+    setSelectedFormRole(null);
     form.resetFields();
     setModalVisible(true);
-  };
-
-  const handleDeleteUser = async (userId) => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      await axios.delete(`${API_BASE_URL}/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      message.success('Đã xóa người dùng');
-      fetchUsers();
-    } catch (err) {
-      message.error('Không thể xóa người dùng');
-    }
   };
 
   const handleToggleStatus = async (user) => {
@@ -156,22 +176,102 @@ const UserManagement = () => {
       const token = localStorage.getItem('accessToken');
       const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
       
-      await axios.patch(
-        `${API_BASE_URL}/users/${user._id}/disable`,
-        { reason: 'Admin action', status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
+      await apiClient.patch(
+        `/users/${user._id}/disable`,
+        { isActive: newStatus === 'ACTIVE' }
       );
       
-      message.success(`Đã ${newStatus === 'ACTIVE' ? 'kích hoạt' : 'vô hiệu hóa'} người dùng`);
+      message.success(`${newStatus === 'ACTIVE' ? 'Kích hoạt' : 'Vô hiệu hóa'} người dùng thành công`);
       fetchUsers();
     } catch (err) {
-      message.error('Không thể thay đổi trạng thái người dùng');
+      message.error('Không thể cập nhật trạng thái');
+      console.error(err);
     }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    try {
+      await apiClient.delete(
+        `/users/${userId}`
+      );
+      
+      message.success('Xóa người dùng thành công');
+      fetchUsers();
+    } catch (err) {
+      message.error(err.response?.data?.error || 'Không thể xóa người dùng');
+      console.error(err);
+    }
+  };
+
+  const handleEnableUser = async (userId) => {
+    try {
+      await apiClient.patch(
+        `/users/${userId}/enable`,
+        {}
+      );
+      
+      message.success('Kích hoạt người dùng thành công');
+      fetchUsers();
+    } catch (err) {
+      message.error('Không thể kích hoạt người dùng');
+      console.error(err);
+    }
+  };
+
+  const handleRestoreUser = async (userId) => {
+    try {
+      await apiClient.patch(
+        `/users/${userId}/restore`,
+        {}
+      );
+      
+      message.success('Khôi phục người dùng thành công');
+      fetchDeletedUsers();
+      fetchUsers();
+    } catch (err) {
+      message.error('Không thể khôi phục người dùng');
+      console.error(err);
+    }
+  };
+
+  const fetchDeletedUsers = async () => {
+    try {
+      const response = await apiClient.get(
+        `/users/deleted/list`
+      );
+      
+      if (response.data.success) {
+        setDeletedUsers(response.data.data || []);
+      }
+    } catch (err) {
+      message.error('Không thể tải danh sách người dùng đã xóa');
+      console.error(err);
+    }
+  };
+
+  const handleOpenRoleModal = (user) => {
+    setSelectedUser(user);
+    setRoleModalVisible(true);
+  };
+
+  const handleOpenPermissions = (user) => {
+    setSelectedUser(user);
+    setPermissionsDrawerVisible(true);
   };
 
   const handleSubmit = async (values) => {
     try {
-      const token = localStorage.getItem('accessToken');
+      // Convert dateOfBirth from dayjs to Date string (ISO format)
+      // Use UTC midnight to avoid timezone issues
+      let dateOfBirth;
+      if (values.dateOfBirth) {
+        const dateStr = values.dateOfBirth.format('YYYY-MM-DD');
+        dateOfBirth = dayjs(`${dateStr}T00:00:00Z`).toISOString();
+      } else {
+        dateOfBirth = dayjs('1990-01-01T00:00:00Z').toISOString();
+      }
+
+      const medicalRoles = ['DOCTOR', 'NURSE', 'PHARMACIST', 'LAB_TECHNICIAN'];
       
       const userData = {
         email: values.email,
@@ -179,38 +279,97 @@ const UserManagement = () => {
           firstName: values.firstName,
           lastName: values.lastName,
           phone: values.phone,
-          dateOfBirth: values.dateOfBirth || '1990-01-01',
+          dateOfBirth: dateOfBirth,
           gender: values.gender || 'OTHER'
         },
-        role: values.role,
-        ...(values.password && { password: values.password, confirmPassword: values.password })
+        role: values.role
       };
 
+      // Add professional info for medical roles - must not use default "N/A" or "General"
+      if (medicalRoles.includes(values.role)) {
+        userData.professionalInfo = {
+          licenseNumber: values.licenseNumber || '',
+          specialization: values.specialization || '',
+          department: values.department || ''
+        };
+      }
+
+      // Add password only if provided (required for create, optional for update)
+      if (values.password) {
+        userData.password = values.password;
+        userData.confirmPassword = values.password;
+      }
+
+      console.log('📤 Payload gửi:', JSON.stringify(userData, null, 2));
+
       if (editMode && selectedUser) {
-        // Update user
-        await axios.put(
-          `${API_BASE_URL}/users/${selectedUser._id}`,
-          userData,
-          { headers: { Authorization: `Bearer ${token}` } }
+        // Update user - remove password if not changing it
+        if (!values.password) {
+          delete userData.password;
+          delete userData.confirmPassword;
+        }
+        await apiClient.put(
+          `/users/${selectedUser._id}`,
+          userData
         );
         message.success('Cập nhật người dùng thành công');
       } else {
-        // Create user
-        await axios.post(
-          `${API_BASE_URL}/users`,
-          { ...userData, password: values.password, confirmPassword: values.password },
-          { headers: { Authorization: `Bearer ${token}` } }
+        // Create user - password required
+        if (!values.password) {
+          message.error('Mật khẩu là bắt buộc khi tạo người dùng');
+          return;
+        }
+        await apiClient.post(
+          `/users`,
+          userData
         );
         message.success('Tạo người dùng thành công');
       }
 
       setModalVisible(false);
+      setSelectedFormRole(null);
       form.resetFields();
       fetchUsers();
     } catch (err) {
-      console.error('Submit error:', err.response?.data);
-      const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Có lỗi xảy ra';
-      message.error(errorMsg);
+      console.error('Submit error response:', err.response?.data);
+      
+      // Try to extract error details from different response structures
+      const errorData = err.response?.data;
+      let errorMsg = 'Có lỗi xảy ra';
+      let details = null;
+
+      if (errorData) {
+        // Check different possible error response structures
+        if (errorData.error?.message) {
+          errorMsg = errorData.error.message;
+          details = errorData.error?.details;
+        } else if (errorData.message) {
+          errorMsg = errorData.message;
+          details = errorData.details;
+        } else if (typeof errorData.error === 'string') {
+          errorMsg = errorData.error;
+        }
+      }
+
+      // Show detailed validation errors if available
+      if (details && Array.isArray(details)) {
+        const detailsText = details
+          .map(d => `• ${d.field}: ${d.message}`)
+          .join('\n');
+        message.error({
+          content: (
+            <div>
+              <div style={{ marginBottom: '8px', fontWeight: 'bold' }}>Lỗi xác thực:</div>
+              <div style={{ whiteSpace: 'pre-wrap', fontSize: '12px' }}>
+                {detailsText}
+              </div>
+            </div>
+          ),
+          duration: 5
+        });
+      } else {
+        message.error(errorMsg);
+      }
     }
   };
 
@@ -297,9 +456,9 @@ const UserManagement = () => {
       title: 'Hành động',
       key: 'action',
       fixed: 'right',
-      width: 200,
+      width: 300,
       render: (_, record) => (
-        <Space>
+        <Space wrap>
           <Tooltip title="Xem chi tiết">
             <Button
               type="primary"
@@ -315,15 +474,32 @@ const UserManagement = () => {
               onClick={() => handleEditUser(record)}
             />
           </Tooltip>
-          <Tooltip title={record.status === 'ACTIVE' ? 'Vô hiệu hóa' : 'Kích hoạt'}>
+          <Tooltip title="Gán vai trò">
             <Button
-              icon={record.status === 'ACTIVE' ? <LockOutlined /> : <UnlockOutlined />}
+              icon={<SafetyOutlined />}
               size="small"
-              onClick={() => handleToggleStatus(record)}
+              onClick={() => handleOpenRoleModal(record)}
+              style={{ color: '#faad14' }}
+            />
+          </Tooltip>
+          <Tooltip title="Xem quyền">
+            <Button
+              icon={<LockOutlined />}
+              size="small"
+              onClick={() => handleOpenPermissions(record)}
+              style={{ color: '#1890ff' }}
+            />
+          </Tooltip>
+          <Tooltip title={record.isActive === false ? 'Kích hoạt' : 'Vô hiệu hóa'}>
+            <Button
+              icon={record.isActive === false ? <UnlockOutlined /> : <LockOutlined />}
+              size="small"
+              onClick={() => record.isActive === false ? handleEnableUser(record._id) : handleToggleStatus(record)}
             />
           </Tooltip>
           <Popconfirm
             title="Bạn có chắc chắn muốn xóa người dùng này?"
+            description="Người dùng sẽ được di chuyển vào thư mục đã xóa và có thể khôi phục sau."
             onConfirm={() => handleDeleteUser(record._id)}
             okText="Xóa"
             cancelText="Hủy"
@@ -424,6 +600,12 @@ const UserManagement = () => {
             <Button icon={<ReloadOutlined />} onClick={fetchUsers}>
               Làm mới
             </Button>
+            <Button icon={<DeleteOutlined />} onClick={() => {
+              fetchDeletedUsers();
+              setViewDeletedModalVisible(true);
+            }}>
+              Xem đã xóa
+            </Button>
           </Space>
           <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateUser}>
             Thêm người dùng
@@ -491,6 +673,7 @@ const UserManagement = () => {
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
+          setSelectedFormRole(null);
           form.resetFields();
         }}
         footer={null}
@@ -529,6 +712,35 @@ const UserManagement = () => {
             </Col>
           </Row>
 
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="dateOfBirth"
+                label="Ngày sinh"
+                rules={[{ required: true, message: 'Vui lòng chọn ngày sinh' }]}
+              >
+                <DatePicker
+                  style={{ width: '100%' }}
+                  format="DD/MM/YYYY"
+                  disabledDate={(current) => current && current > dayjs().endOf('day')}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="gender"
+                label="Giới tính"
+                rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
+              >
+                <Select placeholder="Chọn giới tính">
+                  <Option value="MALE">Nam</Option>
+                  <Option value="FEMALE">Nữ</Option>
+                  <Option value="OTHER">Khác</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
+
           <Form.Item
             name="phone"
             label="Số điện thoại"
@@ -545,23 +757,65 @@ const UserManagement = () => {
             label="Vai trò"
             rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
           >
-            <Select placeholder="Chọn vai trò">
-              <Option value="ADMIN">Admin</Option>
-              <Option value="DOCTOR">Bác sĩ</Option>
+            <Select 
+              placeholder="Chọn vai trò"
+              onChange={(value) => setSelectedFormRole(value)}
+            >
               <Option value="PATIENT">Bệnh nhân</Option>
+              <Option value="DOCTOR">Bác sĩ</Option>
+              <Option value="NURSE">Y tá</Option>
+              <Option value="PHARMACIST">Dược sĩ</Option>
+              <Option value="LAB_TECHNICIAN">Kỹ thuật viên phòng lab</Option>
+              <Option value="RECEPTIONIST">Lễ tân</Option>
+              <Option value="BILLING_STAFF">Nhân viên thanh toán</Option>
             </Select>
           </Form.Item>
+
+          {/* Medical Professional Fields */}
+          {['DOCTOR', 'NURSE', 'PHARMACIST', 'LAB_TECHNICIAN'].includes(selectedFormRole) && (
+            <>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="licenseNumber"
+                    label="Số giấy phép"
+                    rules={[{ required: true, message: 'Vui lòng nhập số giấy phép' }]}
+                  >
+                    <Input placeholder="Nhập số giấy phép hành nghề" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="specialization"
+                    label="Chuyên khoa"
+                    rules={[{ required: true, message: 'Vui lòng nhập chuyên khoa' }]}
+                  >
+                    <Input placeholder="VD: Tim mạch, Nhi, v.v" />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item
+                name="department"
+                label="Khoa/Phòng"
+                rules={[{ required: true, message: 'Vui lòng nhập khoa/phòng' }]}
+              >
+                <Input placeholder="VD: Khoa Tim mạch, Phòng Khám chung" />
+              </Form.Item>
+            </>
+          )}
 
           {!editMode && (
             <Form.Item
               name="password"
               label="Mật khẩu"
               rules={[
-                { required: true, message: 'Vui lòng nhập mật khẩu' },
-                { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự' }
+                { validator: validatePassword }
               ]}
             >
-              <Input.Password prefix={<LockOutlined />} placeholder="Nhập mật khẩu" />
+              <Input.Password 
+                prefix={<LockOutlined />} 
+                placeholder="Nhập mật khẩu (ít nhất 8 ký tự, 1 chữ hoa, 1 chữ thường, 1 số)" 
+              />
             </Form.Item>
           )}
 
@@ -579,6 +833,111 @@ const UserManagement = () => {
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Role Assignment Modal */}
+      <RoleAssignmentModal
+        visible={roleModalVisible}
+        user={selectedUser}
+        onCancel={() => setRoleModalVisible(false)}
+        onSuccess={() => {
+          setRoleModalVisible(false);
+          fetchUsers();
+        }}
+      />
+
+      {/* Permissions Viewer Drawer */}
+      <PermissionsViewer
+        visible={permissionsDrawerVisible}
+        user={selectedUser}
+        onClose={() => setPermissionsDrawerVisible(false)}
+      />
+
+      {/* Deleted Users Modal */}
+      <Modal
+        title="Người dùng đã xóa"
+        open={viewDeletedModalVisible}
+        onCancel={() => setViewDeletedModalVisible(false)}
+        width={900}
+        footer={[
+          <Button key="close" onClick={() => setViewDeletedModalVisible(false)}>
+            Đóng
+          </Button>
+        ]}
+      >
+        <Table
+          columns={[
+            {
+              title: 'Email',
+              dataIndex: 'email',
+              key: 'email'
+            },
+            {
+              title: 'Họ tên',
+              key: 'name',
+              render: (_, record) => `${record.personalInfo?.firstName || ''} ${record.personalInfo?.lastName || ''}`
+            },
+            {
+              title: 'Số điện thoại',
+              dataIndex: ['personalInfo', 'phone'],
+              key: 'phone'
+            },
+            {
+              title: 'Vai trò',
+              dataIndex: 'role',
+              key: 'role',
+              render: (role) => (
+                <Tag color={
+                  role === 'SUPER_ADMIN' ? 'red' :
+                  role === 'ADMIN' ? 'orange' :
+                  role === 'DOCTOR' ? 'blue' : 'green'
+                }>
+                  {role}
+                </Tag>
+              )
+            },
+            {
+              title: 'Ngày xóa',
+              key: 'deletedAt',
+              render: (_, record) => record.deletedAt ? new Date(record.deletedAt).toLocaleString('vi-VN') : '-'
+            },
+            {
+              title: 'Hành động',
+              key: 'action',
+              render: (_, record) => (
+                <Space wrap>
+                  <Popconfirm
+                    title="Khôi phục người dùng"
+                    description="Người dùng sẽ được phục hồi và có thể sử dụng lại."
+                    onConfirm={() => handleRestoreUser(record._id)}
+                    okText="Khôi phục"
+                    cancelText="Hủy"
+                  >
+                    <Button type="primary" ghost icon={<UndoOutlined />} size="small">
+                      Khôi phục
+                    </Button>
+                  </Popconfirm>
+                  <Popconfirm
+                    title="Xóa vĩnh viễn"
+                    description="Hành động này không thể hoàn tác. Dữ liệu người dùng sẽ bị xóa hoàn toàn."
+                    onConfirm={() => handleDeleteUser(record._id)}
+                    okText="Xóa"
+                    cancelText="Hủy"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button danger size="small" icon={<DeleteOutlined />}>
+                      Xóa vĩnh viễn
+                    </Button>
+                  </Popconfirm>
+                </Space>
+              )
+            }
+          ]}
+          dataSource={deletedUsers}
+          rowKey="_id"
+          pagination={{ pageSize: 10 }}
+          loading={false}
+        />
       </Modal>
     </div>
   );

@@ -18,13 +18,23 @@ import {
   FileTextOutlined,
   DeleteOutlined,
   EditOutlined,
-  KeyOutlined
+  KeyOutlined,
+  DollarOutlined,
+  AuditOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import UserManagement from '../../components/UserManagement';
+import PatientManagement from '../../components/PatientManagement';
+import SystemHealthDashboard from '../../components/SystemHealthDashboard';
+import AppointmentManagement from '../../components/AppointmentManagement';
+import SystemResetFeature from '../../components/SystemResetFeature';
+import MedicalRecordManagement from '../../components/MedicalRecordManagement';
+import BillingManagement from '../../components/BillingManagement';
+import AuditLogViewer from '../../components/AuditLogViewer';
+import DoctorDashboard from '../../components/DoctorDashboard';
 import UserProfile from './UserProfile';
 import ChangePassword from './ChangePassword';
-import axios from 'axios';
+import { apiClient } from '../../utils/api';
 
 const { Header, Sider, Content } = Layout;
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
@@ -52,12 +62,7 @@ const SuperAdminDashboard = () => {
   const fetchSystemHealth = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`${API_BASE_URL}/super-admin/system-health`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await apiClient.get('/super-admin/system-health');
 
       if (response.data.success) {
         setSystemHealth(response.data.data);
@@ -72,12 +77,7 @@ const SuperAdminDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`${API_BASE_URL}/users`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await apiClient.get('/users');
 
       if (response.data.success) {
         setUsers(response.data.data || []);
@@ -196,6 +196,16 @@ const SuperAdminDashboard = () => {
       label: 'Quản lý người dùng'
     },
     {
+      key: '3.5',
+      icon: <HeartOutlined />,
+      label: 'Quản lý bệnh nhân'
+    },
+    {
+      key: '3.7',
+      icon: <FileTextOutlined />,
+      label: 'Quản lý lịch hẹn'
+    },
+    {
       key: '4',
       icon: <UserOutlined />,
       label: 'Thông tin cá nhân'
@@ -209,6 +219,32 @@ const SuperAdminDashboard = () => {
       key: '6',
       icon: <SettingOutlined />,
       label: 'Cài đặt hệ thống'
+    },
+    {
+      key: '7',
+      icon: <DeleteOutlined />,
+      label: 'Reset Hệ Thống',
+      style: { color: '#ff4d4f' }
+    },
+    {
+      key: '8',
+      icon: <FileTextOutlined />,
+      label: 'Quản lý hồ sơ y tế'
+    },
+    {
+      key: '9',
+      icon: <DollarOutlined />,
+      label: 'Quản lý hóa đơn'
+    },
+    {
+      key: '10',
+      icon: <AuditOutlined />,
+      label: 'Xem nhật ký hệ thống'
+    },
+    {
+      key: '11',
+      icon: <DashboardOutlined />,
+      label: 'Dashboard Bác sĩ'
     }
   ];
 
@@ -220,7 +256,8 @@ const SuperAdminDashboard = () => {
         collapsed={collapsed}
         theme="dark"
         style={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+          background: 'linear-gradient(135deg, #0099cc 0%, #0077aa 100%)',
+          boxShadow: '2px 0 8px rgba(0, 153, 204, 0.15)'
         }}
       >
         <div className="logo p-4 text-white text-center font-bold text-xl flex items-center justify-center">
@@ -404,7 +441,7 @@ const SuperAdminDashboard = () => {
             {selectedKey === '2' && (
               <Card 
                 title="📈 Thống kê hệ thống" 
-                bordered={false}
+                variant="borderless"
                 extra={<Button type="primary">Làm mới</Button>}
               >
                 <Row gutter={16} className="mb-6">
@@ -438,6 +475,20 @@ const SuperAdminDashboard = () => {
               </div>
             )}
 
+            {selectedKey === '3.5' && (
+              <div>
+                <h3 className="text-2xl font-bold mb-6">🏥 Quản lý bệnh nhân</h3>
+                <PatientManagement />
+              </div>
+            )}
+
+            {selectedKey === '3.7' && (
+              <div>
+                <h3 className="text-2xl font-bold mb-6">📅 Quản lý lịch hẹn</h3>
+                <AppointmentManagement />
+              </div>
+            )}
+
             {selectedKey === '4' && (
               <div>
                 <h3 className="text-2xl font-bold mb-6">👤 Thông tin cá nhân</h3>
@@ -453,7 +504,7 @@ const SuperAdminDashboard = () => {
             )}
 
             {selectedKey === '6' && (
-              <Card title="⚙️ Cài đặt hệ thống" bordered={false}>
+              <Card title="⚙️ Cài đặt hệ thống" variant="borderless">
                 <Row gutter={16}>
                   <Col xs={24} sm={12}>
                     <Card title="🔐 Bảo mật" type="inner">
@@ -487,6 +538,41 @@ const SuperAdminDashboard = () => {
                   </Col>
                 </Row>
               </Card>
+            )}
+
+            {selectedKey === '7' && (
+              <div>
+                <h3 className="text-2xl font-bold mb-6">🗑️ Reset Hệ Thống</h3>
+                <SystemResetFeature />
+              </div>
+            )}
+
+            {selectedKey === '8' && (
+              <div>
+                <h3 className="text-2xl font-bold mb-6">📋 Quản lý hồ sơ y tế</h3>
+                <MedicalRecordManagement />
+              </div>
+            )}
+
+            {selectedKey === '9' && (
+              <div>
+                <h3 className="text-2xl font-bold mb-6">💳 Quản lý hóa đơn</h3>
+                <BillingManagement />
+              </div>
+            )}
+
+            {selectedKey === '10' && (
+              <div>
+                <h3 className="text-2xl font-bold mb-6">📝 Nhật ký hệ thống</h3>
+                <AuditLogViewer />
+              </div>
+            )}
+
+            {selectedKey === '11' && (
+              <div>
+                <h3 className="text-2xl font-bold mb-6">👨‍⚕️ Dashboard Bác sĩ</h3>
+                <DoctorDashboard />
+              </div>
             )}
           </Spin>
         </Content>

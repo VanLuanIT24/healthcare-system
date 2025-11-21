@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 /**
- * 🛡️ MODEL AUDIT LOG CHO HEALTHCARE SYSTEM
+ * MODEL AUDIT LOG CHO HEALTHCARE SYSTEM
  * - Lưu trữ tất cả hoạt động quan trọng trong hệ thống
  * - Tuân thủ HIPAA và các quy định lưu trữ dữ liệu y tế
  */

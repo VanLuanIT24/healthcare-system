@@ -14,7 +14,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f5;
+  background: linear-gradient(135deg, #f8fdfb 0%, #f0f9ff 50%, #f5f8ff 100%);
+  color: #0f172a;
 }
 
 code {
@@ -27,41 +28,374 @@ code {
   height: 100%;
 }
 
-/* Ant Design customizations */
+/* ===== TEAL OCEAN THEME (Xanh Nước Biển) ===== */
+
+/* Primary Colors */
+:root {
+  --primary-teal: #0099cc;      /* Xanh nước biển chính - đậm hơn */
+  --primary-light: #06b6d4;     /* Xanh nhạt */
+  --primary-dark: #0077aa;      /* Xanh đậm */
+  --accent-cyan: #0099cc;       /* Xanh cyan */
+  --white: #ffffff;             /* Trắng */
+  --light-bg: #f8fdfb;          /* Nền xanh nhạt */
+  --border-light: #a5f3fc;      /* Border xanh nhạt */
+}
+
+/* Ant Design Layout Customizations */
 .ant-layout {
-  background-color: #f5f5f5;
+  background-color: #f8fdfb;
 }
 
 .ant-layout-sider {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #0099cc 0%, #0077aa 100%) !important;
+  box-shadow: 2px 0 8px rgba(0, 153, 204, 0.08);
 }
 
+.ant-layout-sider-light {
+  background: linear-gradient(135deg, #f8fdfb 0%, #f0f9ff 100%) !important;
+}
+
+.ant-layout-header {
+  background: linear-gradient(90deg, #ffffff 0%, #f8fdfb 100%) !important;
+  box-shadow: 0 2px 8px rgba(0, 153, 204, 0.05);
+  border-bottom: 2px solid #cffafe;
+}
+
+/* Menu Styling */
+.ant-menu {
+  background: transparent !important;
+  color: #ffffff;
+}
+
+.ant-menu-dark .ant-menu-item {
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.ant-menu-dark .ant-menu-item:hover {
+  background-color: rgba(0, 153, 204, 0.2) !important;
+  color: #0099cc;
+}
+
+.ant-menu-dark .ant-menu-item-selected {
+  background-color: rgba(0, 153, 204, 0.3) !important;
+  color: #0099cc;
+  border-right: 3px solid #0099cc;
+}
+
+/* Button Styling */
 .ant-btn-primary {
-  background-color: #1890ff;
-  border-color: #1890ff;
+  background: linear-gradient(135deg, #0099cc 0%, #0077aa 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 153, 204, 0.2);
+  transition: all 0.3s ease;
 }
 
 .ant-btn-primary:hover {
-  background-color: #40a9ff;
-  border-color: #40a9ff;
+  background: linear-gradient(135deg, #0077aa 0%, #0099cc 100%);
+  box-shadow: 0 6px 16px rgba(0, 153, 204, 0.25);
+  transform: translateY(-2px);
+}
+
+.ant-btn-primary:active {
+  transform: translateY(0);
+}
+
+.ant-btn-default {
+  border-color: #a5f3fc;
+  color: #0099cc;
+  transition: all 0.3s ease;
+}
+
+.ant-btn-default:hover {
+  color: #0077aa;
+  border-color: #0099cc;
+  background-color: #f8fdfb;
+}
+
+/* Card Styling */
+.ant-card {
+  background: #ffffff;
+  border: 1px solid #e0f2fe;
+  box-shadow: 0 2px 8px rgba(0, 153, 204, 0.06);
+  transition: all 0.3s ease;
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 153, 204, 0.10);
+  transform: translateY(-2px);
+  border-color: #a5f3fc;
+}
+
+.ant-card-head {
+  background: linear-gradient(90deg, #f8fdfb 0%, #ffffff 100%);
+  border-bottom: 1px solid #e0f2fe;
+}
+
+.ant-card-head-title {
+  color: #0099cc;
+  font-weight: 600;
+}
+
+/* Table Styling */
+.ant-table {
+  background: #ffffff;
+}
+
+.ant-table-thead > tr > th {
+  background: linear-gradient(90deg, #0099cc 0%, #0077aa 100%);
+  color: #ffffff;
+  font-weight: 600;
+  border: none;
+}
+
+.ant-table-row:hover > td {
+  background-color: #f8fdfb;
+}
+
+.ant-table-row-selected > td {
+  background-color: #e0f2fe;
+}
+
+.ant-table-pagination {
+  padding: 12px 16px;
+  background: linear-gradient(90deg, #f0f9ff 0%, #ffffff 100%);
+}
+
+/* Modal Styling */
+.ant-modal-content {
+  background: #ffffff;
+  border: 1px solid #e0f2fe;
+}
+
+.ant-modal-header {
+  background: linear-gradient(90deg, #f8fdfb 0%, #ffffff 100%);
+  border-bottom: 1px solid #e0f2fe;
+}
+
+.ant-modal-title {
+  color: #0099cc;
+  font-weight: 600;
+}
+
+/* Form Styling */
+.ant-form-item-label > label {
+  color: #0099cc;
+  font-weight: 500;
+}
+
+.ant-input {
+  border-color: #a5f3fc;
+  transition: all 0.3s ease;
+}
+
+.ant-input:focus {
+  border-color: #0099cc;
+  box-shadow: 0 0 0 2px rgba(0, 153, 204, 0.1);
+}
+
+.ant-input-status-error {
+  border-color: #ef4444;
+}
+
+.ant-select-selector {
+  border-color: #a5f3fc !important;
+  transition: all 0.3s ease;
+}
+
+.ant-select-focused .ant-select-selector {
+  border-color: #0099cc !important;
+  box-shadow: 0 0 0 2px rgba(0, 153, 204, 0.1) !important;
+}
+
+.ant-select-item-option-selected {
+  background-color: #f0f9ff;
+  color: #0099cc;
+}
+
+/* Tag & Badge Styling */
+.ant-tag {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.ant-tag-cyan {
+  background-color: #a5f3fc;
+  color: #0099cc;
+}
+
+.ant-badge-status-success {
+  background-color: #10b981;
+}
+
+.ant-badge-status-processing {
+  background-color: #00d9ff;
+}
+
+/* Statistic Styling */
+.ant-statistic-title {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ant-statistic-content {
+  color: #0099cc;
+  font-weight: 700;
+}
+
+/* Drawer Styling */
+.ant-drawer-header {
+  background: linear-gradient(90deg, #f0f9ff 0%, #ffffff 100%);
+  border-bottom: 2px solid #a5f3fc;
+}
+
+.ant-drawer-title {
+  color: #0099cc;
+  font-weight: 600;
+}
+
+/* Message & Notification */
+.ant-message-notice-content {
+  background: linear-gradient(90deg, #ffffff 0%, #f0f9ff 100%);
+  box-shadow: 0 4px 12px rgba(0, 153, 204, 0.15);
+}
+
+/* Tabs Styling */
+.ant-tabs-nav {
+  border-bottom: 2px solid #a5f3fc;
+}
+
+.ant-tabs-tab {
+  color: #0077aa;
+  transition: all 0.3s ease;
+}
+
+.ant-tabs-tab:hover {
+  color: #0099cc;
+}
+
+.ant-tabs-tab-active {
+  color: #0099cc;
+  border-bottom: 3px solid #0099cc;
+}
+
+/* Descriptions Styling */
+.ant-descriptions-item-label {
+  background-color: #f0f9ff;
+  color: #0099cc;
+  font-weight: 600;
+}
+
+.ant-descriptions-item-content {
+  color: #1e3a8a;
+}
+
+/* Spin Loading */
+.ant-spin-spinning {
+  color: #0891b2;
 }
 
 /* Smooth transitions */
 a {
+  color: #00d9ff;
+  text-decoration: none;
   transition: color 0.3s ease;
 }
 
-button {
+a:hover {
+  color: #06b6d4;
+}
+
+/* ===== CUSTOM COMPONENTS ===== */
+
+/* Header Logo */
+.header-logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: #00d9ff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Dashboard Card */
+.dashboard-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+  border: 1px solid #cffafe;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 217, 255, 0.08);
   transition: all 0.3s ease;
 }
 
-/* Responsive */
+.dashboard-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 217, 255, 0.15);
+  border-color: #a5f3fc;
+}
+
+/* Section Title */
+.section-title {
+  color: #00d9ff;
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title::before {
+  content: '';
+  width: 4px;
+  height: 28px;
+  background: linear-gradient(135deg, #00d9ff 0%, #06b6d4 100%);
+  border-radius: 2px;
+}
+
+/* Action Button Group */
+.action-button-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Status Badge */
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background-color: #d1fae5;
+  color: #047857;
+}
+
+.status-badge.pending {
+  background-color: #fef3c7;
+  color: #b45309;
+}
+
+.status-badge.inactive {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
-  body {
-    font-size: 14px;
+  .section-title {
+    font-size: 20px;
+  }
+
+  .ant-table {
+    font-size: 13px;
   }
 
   .ant-btn {
-    font-size: 14px;
+    padding: 6px 12px;
+    font-size: 13px;
   }
 }

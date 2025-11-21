@@ -1,6 +1,6 @@
 // src/constants/roles.js
 /**
- * 🌐 HỆ THỐNG PHÂN QUYỀN RBAC CHUẨN HEALTHCARE ENTERPRISE
+ *  HỆ THỐNG PHÂN QUYỀN RBAC CHUẨN HEALTHCARE ENTERPRISE
  * Author: Senior Dev Team (Healthcare Edition)
  * Description:
  *  - Thiết kế chuyên biệt cho hệ thống y tế
@@ -114,7 +114,7 @@ const PERMISSIONS = Object.freeze({
 });
 
 /**
- * 🎯 PHÂN QUYỀN CHI TIẾT THEO VAI TRÒ
+ *  PHÂN QUYỀN CHI TIẾT THEO VAI TRÒ
  * - Mỗi role có tập permissions phù hợp với công việc
  * - Tuân thủ nguyên tắc "least privilege" trong bảo mật y tế
  */
@@ -245,7 +245,7 @@ const ROLE_PERMISSIONS = Object.freeze({
 });
 
 /**
- * 🏥 HIERARCHY CHUẨN Y TẾ
+ *  HIERARCHY CHUẨN Y TẾ
  * - Thứ tự từ cao xuống thấp
  * - Phản ánh cơ cấu tổ chức bệnh viện thực tế
  */
@@ -264,11 +264,8 @@ const ROLE_HIERARCHY = Object.freeze([
 ]);
 
 /**
- * 🧩 HÀM HỖ TRỢ KIỂM TRA QUYỀN
+ *  HÀM HỖ TRỢ KIỂM TRA QUYỀN
  * Kiểm tra xem vai trò có quyền thực hiện hành động không
- * @param {string} role - Vai trò người dùng
- * @param {string} permission - Quyền cần kiểm tra
- * @returns {boolean}
  */
 function hasPermission(role, permission) {
   if (!role || !permission) return false;
@@ -278,76 +275,133 @@ function hasPermission(role, permission) {
 }
 
 /**
- * ⚡ KIỂM TRA QUYỀN TẠO ROLE
+ *  KIỂM TRA QUYỀN TẠO ROLE
  * Đảm bảo người dùng chỉ có thể tạo tài khoản cấp thấp hơn
- * @param {string} currentRole - Vai trò hiện tại
- * @param {string} targetRole - Vai trò muốn tạo
- * @returns {boolean}
  */
 function canCreateRole(currentRole, targetRole) {
   const currentIndex = ROLE_HIERARCHY.indexOf(currentRole);
   const targetIndex = ROLE_HIERARCHY.indexOf(targetRole);
+<<<<<<< Updated upstream
 
   // Không được tạo cùng cấp hoặc cấp cao hơn
   return currentIndex >= 0 && targetIndex > currentIndex;
+=======
+  if (currentIndex < 0 || targetIndex < 0) return false;
+  // SUPER_ADMIN có thể tạo mọi role (trừ chính nó trong logic khác)
+  if (currentRole === ROLES.SUPER_ADMIN) {
+    return targetRole !== ROLES.SUPER_ADMIN;
+  }
+  // HOSPITAL_ADMIN có thể tạo DEPARTMENT_HEAD, DOCTOR và các role thấp hơn
+  if (currentRole === ROLES.HOSPITAL_ADMIN) {
+    return targetIndex >= 2; // Từ DEPARTMENT_HEAD trở xuống
+  }
+  // DEPARTMENT_HEAD có thể tạo DOCTOR, NURSE, LAB_TECHNICIAN
+  if (currentRole === ROLES.DEPARTMENT_HEAD) {
+    return [ROLES.DOCTOR, ROLES.NURSE, ROLES.LAB_TECHNICIAN].includes(targetRole);
+  }
+  // Mặc định: không được tạo cùng cấp hoặc cao hơn
+  return targetIndex > currentIndex;
+>>>>>>> Stashed changes
 }
-
 /**
- * 🚨 KIỂM TRA QUYỀN TRUY CẬP DỮ LIỆU BỆNH NHÂN
+ * KIỂM TRA QUYỀN TRUY CẬP DỮ LIỆU BỆNH NHÂN
  * Quan trọng: Tuân thủ HIPAA và bảo vệ quyền riêng tư
- * @param {string} userRole - Vai trò người truy cập
- * @param {string} patientId - ID bệnh nhân
- * @param {string} accessorId - ID người truy cập
- * @param {boolean} isEmergency - Có phải tình huống khẩn cấp
- * @returns {boolean}
  */
 function canAccessPatientData(userRole, patientId, accessorId, isEmergency = false) {
-  // 🚑 TRƯỜNG HỢP KHẨN CẤP: Cho phép truy cập
+  // TRƯỜNG HỢP KHẨN CẤP: Cho phép truy cập
   if (isEmergency && hasPermission(userRole, PERMISSIONS.EMERGENCY_ACCESS)) {
     return true;
   }
-
   // 👤 BỆNH NHÂN: Chỉ xem dữ liệu của chính mình
   if (userRole === ROLES.PATIENT) {
     return patientId === accessorId;
   }
-
-  // 🏥 NHÂN VIÊN Y TẾ: Được xem theo phân quyền
+  // NHÂN VIÊN Y TẾ: Được xem theo phân quyền
   const medicalStaff = [
     ROLES.DOCTOR, ROLES.NURSE, ROLES.DEPARTMENT_HEAD, 
     ROLES.HOSPITAL_ADMIN, ROLES.SUPER_ADMIN
   ];
-  
   if (medicalStaff.includes(userRole)) {
     return hasPermission(userRole, PERMISSIONS.VIEW_MEDICAL_RECORDS);
   }
-
   return false;
 }
-
 /**
- * 📊 LẤY DANH SÁCH ROLE CÓ THỂ TẠO
- * @param {string} currentRole - Vai trò hiện tại
- * @returns {string[]}
+ *  LẤY DANH SÁCH ROLE CÓ THỂ TẠO
  */
 function getCreatableRoles(currentRole) {
   return ROLE_HIERARCHY.filter(targetRole => canCreateRole(currentRole, targetRole));
 }
 
 /**
- * 🔍 KIỂM TRA QUYỀN THEO MODULE
- * @param {string} role - Vai trò
- * @param {string} module - Module cần kiểm tra (USER, MEDICAL, etc.)
- * @returns {boolean}
+ * KIỂM TRA QUYỀN THEO MODULE
  */
 function hasModuleAccess(role, module) {
   const modulePermissions = Object.values(PERMISSIONS).filter(p => 
     p.startsWith(`${module}.`)
   );
-  
   return modulePermissions.some(permission => hasPermission(role, permission));
 }
+<<<<<<< Updated upstream
 
+=======
+/**
+ * LẤY DANH SÁCH PERMISSIONS THEO ROLE
+ */
+function getRolePermissions(role) {
+  return ROLE_PERMISSIONS[role] || [];
+}
+/**
+ *  KIỂM TRA QUYỀN QUẢN LÝ USER
+ */
+function canManageUser(currentRole, targetRole) {
+  const currentIndex = ROLE_HIERARCHY.indexOf(currentRole);
+  const targetIndex = ROLE_HIERARCHY.indexOf(targetRole);
+
+  if (currentIndex < 0 || targetIndex < 0) return false;
+  // SUPER_ADMIN có thể quản lý mọi role (trừ chính nó trong logic khác)
+  if (currentRole === ROLES.SUPER_ADMIN) {
+    return targetRole !== ROLES.SUPER_ADMIN;
+  }
+  // Các role khác chỉ có thể quản lý role thấp hơn
+  return targetIndex > currentIndex;
+}
+/**
+ * LẤY DANH SÁCH PERMISSIONS THEO NHÓM
+ */
+function getPermissionsByGroup() {
+  const groups = {};
+  
+  Object.values(PERMISSIONS).forEach(permission => {
+    const [group] = permission.split('.');
+    if (!groups[group]) {
+      groups[group] = [];
+    }
+    groups[group].push(permission);
+  });
+  
+  return groups;
+}
+
+/**
+ * KIỂM TRA QUYỀN XEM THÔNG TIN NHẠY CẢM
+ */
+function canViewSensitiveInfo(role) {
+  return hasPermission(role, PERMISSIONS.VIEW_USER_SENSITIVE);
+}
+/**
+ *  KIỂM TRA QUYỀN HỆ THỐNG
+ */
+function hasSystemAccess(role) {
+  const systemPermissions = [
+    PERMISSIONS.SYSTEM_CONFIG,
+    PERMISSIONS.AUDIT_LOG_VIEW,
+    PERMISSIONS.BACKUP_DATA,
+    PERMISSIONS.RESTORE_DATA
+  ];
+  return systemPermissions.some(permission => hasPermission(role, permission));
+}
+>>>>>>> Stashed changes
 module.exports = {
   ROLES,
   PERMISSIONS,
@@ -358,4 +412,13 @@ module.exports = {
   canAccessPatientData,
   getCreatableRoles,
   hasModuleAccess,
+<<<<<<< Updated upstream
 };
+=======
+  getRolePermissions,
+  canManageUser,
+  getPermissionsByGroup,
+  canViewSensitiveInfo,
+  hasSystemAccess,
+};  
+>>>>>>> Stashed changes

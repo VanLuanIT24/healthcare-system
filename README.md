@@ -161,6 +161,107 @@ Response mẫu
 }
 ```
 
+---
+
+## 🎨 Frontend - Giao Diện Người Dùng
+
+### ✨ Tính Năng Frontend (90% Hoàn Thành)
+
+#### 🏠 Super Admin Dashboard
+- 📊 **Thống kê hệ thống** - Tổng quan các chỉ số chính
+- 👥 **Quản lý người dùng** - CRUD người dùng, phân quyền
+- 🏥 **Quản lý bệnh nhân** - Danh sách bệnh nhân, thông tin cá nhân
+- 📅 **Quản lý lịch hẹn** - Theo dõi lịch hẹn bệnh nhân
+- 📋 **Quản lý hồ sơ y tế** ✨ NEW - Diagnoses, Prescriptions, Lab Orders, Consultations
+- 💳 **Quản lý hóa đơn** ✨ NEW - Invoices, Insurance, Payments
+- 📝 **Xem nhật ký hệ thống** ✨ NEW - Audit logs với filtering
+- 👨‍⚕️ **Dashboard Bác sĩ** ✨ NEW - Xem chi tiết dashboard cho bác sĩ
+- ⚙️ **Cài đặt hệ thống** - Bảo mật, email configuration
+- 🗑️ **Reset hệ thống** - Xoá dữ liệu test
+
+#### 👤 Patient Dashboard  
+- 📊 **Trang chủ** - Thống kê cá nhân
+- 📋 **Hồ sơ y tế** - Xem các bản ghi y tế
+- 📅 **Lịch hẹn** - Xem các cuộc hẹn
+- 💊 **Đơn thuốc** - Xem đơn thuốc hiện tại
+- 🛡️ **Bảo hiểm** - Thông tin bảo hiểm y tế
+- 💳 **Hóa đơn** ✨ NEW - Xem các hóa đơn/biên lai
+- 👤 **Thông tin cá nhân** - Hồ sơ người dùng
+
+#### 👨‍⚕️ Doctor Dashboard ✨ NEW
+- 📊 **Tổng quan** - Thống kê bệnh nhân và lịch hẹn
+- 👥 **Bệnh nhân** - Danh sách bệnh nhân được giao
+- 📅 **Lịch hẹn** - Quản lý lịch hẹn (Hoàn thành/Hủy)
+- 📋 **Hồ sơ y tế** - Xem hồ sơ bệnh nhân
+
+### 🛠️ Công Nghệ Frontend
+| Công nghệ | Phiên bản | Mục đích |
+|-----------|----------|---------|
+| **React** | 18.2+ | UI Framework |
+| **Ant Design** | 5.11+ | Component Library |
+| **React Router** | 6.20+ | Routing |
+| **Axios** | 1.6+ | HTTP Client |
+| **Dayjs** | Latest | Date Handling |
+| **Tailwind CSS** | Latest | Styling |
+| **Vite** | Latest | Build Tool |
+
+### 📁 Cấu Trúc Frontend
+```
+healthcare-frontend/
+├── src/
+│   ├── components/
+│   │   ├── MedicalRecordManagement.jsx ✨ NEW
+│   │   ├── BillingManagement.jsx ✨ NEW
+│   │   ├── AuditLogViewer.jsx ✨ NEW
+│   │   ├── DoctorDashboard.jsx ✨ NEW
+│   │   ├── UserManagement.jsx
+│   │   ├── PatientManagement.jsx
+│   │   ├── AppointmentManagement.jsx
+│   │   ├── SystemHealthDashboard.jsx
+│   │   └── ... (8+ components)
+│   ├── pages/
+│   │   ├── SuperAdmin/
+│   │   │   ├── Dashboard.jsx (updated)
+│   │   │   ├── Login.jsx
+│   │   │   └── ... (5+ pages)
+│   │   └── PatientDashboard.jsx (updated)
+│   ├── contexts/
+│   │   └── AuthContext.jsx
+│   ├── utils/
+│   │   ├── api.js
+│   │   └── ...
+│   ├── App.jsx (updated)
+│   └── index.jsx
+├── package.json
+├── vite.config.ts
+└── tailwind.config.js
+```
+
+### 🚀 Chạy Frontend
+```bash
+cd healthcare-frontend
+npm install
+npm run dev
+# Truy cập: http://localhost:5173
+```
+
+### 📊 Cải Tiến Frontend (So với Phase 1)
+```
+Phase 1: 30% hoàn thành
+├── Basic auth, user management
+├── Patient/appointment listing
+└── Simple dashboards
+
+Phase 2: 90% hoàn thành (+60%)
+├── Medical records management ✨
+├── Billing system ✨
+├── Audit logging ✨
+├── Doctor dashboard ✨
+├── Patient invoices ✨
+├── Advanced filtering & search
+└── Status tracking & indicators
+```
+
 🧾 Công Nghệ Sử Dụng
 | Công nghệ         | Mục đích         | Trang chủ                                                    |
 | ----------------- | ---------------- | ------------------------------------------------------------ |
