@@ -1,3 +1,4 @@
+//src/middlewares/public.middleware.js
 /**
  * 🛡️ MIDDLEWARE ĐÁNH DẤU ROUTE LÀ PUBLIC
  * - Routes được đánh dấu public sẽ bỏ qua xác thực JWT

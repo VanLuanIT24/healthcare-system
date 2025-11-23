@@ -1,3 +1,4 @@
+// src/middlewares/error.middlesware.js
 const { appConfig } = require('../config');
 
 /**

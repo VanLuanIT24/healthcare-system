@@ -3,14 +3,14 @@ const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
 
 /**
- * 📅 APPOINTMENT CONTROLLER - QUẢN LÝ LỊCH HẸN
+ * APPOINTMENT CONTROLLER - QUẢN LÝ LỊCH HẸN
  * Core business logic cho hệ thống đặt lịch
  */
 
 class AppointmentController {
   
   /**
-   * 🎯 TẠO LỊCH HẸN MỚI
+   * TẠO LỊCH HẸN MỚI
    */
   async createAppointment(req, res, next) {
     try {
@@ -70,7 +70,7 @@ class AppointmentController {
         endDate
       });
 
-      // 🎯 AUDIT LOG
+      // AUDIT LOG
       await auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW, {
         resource: 'Appointment',
         category: 'PATIENT_APPOINTMENTS',
@@ -89,7 +89,7 @@ class AppointmentController {
   }
 
   /**
-   * 🎯 LẤY LỊCH HẸN CỦA BÁC SĨ
+   * LẤY LỊCH HẸN CỦA BÁC SĨ
    */
   async getDoctorAppointments(req, res, next) {
     try {
@@ -130,7 +130,7 @@ class AppointmentController {
   }
 
   /**
-   * 🎯 LẤY THÔNG TIN LỊCH HẸN CHI TIẾT
+   * LẤY THÔNG TIN LỊCH HẸN CHI TIẾT
    */
   async getAppointment(req, res, next) {
     try {
@@ -140,7 +140,7 @@ class AppointmentController {
 
       const appointment = await appointmentService.getAppointment(appointmentId);
 
-      // 🎯 AUDIT LOG
+      // AUDIT LOG
       await auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW, {
         resource: 'Appointment',
         resourceId: appointmentId,
@@ -159,7 +159,7 @@ class AppointmentController {
   }
 
   /**
-   * 🎯 CẬP NHẬT LỊCH HẸN
+   * CẬP NHẬT LỊCH HẸN
    */
   async updateAppointment(req, res, next) {
     try {
@@ -174,7 +174,7 @@ class AppointmentController {
         req.user._id
       );
 
-      // 🎯 AUDIT LOG
+      // AUDIT LOG
       await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
         resource: 'Appointment',
         resourceId: appointmentId,
@@ -194,7 +194,7 @@ class AppointmentController {
   }
 
   /**
-   * 🎯 HỦY LỊCH HẸN
+   * HỦY LỊCH HẸN
    */
   async cancelAppointment(req, res, next) {
     try {
@@ -210,7 +210,7 @@ class AppointmentController {
         notes
       );
 
-      // 🎯 AUDIT LOG
+      // AUDIT LOG
       await auditLog(AUDIT_ACTIONS.APPOINTMENT_CANCEL, {
         resource: 'Appointment',
         resourceId: appointmentId,

@@ -1,3 +1,4 @@
+// src/middlewares/auth.middleware.js
 const { verifyAccessToken } = require('../utils/jwt');
 const User = require('../models/user.model');
 const { ROLES, hasPermission, ROLE_PERMISSIONS } = require('../constants/roles');

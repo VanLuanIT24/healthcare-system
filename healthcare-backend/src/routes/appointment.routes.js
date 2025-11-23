@@ -13,14 +13,14 @@ const { ROLES, PERMISSIONS } = require('../constants/roles');
 const { authenticate } = require('../middlewares/auth.middleware');
 
 /**
- * 📅 APPOINTMENT ROUTES
+ * APPOINTMENT ROUTES
  * Quản lý tất cả endpoints liên quan đến lịch hẹn
  */
 
-// 🎯 APPLY AUTH MIDDLEWARE CHO TẤT CẢ ROUTES
+// APPLY AUTH MIDDLEWARE CHO TẤT CẢ ROUTES
 router.use(authenticate);
 
-// 🎯 TẠO LỊCH HẸN
+// TẠO LỊCH HẸN
 router.post(
   '/',
   requireRole(ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
@@ -29,7 +29,7 @@ router.post(
   appointmentController.createAppointment
 );
 
-// 🎯 LẤY LỊCH HẸN CỦA BỆNH NHÂN
+// LẤY LỊCH HẸN CỦA BỆNH NHÂN
 router.get(
   '/patient/:patientId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
@@ -39,7 +39,7 @@ router.get(
   appointmentController.getPatientAppointments
 );
 
-// 🎯 LẤY LỊCH HẸN CỦA BÁC SĨ
+// LẤY LỊCH HẸN CỦA BÁC SĨ
 router.get(
   '/doctor/:doctorId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
@@ -48,7 +48,7 @@ router.get(
   appointmentController.getDoctorAppointments
 );
 
-// 🎯 LẤY THÔNG TIN LỊCH HẸN CHI TIẾT
+// LẤY THÔNG TIN LỊCH HẸN CHI TIẾT
 router.get(
   '/:appointmentId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),

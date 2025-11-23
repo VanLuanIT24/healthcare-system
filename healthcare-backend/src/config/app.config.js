@@ -4,14 +4,14 @@ const path = require('path');
 const Joi = require('joi');
 
 // =============================================
-// 🧠 CẤU HÌNH ỨNG DỤNG CHÍNH
+// CẤU HÌNH ỨNG DỤNG CHÍNH
 // =============================================
 
 // 🔹 Load biến môi trường từ file .env
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 // =============================================
-// ✅ SCHEMA VALIDATION CHO BIẾN MÔI TRƯỜNG
+// SCHEMA VALIDATION CHO BIẾN MÔI TRƯỜNG
 // =============================================
 const envSchema = Joi.object({
   // MÔI TRƯỜNG ỨNG DỤNG
@@ -164,7 +164,7 @@ const appConfig = {
 };
 
 // =============================================
-// ✅ EXPORT
+// EXPORT
 // =============================================
 module.exports = {
   ...appConfig,

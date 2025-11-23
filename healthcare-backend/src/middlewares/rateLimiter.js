@@ -1,3 +1,4 @@
+// src/middlewares/rateLimiter.js
 const rateLimit = require('express-rate-limit');
 const { AppError, ERROR_CODES } = require('./error.middleware');
 

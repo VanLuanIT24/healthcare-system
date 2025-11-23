@@ -1,6 +1,6 @@
 // src/constants/roles.js
 /**
- * 🌐 HỆ THỐNG PHÂN QUYỀN RBAC CHUẨN HEALTHCARE ENTERPRISE
+ * HỆ THỐNG PHÂN QUYỀN RBAC CHUẨN HEALTHCARE ENTERPRISE
  * Author: Senior Dev Team (Healthcare Edition)
  * Description:
  *  - Thiết kế chuyên biệt cho hệ thống y tế
@@ -10,7 +10,8 @@
 
 const ROLES = Object.freeze({
   // ===== HỆ THỐNG =====
-  SUPER_ADMIN: 'SUPER_ADMIN',        // Toàn quyền hệ thống (IT System Admin)
+  SUPER_ADMIN: 'SUPER_ADMIN',      // Toàn quyền hệ thống (IT System Admin)
+  
   
   // ===== QUẢN TRỊ =====
   HOSPITAL_ADMIN: 'HOSPITAL_ADMIN',  // Quản trị bệnh viện
@@ -119,7 +120,7 @@ const PERMISSIONS = Object.freeze({
 });
 
 /**
- * 🎯 PHÂN QUYỀN CHI TIẾT THEO VAI TRÒ
+ * PHÂN QUYỀN CHI TIẾT THEO VAI TRÒ
  * - Mỗi role có tập permissions phù hợp với công việc
  * - Tuân thủ nguyên tắc "least privilege" trong bảo mật y tế
  */
@@ -252,7 +253,7 @@ const ROLE_PERMISSIONS = Object.freeze({
 });
 
 /**
- * 🏥 HIERARCHY CHUẨN Y TẾ
+ * HIERARCHY CHUẨN Y TẾ
  * - Thứ tự từ cao xuống thấp
  * - Phản ánh cơ cấu tổ chức bệnh viện thực tế
  */
@@ -271,11 +272,8 @@ const ROLE_HIERARCHY = Object.freeze([
 ]);
 
 /**
- * 🧩 HÀM HỖ TRỢ KIỂM TRA QUYỀN
+ * HÀM HỖ TRỢ KIỂM TRA QUYỀN
  * Kiểm tra xem vai trò có quyền thực hiện hành động không
- * @param {string} role - Vai trò người dùng
- * @param {string} permission - Quyền cần kiểm tra
- * @returns {boolean}
  */
 function hasPermission(role, permission) {
   if (!role || !permission) return false;
@@ -285,11 +283,8 @@ function hasPermission(role, permission) {
 }
 
 /**
- * ⚡ KIỂM TRA QUYỀN TẠO ROLE
+ * KIỂM TRA QUYỀN TẠO ROLE
  * Đảm bảo người dùng chỉ có thể tạo tài khoản cấp thấp hơn
- * @param {string} currentRole - Vai trò hiện tại
- * @param {string} targetRole - Vai trò muốn tạo
- * @returns {boolean}
  */
 function canCreateRole(currentRole, targetRole) {
   const currentIndex = ROLE_HIERARCHY.indexOf(currentRole);
@@ -317,7 +312,7 @@ function canCreateRole(currentRole, targetRole) {
 }
 
 /**
- * 🚨 KIỂM TRA QUYỀN TRUY CẬP DỮ LIỆU BỆNH NHÂN
+ * KIỂM TRA QUYỀN TRUY CẬP DỮ LIỆU BỆNH NHÂN
  * Quan trọng: Tuân thủ HIPAA và bảo vệ quyền riêng tư
  * @param {string} userRole - Vai trò người truy cập
  * @param {string} patientId - ID bệnh nhân
@@ -326,7 +321,7 @@ function canCreateRole(currentRole, targetRole) {
  * @returns {boolean}
  */
 function canAccessPatientData(userRole, patientId, accessorId, isEmergency = false) {
-  // 🚑 TRƯỜNG HỢP KHẨN CẤP: Cho phép truy cập
+  // TRƯỜNG HỢP KHẨN CẤP: Cho phép truy cập
   if (isEmergency && hasPermission(userRole, PERMISSIONS.EMERGENCY_ACCESS)) {
     return true;
   }
@@ -336,7 +331,7 @@ function canAccessPatientData(userRole, patientId, accessorId, isEmergency = fal
     return patientId === accessorId;
   }
 
-  // 🏥 NHÂN VIÊN Y TẾ: Được xem theo phân quyền
+  // NHÂN VIÊN Y TẾ: Được xem theo phân quyền
   const medicalStaff = [
     ROLES.DOCTOR, ROLES.NURSE, ROLES.DEPARTMENT_HEAD, 
     ROLES.HOSPITAL_ADMIN, ROLES.SUPER_ADMIN
@@ -350,7 +345,7 @@ function canAccessPatientData(userRole, patientId, accessorId, isEmergency = fal
 }
 
 /**
- * 📊 LẤY DANH SÁCH ROLE CÓ THỂ TẠO
+ * LẤY DANH SÁCH ROLE CÓ THỂ TẠO
  * @param {string} currentRole - Vai trò hiện tại
  * @returns {string[]}
  */
@@ -373,7 +368,7 @@ function hasModuleAccess(role, module) {
 }
 
 /**
- * 🎯 LẤY DANH SÁCH PERMISSIONS THEO ROLE
+ * LẤY DANH SÁCH PERMISSIONS THEO ROLE
  * @param {string} role - Vai trò
  * @returns {string[]}
  */
@@ -382,7 +377,7 @@ function getRolePermissions(role) {
 }
 
 /**
- * 🔄 KIỂM TRA QUYỀN QUẢN LÝ USER
+ * KIỂM TRA QUYỀN QUẢN LÝ USER
  * @param {string} currentRole - Vai trò hiện tại
  * @param {string} targetRole - Vai trò mục tiêu
  * @returns {boolean}
@@ -403,7 +398,7 @@ function canManageUser(currentRole, targetRole) {
 }
 
 /**
- * 📋 LẤY DANH SÁCH PERMISSIONS THEO NHÓM
+ * LẤY DANH SÁCH PERMISSIONS THEO NHÓM
  * @returns {Object}
  */
 function getPermissionsByGroup() {
@@ -421,7 +416,7 @@ function getPermissionsByGroup() {
 }
 
 /**
- * 🎯 KIỂM TRA QUYỀN XEM THÔNG TIN NHẠY CẢM
+ * KIỂM TRA QUYỀN XEM THÔNG TIN NHẠY CẢM
  * @param {string} role - Vai trò
  * @returns {boolean}
  */
@@ -430,7 +425,7 @@ function canViewSensitiveInfo(role) {
 }
 
 /**
- * 🔐 KIỂM TRA QUYỀN HỆ THỐNG
+ * KIỂM TRA QUYỀN HỆ THỐNG
  * @param {string} role - Vai trò
  * @returns {boolean}
  */
