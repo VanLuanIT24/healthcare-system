@@ -1,3 +1,4 @@
+// src/utils/jwt.js
 const jwt = require('jsonwebtoken');
 const { 
   JWT_ACCESS_SECRET, 

@@ -1,4 +1,4 @@
-// src/middlewares/rbac.middleware.js
+// src/middlewares/rbac.middleware
 const { 
   ROLES, 
   PERMISSIONS, 
