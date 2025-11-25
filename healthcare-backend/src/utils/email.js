@@ -1,5 +1,5 @@
 // src/utils/email.js
-const nodemailer = require('nodemailer');
+const nodemailer = require("nodemailer");
 
 /**
  * 🎯 EMAIL SERVICE CHO HEALTHCARE SYSTEM - TÍCH HỢP GMAIL SMTP
@@ -24,8 +24,8 @@ class EmailService {
       greetingTimeout: 30000,
       // 🛡️ BẢO MẬT CHO GMAIL
       tls: {
-        rejectUnauthorized: false // Cho phép self-signed certificates trong development
-      }
+        rejectUnauthorized: false, // Cho phép self-signed certificates trong development
+      },
     });
 
     // 🧪 KIỂM TRA KẾT NỐI SMTP KHI KHỞI TẠO
@@ -38,15 +38,17 @@ class EmailService {
   async verifyConnection() {
     try {
       await this.transporter.verify();
-      console.log('✅ Gmail SMTP Connection verified successfully');
-      console.log('📧 Ready to send emails to real Gmail accounts');
+      console.log("✅ Gmail SMTP Connection verified successfully");
+      console.log("📧 Ready to send emails to real Gmail accounts");
     } catch (error) {
-      console.error('❌ Gmail SMTP Connection failed:', error.message);
-      console.log('💡 Hướng dẫn khắc phục:');
-      console.log('1. Đảm bảo SMTP_USER và SMTP_PASS đúng trong .env');
-      console.log('2. Sử dụng App Password thay vì mật khẩu Gmail');
-      console.log('3. Bật 2FA và tạo App Password: https://myaccount.google.com/apppasswords');
-      console.log('4. Kiểm tra kết nối internet và firewall');
+      console.error("❌ Gmail SMTP Connection failed:", error.message);
+      console.log("💡 Hướng dẫn khắc phục:");
+      console.log("1. Đảm bảo SMTP_USER và SMTP_PASS đúng trong .env");
+      console.log("2. Sử dụng App Password thay vì mật khẩu Gmail");
+      console.log(
+        "3. Bật 2FA và tạo App Password: https://myaccount.google.com/apppasswords"
+      );
+      console.log("4. Kiểm tra kết nối internet và firewall");
     }
   }
 
@@ -58,22 +60,25 @@ class EmailService {
       const mailOptions = {
         from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM}>`,
         to: user.email,
-        subject: 'Chào mừng đến với Hệ Thống Y Tế - Healthcare System',
+        subject: "Chào mừng đến với Hệ Thống Y Tế - Healthcare System",
         html: this.getWelcomeTemplate(user),
         // 📧 THÊM HEADERS CHO EMAIL PROFESSIONAL
         headers: {
-          'X-Priority': '3',
-          'X-MSMail-Priority': 'Normal',
-          'Importance': 'Normal',
-          'X-Application': 'Healthcare System'
-        }
+          "X-Priority": "3",
+          "X-MSMail-Priority": "Normal",
+          Importance: "Normal",
+          "X-Application": "Healthcare System",
+        },
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Welcome email sent to REAL Gmail: ${user.email}`, result.messageId);
+      console.log(
+        `✅ Welcome email sent to REAL Gmail: ${user.email}`,
+        result.messageId
+      );
       return { success: true, messageId: result.messageId };
     } catch (error) {
-      console.error('❌ Send welcome email error:', error.message);
+      console.error("❌ Send welcome email error:", error.message);
       throw new Error(`Không thể gửi email chào mừng: ${error.message}`);
     }
   }
@@ -88,21 +93,24 @@ class EmailService {
       const mailOptions = {
         from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM}>`,
         to: user.email,
-        subject: '🔐 Đặt Lại Mật Khẩu - Hệ Thống Y Tế',
+        subject: "🔐 Đặt Lại Mật Khẩu - Hệ Thống Y Tế",
         html: this.getPasswordResetTemplate(user, resetUrl),
         headers: {
-          'X-Priority': '1',
-          'X-MSMail-Priority': 'High',
-          'Importance': 'High',
-          'X-Application': 'Healthcare System'
-        }
+          "X-Priority": "1",
+          "X-MSMail-Priority": "High",
+          Importance: "High",
+          "X-Application": "Healthcare System",
+        },
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Password reset email sent to REAL Gmail: ${user.email}`, result.messageId);
+      console.log(
+        `✅ Password reset email sent to REAL Gmail: ${user.email}`,
+        result.messageId
+      );
       return { success: true, messageId: result.messageId };
     } catch (error) {
-      console.error('❌ Send password reset email error:', error.message);
+      console.error("❌ Send password reset email error:", error.message);
       throw new Error(`Không thể gửi email đặt lại mật khẩu: ${error.message}`);
     }
   }
@@ -115,22 +123,30 @@ class EmailService {
       const mailOptions = {
         from: `"${process.env.EMAIL_FROM_NAME}" <${process.env.EMAIL_FROM}>`,
         to: user.email,
-        subject: '✅ Mật Khẩu Đã Được Thay Đổi - Hệ Thống Y Tế',
+        subject: "✅ Mật Khẩu Đã Được Thay Đổi - Hệ Thống Y Tế",
         html: this.getPasswordChangedTemplate(user),
         headers: {
-          'X-Priority': '3',
-          'X-MSMail-Priority': 'Normal',
-          'Importance': 'Normal',
-          'X-Application': 'Healthcare System'
-        }
+          "X-Priority": "3",
+          "X-MSMail-Priority": "Normal",
+          Importance: "Normal",
+          "X-Application": "Healthcare System",
+        },
       };
 
       const result = await this.transporter.sendMail(mailOptions);
-      console.log(`✅ Password changed confirmation sent to REAL Gmail: ${user.email}`, result.messageId);
+      console.log(
+        `✅ Password changed confirmation sent to REAL Gmail: ${user.email}`,
+        result.messageId
+      );
       return { success: true, messageId: result.messageId };
     } catch (error) {
-      console.error('❌ Send password changed confirmation error:', error.message);
-      throw new Error(`Không thể gửi email xác nhận thay đổi mật khẩu: ${error.message}`);
+      console.error(
+        "❌ Send password changed confirmation error:",
+        error.message
+      );
+      throw new Error(
+        `Không thể gửi email xác nhận thay đổi mật khẩu: ${error.message}`
+      );
     }
   }
 
@@ -138,8 +154,10 @@ class EmailService {
    * 🎯 TEMPLATE EMAIL CHÀO MỪNG
    */
   getWelcomeTemplate(user) {
-    const fullName = `${user.personalInfo?.firstName || ''} ${user.personalInfo?.lastName || ''}`.trim();
-    
+    const fullName = `${user.personalInfo?.firstName || ""} ${
+      user.personalInfo?.lastName || ""
+    }`.trim();
+
     return `
       <!DOCTYPE html>
       <html lang="vi">
@@ -236,14 +254,20 @@ class EmailService {
             <p>Nền tảng quản lý chăm sóc sức khỏe toàn diện</p>
           </div>
           <div class="content">
-            <p class="welcome-text">Xin chào <strong>${fullName || 'Thành viên'}</strong>,</p>
+            <p class="welcome-text">Xin chào <strong>${
+              fullName || "Thành viên"
+            }</strong>,</p>
             
             <p>Chúc mừng bạn đã đăng ký thành công tài khoản trong hệ thống quản lý y tế của chúng tôi.</p>
             
             <div class="user-info">
               <p><strong>📧 Email:</strong> ${user.email}</p>
-              <p><strong>👤 Vai trò:</strong> ${this.getRoleDisplayName(user.role)}</p>
-              <p><strong>📅 Ngày đăng ký:</strong> ${new Date().toLocaleDateString('vi-VN')}</p>
+              <p><strong>👤 Vai trò:</strong> ${this.getRoleDisplayName(
+                user.role
+              )}</p>
+              <p><strong>📅 Ngày đăng ký:</strong> ${new Date().toLocaleDateString(
+                "vi-VN"
+              )}</p>
             </div>
 
             <p><strong>Với tài khoản này, bạn có thể:</strong></p>
@@ -267,17 +291,25 @@ class EmailService {
             </div>
 
             <div class="contact-info">
-              <p><strong>📞 Hotline hỗ trợ:</strong> ${process.env.SUPPORT_PHONE}</p>
-              <p><strong>✉️ Email hỗ trợ:</strong> ${process.env.SUPPORT_EMAIL}</p>
+              <p><strong>📞 Hotline hỗ trợ:</strong> ${
+                process.env.SUPPORT_PHONE
+              }</p>
+              <p><strong>✉️ Email hỗ trợ:</strong> ${
+                process.env.SUPPORT_EMAIL
+              }</p>
               <p><strong>🕒 Thời gian làm việc:</strong> Thứ 2 - Thứ 6: 8:00 - 17:00</p>
             </div>
 
-            <p>Trân trọng,<br><strong>Đội ngũ Hệ Thống Y Tế</strong><br>${process.env.HOSPITAL_NAME}</p>
+            <p>Trân trọng,<br><strong>Đội ngũ Hệ Thống Y Tế</strong><br>${
+              process.env.HOSPITAL_NAME
+            }</p>
           </div>
           <div class="footer">
             <p>© 2024 ${process.env.HOSPITAL_NAME}. All rights reserved.</p>
             <p>Đây là email tự động, vui lòng không trả lời.</p>
-            <p><small>Để đảm bảo nhận được email, hãy thêm ${process.env.EMAIL_FROM} vào danh bạ của bạn.</small></p>
+            <p><small>Để đảm bảo nhận được email, hãy thêm ${
+              process.env.EMAIL_FROM
+            } vào danh bạ của bạn.</small></p>
           </div>
         </div>
       </body>
@@ -289,8 +321,10 @@ class EmailService {
    * 🎯 TEMPLATE EMAIL RESET PASSWORD
    */
   getPasswordResetTemplate(user, resetUrl) {
-    const fullName = `${user.personalInfo?.firstName || ''} ${user.personalInfo?.lastName || ''}`.trim();
-    
+    const fullName = `${user.personalInfo?.firstName || ""} ${
+      user.personalInfo?.lastName || ""
+    }`.trim();
+
     return `
       <!DOCTYPE html>
       <html lang="vi">
@@ -391,11 +425,11 @@ class EmailService {
             <p>Yêu cầu bảo mật tài khoản</p>
           </div>
           <div class="content">
-            <p>Xin chào <strong>${fullName || 'Thành viên'}</strong>,</p>
+            <p>Xin chào <strong>${fullName || "Thành viên"}</strong>,</p>
             
             <div class="reset-info">
               <p><strong>Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</strong></p>
-              <p>Thời gian yêu cầu: ${new Date().toLocaleString('vi-VN')}</p>
+              <p>Thời gian yêu cầu: ${new Date().toLocaleString("vi-VN")}</p>
             </div>
 
             <p>Để đặt lại mật khẩu, vui lòng nhấp vào nút bên dưới:</p>
@@ -425,7 +459,9 @@ class EmailService {
               <li>Liên hệ hỗ trợ ngay nếu cần</li>
             </ol>
 
-            <p>Trân trọng,<br><strong>Đội ngũ An ninh Hệ Thống Y Tế</strong><br>${process.env.HOSPITAL_NAME}</p>
+            <p>Trân trọng,<br><strong>Đội ngũ An ninh Hệ Thống Y Tế</strong><br>${
+              process.env.HOSPITAL_NAME
+            }</p>
           </div>
           <div class="footer">
             <p>© 2024 ${process.env.HOSPITAL_NAME}. All rights reserved.</p>
@@ -442,10 +478,12 @@ class EmailService {
    * 🎯 TEMPLATE EMAIL XÁC NHẬN ĐỔI MẬT KHẨU
    */
   getPasswordChangedTemplate(user) {
-    const fullName = `${user.personalInfo?.firstName || ''} ${user.personalInfo?.lastName || ''}`.trim();
-    const currentTime = new Date().toLocaleString('vi-VN');
-    const deviceInfo = 'Hệ thống đã ghi nhận thay đổi';
-    
+    const fullName = `${user.personalInfo?.firstName || ""} ${
+      user.personalInfo?.lastName || ""
+    }`.trim();
+    const currentTime = new Date().toLocaleString("vi-VN");
+    const deviceInfo = "Hệ thống đã ghi nhận thay đổi";
+
     return `
       <!DOCTYPE html>
       <html lang="vi">
@@ -522,7 +560,7 @@ class EmailService {
             <p>Xác nhận thay đổi bảo mật thành công</p>
           </div>
           <div class="content">
-            <p>Xin chào <strong>${fullName || 'Thành viên'}</strong>,</p>
+            <p>Xin chào <strong>${fullName || "Thành viên"}</strong>,</p>
             
             <div class="success-info">
               <p><strong>Mật khẩu của bạn đã được thay đổi thành công!</strong></p>
@@ -547,12 +585,16 @@ class EmailService {
             <p class="warning"><strong>⚠️ Nếu bạn không thực hiện thay đổi này:</strong></p>
             <ol>
               <li>Đặt lại mật khẩu ngay lập tức</li>
-              <li>Liên hệ bộ phận hỗ trợ: <strong>${process.env.SUPPORT_PHONE}</strong></li>
+              <li>Liên hệ bộ phận hỗ trợ: <strong>${
+                process.env.SUPPORT_PHONE
+              }</strong></li>
               <li>Kiểm tra các hoạt động gần đây trên tài khoản</li>
               <li>Báo cáo sự cố bảo mật ngay lập tức</li>
             </ol>
 
-            <p>Trân trọng,<br><strong>Đội ngũ An ninh Hệ Thống Y Tế</strong><br>${process.env.HOSPITAL_NAME}</p>
+            <p>Trân trọng,<br><strong>Đội ngũ An ninh Hệ Thống Y Tế</strong><br>${
+              process.env.HOSPITAL_NAME
+            }</p>
           </div>
           <div class="footer">
             <p>© 2024 ${process.env.HOSPITAL_NAME}. All rights reserved.</p>
@@ -566,45 +608,78 @@ class EmailService {
   }
 
   /**
- * 🎯 GỬI EMAIL THÔNG BÁO KÍCH HOẠT TÀI KHOẢN
- */
-async sendAccountActivatedEmail(user) {
-  try {
-    const mailOptions = {
-      to: user.email,
-      subject: 'Tài khoản của bạn đã được kích hoạt - Healthcare System',
-      template: 'account-activated',
-      context: {
-        name: `${user.personalInfo.firstName} ${user.personalInfo.lastName}`,
-        activationDate: new Date().toLocaleDateString('vi-VN'),
-        loginUrl: `${process.env.FRONTEND_URL}/login`,
-        supportEmail: process.env.SUPPORT_EMAIL
-      }
-    };
+   * 🎯 GỬI EMAIL THÔNG BÁO KÍCH HOẠT TÀI KHOẢN
+   */
+  async sendAccountActivatedEmail(user) {
+    try {
+      const loginUrl = `${
+        process.env.FRONTEND_URL ||
+        process.env.CLIENT_URL ||
+        "http://localhost:" + (process.env.PORT || "5000")
+      }/login`;
 
-    await this.sendEmail(mailOptions);
-    console.log('✅ [EMAIL] Account activated email sent to:', user.email);
-  } catch (error) {
-    console.error('❌ [EMAIL] Send account activated email error:', error);
-    throw error;
+      const mailOptions = {
+        from: `"${process.env.EMAIL_FROM_NAME || process.env.HOSPITAL_NAME}" <${
+          process.env.EMAIL_FROM
+        }>`,
+        to: user.email,
+        subject: "Tài khoản của bạn đã được kích hoạt - Healthcare System",
+        html: `
+          <p>Xin chào <strong>${user.personalInfo?.firstName || ""} ${
+          user.personalInfo?.lastName || ""
+        }</strong>,</p>
+          <p>Tài khoản của bạn đã được kích hoạt thành công.</p>
+          <p>Bạn có thể đăng nhập tại: <a href="${loginUrl}">${loginUrl}</a></p>
+          <p>Ngày kích hoạt: ${new Date().toLocaleDateString("vi-VN")}</p>
+          <p>Trân trọng,<br/>${process.env.HOSPITAL_NAME}</p>
+        `,
+      };
+
+      await this.sendEmail(mailOptions);
+      console.log("✅ [EMAIL] Account activated email sent to:", user.email);
+    } catch (error) {
+      console.error("❌ [EMAIL] Send account activated email error:", error);
+      throw error;
+    }
   }
-}
+
+  /**
+   * 🎯 GỬI EMAIL (WRAPPER)
+   */
+  async sendEmail(mailOptions) {
+    try {
+      const opts = Object.assign(
+        {
+          from: `"${
+            process.env.EMAIL_FROM_NAME || process.env.HOSPITAL_NAME
+          }" <${process.env.EMAIL_FROM}>`,
+        },
+        mailOptions
+      );
+
+      const result = await this.transporter.sendMail(opts);
+      return result;
+    } catch (error) {
+      console.error("❌ [EMAIL] sendEmail error:", error.message || error);
+      throw error;
+    }
+  }
 
   /**
    * 🎯 HIỂN THỊ TÊN VAI TRÒ
    */
   getRoleDisplayName(role) {
     const roleNames = {
-      'PATIENT': 'Bệnh nhân',
-      'DOCTOR': 'Bác sĩ',
-      'NURSE': 'Y tá',
-      'RECEPTIONIST': 'Lễ tân',
-      'PHARMACIST': 'Dược sĩ',
-      'LAB_TECHNICIAN': 'Kỹ thuật viên xét nghiệm',
-      'BILLING_STAFF': 'Nhân viên kế toán',
-      'ADMIN': 'Quản trị viên'
+      PATIENT: "Bệnh nhân",
+      DOCTOR: "Bác sĩ",
+      NURSE: "Y tá",
+      RECEPTIONIST: "Lễ tân",
+      PHARMACIST: "Dược sĩ",
+      LAB_TECHNICIAN: "Kỹ thuật viên xét nghiệm",
+      BILLING_STAFF: "Nhân viên kế toán",
+      ADMIN: "Quản trị viên",
     };
-    
+
     return roleNames[role] || role;
   }
 
@@ -613,51 +688,65 @@ async sendAccountActivatedEmail(user) {
    */
   async testGmailSMTPService() {
     try {
-      console.log('🧪 Testing Gmail SMTP Service...');
-      
+      console.log("🧪 Testing Gmail SMTP Service...");
+
       // Test với email thật của bạn
       const testUser = {
-        email: 'luanvo100404@gmail.com', // Thay bằng email bạn muốn test
+        email: "luanvo100404@gmail.com", // Thay bằng email bạn muốn test
         personalInfo: {
-          firstName: 'Luan',
-          lastName: 'Vo'
+          firstName: "Luan",
+          lastName: "Vo",
         },
-        role: 'PATIENT'
+        role: "PATIENT",
       };
 
-      console.log('1. Testing Gmail SMTP connection...');
+      console.log("1. Testing Gmail SMTP connection...");
       await this.verifyConnection();
-      console.log('✅ Gmail SMTP connection successful\n');
+      console.log("✅ Gmail SMTP connection successful\n");
 
-      console.log('2. Testing welcome email to REAL Gmail...');
+      console.log("2. Testing welcome email to REAL Gmail...");
       const welcomeResult = await this.sendWelcomeEmail(testUser);
-      console.log('✅ Welcome email sent to real Gmail:', welcomeResult.messageId, '\n');
+      console.log(
+        "✅ Welcome email sent to real Gmail:",
+        welcomeResult.messageId,
+        "\n"
+      );
 
-      console.log('3. Testing password reset email to REAL Gmail...');
-      const resetToken = 'test_gmail_reset_token_' + Date.now();
-      const resetResult = await this.sendPasswordResetEmail(testUser, resetToken);
-      console.log('✅ Password reset email sent to real Gmail:', resetResult.messageId, '\n');
+      console.log("3. Testing password reset email to REAL Gmail...");
+      const resetToken = "test_gmail_reset_token_" + Date.now();
+      const resetResult = await this.sendPasswordResetEmail(
+        testUser,
+        resetToken
+      );
+      console.log(
+        "✅ Password reset email sent to real Gmail:",
+        resetResult.messageId,
+        "\n"
+      );
 
-      console.log('🎉 Gmail SMTP test completed successfully!');
-      console.log('📧 Check your REAL Gmail inbox for test emails');
-      
-      return { 
-        success: true, 
-        message: 'Gmail SMTP test completed - Check your real Gmail inbox',
+      console.log("🎉 Gmail SMTP test completed successfully!");
+      console.log("📧 Check your REAL Gmail inbox for test emails");
+
+      return {
+        success: true,
+        message: "Gmail SMTP test completed - Check your real Gmail inbox",
         testEmails: [
-          { type: 'Welcome', messageId: welcomeResult.messageId },
-          { type: 'Password Reset', messageId: resetResult.messageId }
-        ]
+          { type: "Welcome", messageId: welcomeResult.messageId },
+          { type: "Password Reset", messageId: resetResult.messageId },
+        ],
       };
-
     } catch (error) {
-      console.error('❌ Gmail SMTP test failed:', error.message);
-      console.log('\n💡 Hướng dẫn khắc phục sự cố Gmail SMTP:');
-      console.log('1. Tạo App Password: https://myaccount.google.com/apppasswords');
-      console.log('2. Đảm bảo 2FA đã bật trên tài khoản Gmail');
-      console.log('3. Kiểm tra SMTP_USER và SMTP_PASS trong .env');
-      console.log('4. Thử bật "Allow less secure apps" nếu cần (không khuyến nghị)');
-      
+      console.error("❌ Gmail SMTP test failed:", error.message);
+      console.log("\n💡 Hướng dẫn khắc phục sự cố Gmail SMTP:");
+      console.log(
+        "1. Tạo App Password: https://myaccount.google.com/apppasswords"
+      );
+      console.log("2. Đảm bảo 2FA đã bật trên tài khoản Gmail");
+      console.log("3. Kiểm tra SMTP_USER và SMTP_PASS trong .env");
+      console.log(
+        '4. Thử bật "Allow less secure apps" nếu cần (không khuyến nghị)'
+      );
+
       return { success: false, error: error.message };
     }
   }

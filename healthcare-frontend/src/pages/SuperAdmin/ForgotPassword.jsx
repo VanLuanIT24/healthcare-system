@@ -1,20 +1,24 @@
-import { useState } from 'react';
-import { Form, Input, Button, Alert, Card, Result } from 'antd';
-import { MailOutlined, ArrowLeftOutlined } from '@ant-design/icons';
-import { Link } from 'react-router-dom';
-import axios from 'axios';
-import '../styles/Auth.css';
+import { useState } from "react";
+import { Form, Input, Button, Alert, Card, Result } from "antd";
+import {
+  MailOutlined,
+  ArrowLeftOutlined,
+  HeartOutlined,
+} from "@ant-design/icons";
+import { Link } from "react-router-dom";
+import axios from "axios";
+import "../styles/Auth.css";
 
 const ForgotPassword = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
-  const [emailSent, setEmailSent] = useState('');
+  const [emailSent, setEmailSent] = useState("");
 
   const handleSubmit = async (values) => {
     setLoading(true);
-    setError('');
+    setError("");
 
     try {
       const response = await axios.post(
@@ -29,8 +33,7 @@ const ForgotPassword = () => {
       }
     } catch (err) {
       setError(
-        err.response?.data?.error || 
-        'Có lỗi xảy ra. Vui lòng thử lại sau.'
+        err.response?.data?.error || "Có lỗi xảy ra. Vui lòng thử lại sau."
       );
     } finally {
       setLoading(false);
@@ -40,26 +43,36 @@ const ForgotPassword = () => {
   if (success) {
     return (
       <div className="auth-container">
-        <Card className="auth-card" bordered={false}>
+        <Card className="auth-card">
           <Result
             status="success"
-            title="Email đã được gửi!"
+            title={<h2 style={{ color: "#16a34a" }}>Email đã được gửi!</h2>}
             subTitle={
               <>
                 <p>Chúng tôi đã gửi email hướng dẫn đặt lại mật khẩu đến:</p>
-                <p style={{ fontWeight: 'bold', color: '#1890ff' }}>{emailSent}</p>
+                <p
+                  style={{
+                    fontWeight: "bold",
+                    color: "#4a90e2",
+                    margin: "12px 0",
+                  }}
+                >
+                  {emailSent}
+                </p>
                 <p>Vui lòng kiểm tra hộp thư và làm theo hướng dẫn.</p>
-                <p style={{ fontSize: '12px', color: '#999', marginTop: '10px' }}>
+                <p
+                  style={{ fontSize: "12px", color: "#888", marginTop: "16px" }}
+                >
                   Link đặt lại mật khẩu sẽ hết hạn sau 1 giờ.
                 </p>
               </>
             }
             extra={[
               <Link to="/superadmin/login" key="login">
-                <Button type="primary">
+                <Button type="primary" size="large">
                   <ArrowLeftOutlined /> Quay lại đăng nhập
                 </Button>
-              </Link>
+              </Link>,
             ]}
           />
         </Card>
@@ -69,10 +82,13 @@ const ForgotPassword = () => {
 
   return (
     <div className="auth-container">
-      <Card className="auth-card" bordered={false}>
-        <div className="auth-header">
-          <h1>Quên mật khẩu</h1>
-          <p>Nhập email của bạn để nhận hướng dẫn đặt lại mật khẩu</p>
+      <Card className="auth-card">
+        <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <HeartOutlined style={{ fontSize: "56px", color: "#ff6b9d" }} />
+          </div>
+          <h1>Quên mật khẩu?</h1>
+          <p>Nhập email để nhận hướng dẫn đặt lại mật khẩu</p>
         </div>
 
         {error && (
@@ -81,8 +97,8 @@ const ForgotPassword = () => {
             type="error"
             showIcon
             closable
-            onClose={() => setError('')}
-            style={{ marginBottom: 16 }}
+            onClose={() => setError("")}
+            style={{ marginBottom: "20px", borderRadius: "12px" }}
           />
         )}
 
@@ -92,13 +108,14 @@ const ForgotPassword = () => {
           onFinish={handleSubmit}
           layout="vertical"
           size="large"
+          style={{ marginTop: "28px" }}
         >
           <Form.Item
             label="Email"
             name="email"
             rules={[
-              { required: true, message: 'Vui lòng nhập email!' },
-              { type: 'email', message: 'Email không hợp lệ!' }
+              { required: true, message: "Vui lòng nhập email!" },
+              { type: "email", message: "Email không hợp lệ!" },
             ]}
           >
             <Input
@@ -114,12 +131,20 @@ const ForgotPassword = () => {
               htmlType="submit"
               loading={loading}
               block
+              size="large"
             >
               Gửi email đặt lại mật khẩu
             </Button>
           </Form.Item>
 
-          <div className="auth-footer">
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: "20px",
+              paddingTop: "20px",
+              borderTop: "1px solid #e0e7ff",
+            }}
+          >
             <Link to="/superadmin/login">
               <ArrowLeftOutlined /> Quay lại đăng nhập
             </Link>

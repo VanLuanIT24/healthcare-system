@@ -1,14 +1,14 @@
 // src/config/app.config.js
-const dotenv = require('dotenv');
-const path = require('path');
-const Joi = require('joi');
+const dotenv = require("dotenv");
+const path = require("path");
+const Joi = require("joi");
 
 // =============================================
 // CẤU HÌNH ỨNG DỤNG CHÍNH
 // =============================================
 
 // 🔹 Load biến môi trường từ file .env
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 // =============================================
 // SCHEMA VALIDATION CHO BIẾN MÔI TRƯỜNG
@@ -16,20 +16,22 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 const envSchema = Joi.object({
   // MÔI TRƯỜNG ỨNG DỤNG
   NODE_ENV: Joi.string()
-    .valid('development', 'production', 'test')
-    .default('development'),
+    .valid("development", "production", "test")
+    .default("development"),
 
   // SERVER CONFIG
   PORT: Joi.number().default(5000),
 
   // DATABASE
-  MONGO_URI: Joi.string().uri().default('mongodb://localhost:27017/healthcare_dev'),
+  MONGO_URI: Joi.string()
+    .uri()
+    .default("mongodb://localhost:27017/healthcare_dev"),
 
   // JWT CONFIG
   JWT_ACCESS_SECRET: Joi.string().required(),
   JWT_REFRESH_SECRET: Joi.string().required(),
-  ACCESS_TOKEN_EXPIRES_IN: Joi.string().default('15m'),
-  REFRESH_TOKEN_EXPIRES_IN: Joi.string().default('7d'),
+  ACCESS_TOKEN_EXPIRES_IN: Joi.string().default("15m"),
+  REFRESH_TOKEN_EXPIRES_IN: Joi.string().default("7d"),
 
   // PASSWORD SECURITY
   SALT_ROUNDS: Joi.number().default(12),
@@ -42,10 +44,10 @@ const envSchema = Joi.object({
   SMTP_PASS: Joi.string().required(),
 
   // SECURITY POLICIES
-  CORS_ORIGIN: Joi.string().default('*'),
-  CSRF_COOKIE_NAME: Joi.string().default('XSRF-TOKEN'),
+  CORS_ORIGIN: Joi.string().default("*"),
+  CSRF_COOKIE_NAME: Joi.string().default("XSRF-TOKEN"),
   MAX_LOGIN_ATTEMPTS: Joi.number().default(5),
-  LOCK_TIME: Joi.string().default('15m'),
+  LOCK_TIME: Joi.string().default("15m"),
 
   // RATE LIMIT
   RATE_LIMIT_WINDOW_MS: Joi.number().default(900000),
@@ -57,24 +59,31 @@ const envSchema = Joi.object({
 
   // PERFORMANCE
   REQUEST_TIMEOUT: Joi.number().default(30000),
-  JSON_BODY_LIMIT: Joi.string().default('10mb'),
+  JSON_BODY_LIMIT: Joi.string().default("10mb"),
 
   // SUPER ADMIN
   SUPER_ADMIN_EMAIL: Joi.string().email().required(),
   SUPER_ADMIN_PASSWORD: Joi.string().required(),
-  SUPER_ADMIN_NAME: Joi.string().default('System Root Admin'),
+  SUPER_ADMIN_NAME: Joi.string().default("System Root Admin"),
 
   // HOSPITAL INFO
-  HOSPITAL_NAME: Joi.string().default('Healthcare System Hospital'),
-  SUPPORT_EMAIL: Joi.string().email().default('support@healthcare.vn'),
-  SUPPORT_PHONE: Joi.string().default('+84-28-3829-8149'),
+  HOSPITAL_NAME: Joi.string().default("Healthcare System Hospital"),
+  SUPPORT_EMAIL: Joi.string().email().default("support@healthcare.vn"),
+  SUPPORT_PHONE: Joi.string().default("+84-28-3829-8149"),
 
   // LOGGING & AUDIT
   LOG_LEVEL: Joi.string()
-    .valid('error', 'warn', 'info', 'debug', 'trace')
-    .default('info'),
+    .valid("error", "warn", "info", "debug", "trace")
+    .default("info"),
   ENABLE_AUDIT_LOG: Joi.boolean().default(true),
   AUDIT_LOG_RETENTION_DAYS: Joi.number().default(90),
+
+  // FRONTEND / CLIENT URLS
+  CLIENT_URL: Joi.string().uri().optional(),
+  FRONTEND_URL: Joi.string().uri().optional(),
+
+  // EMAIL FROM NAME (friendly name shown in emails)
+  EMAIL_FROM_NAME: Joi.string().optional(),
 }).unknown(true);
 
 // =============================================
@@ -87,7 +96,7 @@ const { value: env, error } = envSchema.validate(process.env, {
 });
 
 if (error) {
-  console.error('❌ Cấu hình môi trường không hợp lệ:\n');
+  console.error("❌ Cấu hình môi trường không hợp lệ:\n");
   error.details.forEach((err) => console.error(`- ${err.message}`));
   process.exit(1);
 }
@@ -97,8 +106,8 @@ if (error) {
 // =============================================
 const appConfig = {
   env: env.NODE_ENV,
-  isDev: env.NODE_ENV === 'development',
-  isProd: env.NODE_ENV === 'production',
+  isDev: env.NODE_ENV === "development",
+  isProd: env.NODE_ENV === "production",
   port: env.PORT,
 
   db: {
@@ -115,7 +124,15 @@ const appConfig = {
   },
 
   cors: {
-    origin: env.CORS_ORIGIN,
+    // CORS_ORIGIN can be a comma-separated list; normalize to array
+    origin: (function parseOrigins(val) {
+      if (!val) return ["http://localhost:3000"];
+      if (Array.isArray(val)) return val;
+      return val
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    })(env.CORS_ORIGIN),
   },
 
   email: {
@@ -124,6 +141,8 @@ const appConfig = {
     smtpPort: env.SMTP_PORT,
     smtpUser: env.SMTP_USER,
     smtpPass: env.SMTP_PASS,
+    fromName: env.EMAIL_FROM_NAME || env.HOSPITAL_NAME || "Healthcare System",
+    clientUrl: env.CLIENT_URL || env.FRONTEND_URL || null,
   },
 
   security: {
@@ -142,7 +161,7 @@ const appConfig = {
     email: env.SUPER_ADMIN_EMAIL,
     password: env.SUPER_ADMIN_PASSWORD,
     name: env.SUPER_ADMIN_NAME,
-    phone: env.SUPER_ADMIN_PHONE
+    phone: env.SUPER_ADMIN_PHONE,
   },
 
   hospital: {
@@ -162,6 +181,22 @@ const appConfig = {
     retentionDays: env.AUDIT_LOG_RETENTION_DAYS,
   },
 };
+
+// Ensure we expose useful process.env fallbacks for other modules (email templates, utils)
+try {
+  const firstOrigin =
+    Array.isArray(appConfig.cors.origin) && appConfig.cors.origin.length > 0
+      ? appConfig.cors.origin[0]
+      : `http://localhost:${appConfig.port}`;
+
+  process.env.CLIENT_URL =
+    process.env.CLIENT_URL || appConfig.email.clientUrl || firstOrigin;
+  process.env.FRONTEND_URL = process.env.FRONTEND_URL || process.env.CLIENT_URL;
+  process.env.EMAIL_FROM_NAME =
+    process.env.EMAIL_FROM_NAME || appConfig.email.fromName;
+} catch (e) {
+  // ignore
+}
 
 // =============================================
 // EXPORT

@@ -1,7 +1,7 @@
 // src/controllers/user.controller.js
-const userService = require('../services/user.service');
-const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
-const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
+const userService = require("../services/user.service");
+const { AppError, ERROR_CODES } = require("../middlewares/error.middleware");
+const { auditLog, AUDIT_ACTIONS } = require("../middlewares/audit.middleware");
 
 class UserController {
   /**
@@ -10,22 +10,22 @@ class UserController {
   async createUser(req, res, next) {
     try {
       const userData = req.body;
-      
+
       const user = await userService.createUser(userData, req.user);
-      
+
       // 🎯 AUDIT LOG
       await auditLog(AUDIT_ACTIONS.USER_CREATE, {
-        metadata: { 
-          createdUserId: user._id, 
+        metadata: {
+          createdUserId: user._id,
           role: user.role,
-          email: user.email
-        }
+          email: user.email,
+        },
       })(req, res, () => {});
-      
+
       res.status(201).json({
         success: true,
-        message: 'Tạo user thành công',
-        data: user
+        message: "Tạo user thành công",
+        data: user,
       });
     } catch (error) {
       next(error);
@@ -38,17 +38,21 @@ class UserController {
   async getUserById(req, res, next) {
     try {
       const { userId } = req.params;
-      const includeSensitive = req.user.role === 'SUPER_ADMIN';
-      
+      const includeSensitive = req.user.role === "SUPER_ADMIN";
+
       const user = await userService.getUserById(userId, includeSensitive);
-      
+
       if (!user) {
-        throw new AppError('Không tìm thấy user', 404, ERROR_CODES.USER_NOT_FOUND);
+        throw new AppError(
+          "Không tìm thấy user",
+          404,
+          ERROR_CODES.USER_NOT_FOUND
+        );
       }
-      
+
       res.json({
         success: true,
-        data: user
+        data: user,
       });
     } catch (error) {
       next(error);
@@ -62,20 +66,20 @@ class UserController {
     try {
       const { userId } = req.params;
       const updateData = req.body;
-      
+
       const user = await userService.updateUser(userId, updateData, req.user);
-      
+
       await auditLog(AUDIT_ACTIONS.USER_UPDATE, {
-        metadata: { 
+        metadata: {
           updatedUserId: userId,
-          updatedFields: Object.keys(updateData)
-        }
+          updatedFields: Object.keys(updateData),
+        },
       })(req, res, () => {});
-      
+
       res.json({
         success: true,
-        message: 'Cập nhật user thành công',
-        data: user
+        message: "Cập nhật user thành công",
+        data: user,
       });
     } catch (error) {
       next(error);
@@ -89,20 +93,20 @@ class UserController {
     try {
       const { userId } = req.params;
       const { reason } = req.body;
-      
+
       await userService.disableUser(userId, reason, req.user);
-      
+
       await auditLog(AUDIT_ACTIONS.USER_DISABLE, {
-        metadata: { 
-          disabledUserId: userId, 
+        metadata: {
+          disabledUserId: userId,
           reason,
-          disabledBy: req.user._id
-        }
+          disabledBy: req.user._id,
+        },
       })(req, res, () => {});
-      
+
       res.json({
         success: true,
-        message: 'Vô hiệu hóa user thành công'
+        message: "Vô hiệu hóa user thành công",
       });
     } catch (error) {
       next(error);
@@ -114,37 +118,38 @@ class UserController {
    */
   async listUsers(req, res, next) {
     try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        role, 
+      const {
+        page = 1,
+        limit = 10,
+        role,
         search,
-        status = 'ACTIVE',
-        sortBy = 'createdAt',
-        sortOrder = 'desc'
+        status, // ✅ KHÔNG CÓ DEFAULT VÀO ĐÂY, CHỈ LỌC NẾU ĐƯỢC CẤP
+        sortBy = "createdAt",
+        sortOrder = "desc",
       } = req.query;
-      
-      const filter = { status };
+
+      const filter = {}; // ✅ BỎ STATUS DEFAULT
       if (role) filter.role = role;
+      if (status) filter.status = status; // ✅ CHỈ THÊM NẾU ĐƯỢC CẤP
       if (search) {
         filter.$or = [
-          { 'personalInfo.firstName': { $regex: search, $options: 'i' } },
-          { 'personalInfo.lastName': { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } }
+          { "personalInfo.firstName": { $regex: search, $options: "i" } },
+          { "personalInfo.lastName": { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
         ];
       }
-      
+
       const result = await userService.listUsers(filter, {
         page: parseInt(page),
         limit: parseInt(limit),
         sortBy,
-        sortOrder
+        sortOrder,
       });
-      
+
       res.json({
         success: true,
         data: result.users,
-        pagination: result.pagination
+        pagination: result.pagination,
       });
     } catch (error) {
       next(error);
@@ -157,12 +162,12 @@ class UserController {
   async getUserProfile(req, res, next) {
     try {
       const userId = req.user._id;
-      
+
       const user = await userService.getUserProfile(userId);
-      
+
       res.json({
         success: true,
-        data: user
+        data: user,
       });
     } catch (error) {
       next(error);
@@ -176,21 +181,21 @@ class UserController {
     try {
       const userId = req.user._id;
       const updateData = req.body;
-      
+
       const user = await userService.updateUserProfile(userId, updateData);
-      
+
       await auditLog(AUDIT_ACTIONS.USER_UPDATE, {
-        metadata: { 
-          updatedUserId: userId, 
+        metadata: {
+          updatedUserId: userId,
           selfUpdate: true,
-          updatedFields: Object.keys(updateData)
-        }
+          updatedFields: Object.keys(updateData),
+        },
       })(req, res, () => {});
-      
+
       res.json({
         success: true,
-        message: 'Cập nhật profile thành công',
-        data: user
+        message: "Cập nhật profile thành công",
+        data: user,
       });
     } catch (error) {
       next(error);
@@ -204,21 +209,21 @@ class UserController {
     try {
       const { userId } = req.params;
       const { role } = req.body;
-      
+
       const user = await userService.assignRole(userId, role, req.user);
-      
+
       await auditLog(AUDIT_ACTIONS.USER_UPDATE, {
-        metadata: { 
-          updatedUserId: userId, 
+        metadata: {
+          updatedUserId: userId,
           newRole: role,
-          assignedBy: req.user._id
-        }
+          assignedBy: req.user._id,
+        },
       })(req, res, () => {});
-      
+
       res.json({
         success: true,
         message: `Gán role ${role} thành công`,
-        data: user
+        data: user,
       });
     } catch (error) {
       next(error);
@@ -231,12 +236,12 @@ class UserController {
   async getUserPermissions(req, res, next) {
     try {
       const { userId } = req.params;
-      
+
       const permissions = await userService.getUserPermissions(userId);
-      
+
       res.json({
         success: true,
-        data: permissions
+        data: permissions,
       });
     } catch (error) {
       next(error);
@@ -250,12 +255,15 @@ class UserController {
     try {
       const { userId } = req.params;
       const { permission } = req.body;
-      
-      const hasPermission = await userService.checkUserPermission(userId, permission);
-      
+
+      const hasPermission = await userService.checkUserPermission(
+        userId,
+        permission
+      );
+
       res.json({
         success: true,
-        data: { hasPermission }
+        data: { hasPermission },
       });
     } catch (error) {
       next(error);
@@ -263,112 +271,111 @@ class UserController {
   }
 
   async enableUser(req, res, next) {
-  try {
-    const { userId } = req.params;
-    
-    const user = await userService.enableUser(userId, req.user);
-    
-    await auditLog(AUDIT_ACTIONS.USER_ENABLE, {
-      metadata: { 
-        enabledUserId: userId, 
-        enabledBy: req.user._id,
-        newStatus: 'ACTIVE'
-      }
-    })(req, res, () => {});
-    
-    res.json({
-      success: true,
-      message: 'Kích hoạt user thành công',
-      data: user
-    });
-  } catch (error) {
-    next(error);
+    try {
+      const { userId } = req.params;
+
+      const user = await userService.enableUser(userId, req.user);
+
+      await auditLog(AUDIT_ACTIONS.USER_ENABLE, {
+        metadata: {
+          enabledUserId: userId,
+          enabledBy: req.user._id,
+          newStatus: "ACTIVE",
+        },
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: "Kích hoạt user thành công",
+        data: user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 XÓA USER (SOFT DELETE)
+   */
+  async deleteUser(req, res, next) {
+    try {
+      const { userId } = req.params;
+      const { reason } = req.body;
+
+      await userService.deleteUser(userId, reason, req.user);
+
+      await auditLog(AUDIT_ACTIONS.USER_DELETE, {
+        metadata: {
+          deletedUserId: userId,
+          reason,
+          deletedBy: req.user._id,
+          deletionType: "SOFT_DELETE",
+        },
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: "Xóa user thành công",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 KHÔI PHỤC USER ĐÃ XÓA
+   */
+  async restoreUser(req, res, next) {
+    try {
+      const { userId } = req.params;
+
+      const user = await userService.restoreUser(userId, req.user);
+
+      await auditLog(AUDIT_ACTIONS.USER_RESTORE, {
+        metadata: {
+          restoredUserId: userId,
+          restoredBy: req.user._id,
+        },
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: "Khôi phục user thành công",
+        data: user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 LẤY DANH SÁCH USER ĐÃ XÓA
+   */
+  async listDeletedUsers(req, res, next) {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = "deletedAt",
+        sortOrder = "desc",
+      } = req.query;
+
+      const result = await userService.listDeletedUsers({
+        page: parseInt(page),
+        limit: parseInt(limit),
+        sortBy,
+        sortOrder,
+      });
+
+      res.json({
+        success: true,
+        data: result.users,
+        pagination: result.pagination,
+      });
+    } catch (error) {
+      next(error);
+    }
   }
 }
-
-/**
- * 🎯 XÓA USER (SOFT DELETE)
- */
-async deleteUser(req, res, next) {
-  try {
-    const { userId } = req.params;
-    const { reason } = req.body;
-    
-    await userService.deleteUser(userId, reason, req.user);
-    
-    await auditLog(AUDIT_ACTIONS.USER_DELETE, {
-      metadata: { 
-        deletedUserId: userId, 
-        reason,
-        deletedBy: req.user._id,
-        deletionType: 'SOFT_DELETE'
-      }
-    })(req, res, () => {});
-    
-    res.json({
-      success: true,
-      message: 'Xóa user thành công'
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-/**
- * 🎯 KHÔI PHỤC USER ĐÃ XÓA
- */
-async restoreUser(req, res, next) {
-  try {
-    const { userId } = req.params;
-    
-    const user = await userService.restoreUser(userId, req.user);
-    
-    await auditLog(AUDIT_ACTIONS.USER_RESTORE, {
-      metadata: { 
-        restoredUserId: userId, 
-        restoredBy: req.user._id
-      }
-    })(req, res, () => {});
-    
-    res.json({
-      success: true,
-      message: 'Khôi phục user thành công',
-      data: user
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-/**
- * 🎯 LẤY DANH SÁCH USER ĐÃ XÓA
- */
-async listDeletedUsers(req, res, next) {
-  try {
-    const { 
-      page = 1, 
-      limit = 10,
-      sortBy = 'deletedAt',
-      sortOrder = 'desc'
-    } = req.query;
-    
-    const result = await userService.listDeletedUsers({
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sortBy,
-      sortOrder
-    });
-    
-    res.json({
-      success: true,
-      data: result.users,
-      pagination: result.pagination
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-}
-
 
 module.exports = new UserController();

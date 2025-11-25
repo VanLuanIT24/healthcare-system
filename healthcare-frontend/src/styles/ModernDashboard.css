@@ -1,0 +1,724 @@
+/* ============================================
+   Modern Healthcare Dashboard Styles
+   ============================================ */
+
+/* Colors Configuration */
+:root {
+  --primary-dark-blue: #0f5b8c;
+  --primary-light-blue: #4a90e2;
+  --secondary-teal: #00bcd4;
+  --accent-green: #16a34a;
+  --light-gray: #f5fafb;
+  --dark-gray: #757575;
+  --error-red: #ef5350;
+  --border-light: #e0e7ff;
+  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   Layout Styles
+   ============================================ */
+
+.modern-dashboard-layout {
+  background-color: #fafbfc;
+}
+
+.modern-sider {
+  background: linear-gradient(180deg, #0f5b8c 0%, #1e3a5f 100%) !important;
+  position: relative;
+}
+
+.modern-sider::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    circle at 20% 50%,
+    rgba(255, 255, 255, 0.05) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+
+/* ============================================
+   Logo Styles
+   ============================================ */
+
+.modern-logo {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 12px;
+}
+
+.logo-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  transition: var(--transition);
+}
+
+.logo-icon {
+  font-size: 24px;
+  color: #ff6b9d;
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* ============================================
+   Menu Styles
+   ============================================ */
+
+.modern-menu {
+  padding: 12px 8px;
+}
+
+.modern-menu .ant-menu-item {
+  margin: 6px 8px;
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.modern-menu .ant-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.modern-menu .ant-menu-item-selected {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0.05)
+  );
+  color: white;
+  font-weight: 600;
+}
+
+.modern-menu .ant-menu-item-selected::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: #ff6b9d;
+  border-radius: 0 2px 2px 0;
+}
+
+/* ============================================
+   Header Styles
+   ============================================ */
+
+.modern-header {
+  background: linear-gradient(90deg, #ffffff 0%, #f5fafb 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid #e0e7ff;
+  height: 70px;
+}
+
+.modern-header-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary-dark-blue);
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.toggle-btn {
+  color: var(--primary-dark-blue);
+  font-size: 18px;
+  transition: var(--transition);
+}
+
+.toggle-btn:hover {
+  color: var(--primary-light-blue);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.user-greeting {
+  font-size: 14px;
+  color: #555;
+  white-space: nowrap;
+}
+
+.user-greeting strong {
+  color: var(--primary-dark-blue);
+  font-weight: 600;
+}
+
+/* ============================================
+   Content Styles
+   ============================================ */
+
+.modern-content {
+  background: linear-gradient(135deg, #f5fafb 0%, #f9fafb 100%);
+  min-height: calc(100vh - 70px);
+  padding: 24px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Page Header Styles
+   ============================================ */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding: 16px 0;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary-dark-blue);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: #999;
+  margin: 4px 0 0 0;
+}
+
+/* ============================================
+   Dashboard Home Styles
+   ============================================ */
+
+.dashboard-home .stats-grid {
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+  transition: var(--transition);
+  box-shadow: var(--shadow-light);
+  position: relative;
+  padding: 20px;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-medium);
+}
+
+.stat-card-icon {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  font-size: 28px;
+  opacity: 0.15;
+}
+
+.stat-card-primary {
+  border-left: 4px solid var(--primary-dark-blue);
+}
+
+.stat-card-primary .ant-statistic-title {
+  color: #666;
+  font-size: 12px;
+}
+
+.stat-card-primary .ant-statistic-content {
+  color: var(--primary-dark-blue);
+  font-weight: 700;
+}
+
+.stat-card-light-blue {
+  border-left: 4px solid var(--primary-light-blue);
+}
+
+.stat-card-light-blue .ant-statistic-content {
+  color: var(--primary-light-blue);
+  font-weight: 700;
+}
+
+.stat-card-teal {
+  border-left: 4px solid var(--secondary-teal);
+}
+
+.stat-card-teal .ant-statistic-content {
+  color: var(--secondary-teal);
+  font-weight: 700;
+}
+
+.stat-card-dark-gray {
+  border-left: 4px solid var(--dark-gray);
+}
+
+.stat-card-dark-gray .ant-statistic-content {
+  color: var(--dark-gray);
+  font-weight: 700;
+}
+
+/* ============================================
+   Memory Card Styles
+   ============================================ */
+
+.memory-card {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  margin-top: 24px;
+  box-shadow: var(--shadow-light);
+}
+
+.memory-card .ant-card-head {
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(90deg, #ffffff 0%, #f9fafb 100%);
+}
+
+.memory-card .ant-card-head-title {
+  font-weight: 700;
+  color: var(--primary-dark-blue);
+  font-size: 16px;
+}
+
+.memory-stat {
+  padding: 16px;
+  background: linear-gradient(135deg, #f9fafb 0%, #f5fafb 100%);
+  border-radius: 10px;
+  text-align: center;
+  border: 1px solid var(--border-light);
+  transition: var(--transition);
+}
+
+.memory-stat:hover {
+  background: linear-gradient(135deg, #f0f4ff 0%, #f5f7ff 100%);
+  border-color: var(--primary-light-blue);
+}
+
+.memory-label {
+  font-size: 12px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.memory-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-dark-blue);
+}
+
+.memory-unit {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 12px;
+}
+
+.memory-stat .ant-progress {
+  margin-top: 8px;
+}
+
+/* ============================================
+   User Info Card Styles
+   ============================================ */
+
+.user-info-card {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  margin-top: 24px;
+  box-shadow: var(--shadow-light);
+}
+
+.user-info-card .ant-card-head {
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(90deg, #ffffff 0%, #f9fafb 100%);
+}
+
+.user-info-card .ant-card-head-title {
+  font-weight: 700;
+  color: var(--primary-dark-blue);
+  font-size: 16px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.info-label {
+  font-size: 13px;
+  color: #999;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.info-value {
+  font-size: 15px;
+  color: #333;
+  font-weight: 500;
+}
+
+/* ============================================
+   Dashboard Stats Styles
+   ============================================ */
+
+.dashboard-stats .stats-row {
+  margin-bottom: 24px;
+}
+
+.overview-card {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  box-shadow: var(--shadow-light);
+  transition: var(--transition);
+}
+
+.overview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.overview-card .ant-statistic-title {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* ============================================
+   Settings Card Styles
+   ============================================ */
+
+.settings-card {
+  background: white;
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  box-shadow: var(--shadow-light);
+}
+
+.settings-card .ant-card-head {
+  border-bottom: 1px solid var(--border-light);
+  background: linear-gradient(90deg, #ffffff 0%, #f9fafb 100%);
+}
+
+.settings-card .ant-card-head-title {
+  font-weight: 700;
+  color: var(--primary-dark-blue);
+  font-size: 14px;
+}
+
+.settings-card .ant-form-item-label > label {
+  color: #555;
+  font-weight: 500;
+}
+
+.settings-card .ant-input {
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  transition: var(--transition);
+}
+
+.settings-card .ant-input:focus,
+.settings-card .ant-input-focused {
+  border-color: var(--primary-light-blue);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+/* ============================================
+   Delete Button Styles
+   ============================================ */
+
+.delete-btn {
+  border-color: var(--error-red);
+  color: var(--error-red);
+  transition: var(--transition);
+}
+
+.delete-btn:hover {
+  background-color: rgba(239, 83, 80, 0.1);
+}
+
+/* ============================================
+   Sections Styling
+   ============================================ */
+
+.user-management-section,
+.user-profile-section,
+.change-password-section,
+.system-settings-section {
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+@media (max-width: 768px) {
+  .modern-header {
+    height: auto;
+    flex-wrap: wrap;
+    padding: 16px !important;
+  }
+
+  .modern-header-title {
+    font-size: 16px;
+  }
+
+  .header-right {
+    width: 100%;
+    gap: 12px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .user-greeting {
+    font-size: 12px;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .modern-content {
+    padding: 16px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .memory-stat {
+    padding: 12px;
+  }
+
+  .info-item {
+    margin-bottom: 12px;
+  }
+
+  .stats-grid {
+    row-gap: 12px;
+  }
+
+  .stat-card-icon {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .modern-header-title {
+    font-size: 14px;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .user-greeting {
+    display: none;
+  }
+
+  .modern-logo {
+    height: 60px;
+  }
+
+  .logo-content {
+    font-size: 14px;
+  }
+
+  .logo-icon {
+    font-size: 20px;
+  }
+
+  .memory-value {
+    font-size: 20px;
+  }
+}
+
+/* ============================================
+   Animation Utilities
+   ============================================ */
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+.mt-4 {
+  margin-top: 16px;
+}
+
+.mb-6 {
+  margin-bottom: 24px;
+}
+
+.flex {
+  display: flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.gap-4 {
+  gap: 16px;
+}
+
+.gap-6 {
+  gap: 24px;
+}
+
+/* ============================================
+   Ant Design Component Overrides
+   ============================================ */
+
+.ant-card {
+  border-color: var(--border-light);
+}
+
+.ant-tag {
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.ant-btn-primary {
+  background: var(--primary-dark-blue);
+  border-color: var(--primary-dark-blue);
+  transition: var(--transition);
+}
+
+.ant-btn-primary:hover,
+.ant-btn-primary:focus {
+  background: var(--primary-light-blue);
+  border-color: var(--primary-light-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.ant-btn-primary:active {
+  background: #0d4a73;
+}
+
+.ant-btn-danger {
+  background: var(--error-red);
+  border-color: var(--error-red);
+}
+
+.ant-btn-danger:hover,
+.ant-btn-danger:focus {
+  background: #e53935;
+  border-color: #e53935;
+}
+
+.ant-progress-inner {
+  background-color: #e0e7ff;
+}
+
+.ant-menu-dark {
+  background: transparent;
+}
+
+/* ============================================
+   Scrollbar Styles
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5fafb;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c0c7cc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a0a7ac;
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+
+@media print {
+  .modern-sider,
+  .modern-header {
+    display: none;
+  }
+
+  .modern-content {
+    padding: 0;
+  }
+}

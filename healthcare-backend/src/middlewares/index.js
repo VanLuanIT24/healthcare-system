@@ -4,8 +4,17 @@
  */
 
 // 🔐 AUTHENTICATION
-const { authenticate, requirePermission, requireRole } = require('./auth.middleware');
-const { markPublic } = require('./public.middleware');
+const {
+  authenticate,
+  requirePermission,
+  requireRole,
+} = require("./auth.middleware");
+const { markPublic } = require("./public.middleware");
+const {
+  authPatient,
+  checkPatientOwnership,
+  patientOnly,
+} = require("./patientPortal.middleware");
 
 // 🛡️ SECURITY
 const {
@@ -19,7 +28,7 @@ const {
   limitPayloadSize,
   maintenanceMode,
   requestLogger,
-} = require('./security.middleware');
+} = require("./security.middleware");
 
 // 📝 VALIDATION
 const {
@@ -30,7 +39,7 @@ const {
   sanitizeInput,
   commonSchemas,
   medicalSchemas,
-} = require('./validation.middleware');
+} = require("./validation.middleware");
 
 // 🎯 ERROR HANDLING
 const {
@@ -39,20 +48,23 @@ const {
   asyncHandler,
   AppError,
   ERROR_CODES,
-} = require('./error.middleware');
+} = require("./error.middleware");
 
 // 📊 AUDIT LOG
 const {
   auditLog,
   autoAuditMiddleware,
   AUDIT_ACTIONS,
-} = require('./audit.middleware');
+} = require("./audit.middleware");
 
 // ⚡ RATE LIMITING
-const { loginLimiter } = require('./rateLimiter');
+const { loginLimiter } = require("./rateLimiter");
 
 // 🔐 RBAC
-const { requireRole: rbacRequireRole, requirePermission: rbacRequirePermission } = require('./rbac.middleware');
+const {
+  requireRole: rbacRequireRole,
+  requirePermission: rbacRequirePermission,
+} = require("./rbac.middleware");
 
 module.exports = {
   // Authentication
@@ -60,7 +72,10 @@ module.exports = {
   requirePermission,
   requireRole,
   markPublic,
-  
+  authPatient,
+  checkPatientOwnership,
+  patientOnly,
+
   // Security
   helmetConfig,
   noSqlInjectionProtection,
@@ -72,7 +87,7 @@ module.exports = {
   limitPayloadSize,
   maintenanceMode,
   requestLogger,
-  
+
   // Validation
   validate,
   validateParams,
@@ -81,22 +96,22 @@ module.exports = {
   sanitizeInput,
   commonSchemas,
   medicalSchemas,
-  
+
   // Error Handling
   errorHandler,
   notFoundHandler,
   asyncHandler,
   AppError,
   ERROR_CODES,
-  
+
   // Audit Log
   auditLog,
   autoAuditMiddleware,
   AUDIT_ACTIONS,
-  
+
   // Rate Limiting
   loginLimiter,
-  
+
   // RBAC
   rbacRequireRole,
   rbacRequirePermission,

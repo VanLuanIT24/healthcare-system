@@ -1,15 +1,14 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { Spin } from 'antd';
-import { useAuth } from '../contexts/AuthContext';
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
+import { Spin } from "antd";
+import { useAuth } from "../contexts/AuthContext";
 
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const { isAuthenticated, user, loading } = useAuth();
+  const location = useLocation();
 
-  console.log('ProtectedRoute - Auth State:', { isAuthenticated, user, loading, requiredRole });
-
+  // Show loading only briefly at very start
   if (loading) {
-    console.log('ProtectedRoute - Still loading...');
     return (
       <div className="flex items-center justify-center h-screen">
         <Spin size="large" />
@@ -18,16 +17,13 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
   }
 
   if (!isAuthenticated) {
-    console.log('ProtectedRoute - Not authenticated, redirecting to login');
     return <Navigate to="/superadmin/login" replace />;
   }
 
   if (requiredRole && user?.role !== requiredRole) {
-    console.log('ProtectedRoute - Role mismatch:', user?.role, 'required:', requiredRole);
     return <Navigate to="/" replace />;
   }
 
-  console.log('ProtectedRoute - Access granted!');
   return children;
 };
 

@@ -1,5 +1,5 @@
 // src/middlewares/error.middlesware.js
-const { appConfig } = require('../config');
+const { appConfig } = require("../config");
 
 /**
  * 🛡️ MIDDLEWARE XỬ LÝ LỖI TẬP TRUNG
@@ -23,27 +23,27 @@ class AppError extends Error {
 // 🎯 DANH SÁCH LỖI ĐẶC BIỆT
 const ERROR_CODES = {
   // Authentication errors
-  AUTH_INVALID_TOKEN: 'AUTH_001',
-  AUTH_TOKEN_EXPIRED: 'AUTH_002',
-  AUTH_INSUFFICIENT_PERMISSIONS: 'AUTH_003',
-  AUTH_ACCOUNT_LOCKED: 'AUTH_004',
-  
+  AUTH_INVALID_TOKEN: "AUTH_001",
+  AUTH_TOKEN_EXPIRED: "AUTH_002",
+  AUTH_INSUFFICIENT_PERMISSIONS: "AUTH_003",
+  AUTH_ACCOUNT_LOCKED: "AUTH_004",
+
   // Validation errors
-  VALIDATION_FAILED: 'VAL_001',
-  DUPLICATE_ENTRY: 'VAL_002',
-  
+  VALIDATION_FAILED: "VAL_001",
+  DUPLICATE_ENTRY: "VAL_002",
+
   // Database errors
-  DB_CONNECTION_FAILED: 'DB_001',
-  DB_QUERY_FAILED: 'DB_002',
-  
+  DB_CONNECTION_FAILED: "DB_001",
+  DB_QUERY_FAILED: "DB_002",
+
   // Business logic errors
-  PATIENT_DATA_ACCESS_DENIED: 'BIZ_001',
-  MEDICAL_RECORD_NOT_FOUND: 'BIZ_002',
-  APPOINTMENT_CONFLICT: 'BIZ_003',
-  
+  PATIENT_DATA_ACCESS_DENIED: "BIZ_001",
+  MEDICAL_RECORD_NOT_FOUND: "BIZ_002",
+  APPOINTMENT_CONFLICT: "BIZ_003",
+
   // System errors
-  INTERNAL_SERVER_ERROR: 'SYS_001',
-  SERVICE_UNAVAILABLE: 'SYS_002',
+  INTERNAL_SERVER_ERROR: "SYS_001",
+  SERVICE_UNAVAILABLE: "SYS_002",
 };
 
 /**
@@ -58,29 +58,47 @@ function errorHandler(err, req, res, next) {
   logError(error, req);
 
   // 🔹 JWT ERRORS
-  if (err.name === 'JsonWebTokenError') {
-    error = new AppError('Token không hợp lệ', 401, ERROR_CODES.AUTH_INVALID_TOKEN);
+  if (err.name === "JsonWebTokenError") {
+    error = new AppError(
+      "🔐 Token không hợp lệ. Vui lòng đăng nhập lại.",
+      401,
+      ERROR_CODES.AUTH_INVALID_TOKEN
+    );
   }
 
-  if (err.name === 'TokenExpiredError') {
-    error = new AppError('Token đã hết hạn', 401, ERROR_CODES.AUTH_TOKEN_EXPIRED);
+  if (err.name === "TokenExpiredError") {
+    error = new AppError(
+      "⏰ Token của bạn đã hết hạn. Vui lòng đăng nhập lại.",
+      401,
+      ERROR_CODES.AUTH_TOKEN_EXPIRED
+    );
   }
 
   // 🔹 MONGOOSE ERRORS
-  if (err.name === 'CastError') {
-    const message = 'Định dạng ID không hợp lệ';
+  if (err.name === "CastError") {
+    const message = "Định dạng ID không hợp lệ";
     error = new AppError(message, 400, ERROR_CODES.VALIDATION_FAILED);
   }
 
   if (err.code === 11000) {
     const field = Object.keys(err.keyValue)[0];
-    const message = `${field} đã tồn tại trong hệ thống`;
+    let fieldName = field;
+
+    // Dịch field name thành tiếng Việt
+    const fieldTranslation = {
+      email: "Email này",
+      username: "Tên tài khoản này",
+      phone: "Số điện thoại này",
+    };
+
+    fieldName = fieldTranslation[field] || field;
+    const message = `❌ ${fieldName} đã được sử dụng trong hệ thống. Vui lòng thử lại với ${fieldName.toLowerCase()} khác hoặc kiểm tra xem bạn đã đăng ký trước đó chưa.`;
     error = new AppError(message, 409, ERROR_CODES.DUPLICATE_ENTRY);
   }
 
-  if (err.name === 'ValidationError') {
-    const messages = Object.values(err.errors).map(val => val.message);
-    const message = `Dữ liệu không hợp lệ: ${messages.join(', ')}`;
+  if (err.name === "ValidationError") {
+    const messages = Object.values(err.errors).map((val) => val.message);
+    const message = `Dữ liệu không hợp lệ: ${messages.join(", ")}`;
     error = new AppError(message, 400, ERROR_CODES.VALIDATION_FAILED);
   }
 
@@ -89,15 +107,15 @@ function errorHandler(err, req, res, next) {
     success: false,
     error: {
       code: error.errorCode || ERROR_CODES.INTERNAL_SERVER_ERROR,
-      message: error.message || 'Lỗi máy chủ nội bộ',
+      message: error.message || "Lỗi máy chủ nội bộ",
       timestamp: error.timestamp,
-      
+
       // 🎯 CHỈ TRẢ VỀ STACK TRACE TRONG MÔI TRƯỜNG DEVELOPMENT
       ...(appConfig.isDev && { stack: error.stack }),
-      
+
       // 🎯 THÔNG TIN BỔ SUNG CHO MỘT SỐ LỖI
       ...(error.details && { details: error.details }),
-    }
+    },
   };
 
   // 🎯 STATUS CODE MẶC ĐỊNH
@@ -115,7 +133,7 @@ function logError(error, req) {
     method: req.method,
     url: req.originalUrl,
     ip: req.ip,
-    userAgent: req.get('User-Agent'),
+    userAgent: req.get("User-Agent"),
     userId: req.user?._id,
     error: {
       name: error.name,
@@ -123,16 +141,16 @@ function logError(error, req) {
       stack: error.stack,
       code: error.errorCode,
       statusCode: error.statusCode,
-    }
+    },
   };
 
   // 🎯 PHÂN LOẠI LOG THEO MỨC ĐỘ
   if (error.statusCode >= 500) {
-    console.error('❌ LỖI HỆ THỐNG:', logData);
+    console.error("❌ LỖI HỆ THỐNG:", logData);
   } else if (error.statusCode >= 400) {
-    console.warn('⚠️ LỖI NGƯỜI DÙNG:', logData);
+    console.warn("⚠️ LỖI NGƯỜI DÙNG:", logData);
   } else {
-    console.info('ℹ️ LỖI THÔNG TIN:', logData);
+    console.info("ℹ️ LỖI THÔNG TIN:", logData);
   }
 }
 

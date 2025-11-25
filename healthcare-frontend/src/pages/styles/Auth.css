@@ -1,21 +1,70 @@
+/* ============================================
+   🎨 PREMIUM Auth Pages Design v3.0
+   ============================================ */
+
 .auth-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  background: linear-gradient(135deg, #f5fafb 0%, #ffffff 50%, #f0f4ff 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
+    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
+
+.auth-container::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(
+    circle,
+    rgba(74, 144, 226, 0.1) 0%,
+    rgba(0, 188, 212, 0.05) 100%
+  );
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.auth-container::after {
+  content: "";
+  position: absolute;
+  bottom: -30%;
+  left: -15%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(
+    circle,
+    rgba(15, 91, 140, 0.08) 0%,
+    rgba(74, 144, 226, 0.03) 100%
+  );
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .auth-card {
-  animation: slideIn 0.3s ease-in-out;
+  animation: slideInDown 0.5s ease-out;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(74, 144, 226, 0.1);
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%) !important;
+  width: 100%;
+  max-width: 480px;
+  position: relative;
+  z-index: 10;
+  padding: 40px 32px;
 }
 
-@keyframes slideIn {
+@keyframes slideInDown {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-40px);
   }
   to {
     opacity: 1;
@@ -23,26 +72,268 @@
   }
 }
 
+/* HEADER SECTION */
+.auth-card .text-center {
+  margin-bottom: 32px;
+}
+
+.auth-card .flex.justify-center {
+  margin-bottom: 20px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.auth-card h1 {
+  font-size: 32px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #0f5b8c, #4a90e2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.auth-card p {
+  font-size: 14px;
+  color: #888888;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+/* FORM STYLING */
+.auth-card .ant-form {
+  margin-top: 28px;
+}
+
 .auth-card .ant-form-item {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
+}
+
+.auth-card .ant-form-item-label > label {
+  color: #1a1a2e;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
 .auth-card .ant-input,
+.auth-card .ant-input-password input,
 .auth-card .ant-input-password {
+  border-radius: 12px !important;
+  border: 1px solid #e0e7ff !important;
+  font-size: 15px;
+  height: 48px;
+  background: #ffffff !important;
+  transition: all 0.3s ease;
+}
+
+.auth-card .ant-input:focus,
+.auth-card .ant-input-password input:focus,
+.auth-card .ant-input-password:focus-within {
+  border-color: #4a90e2 !important;
+  box-shadow: 0 0 16px rgba(74, 144, 226, 0.25) !important;
+}
+
+.auth-card .ant-input-prefix {
+  color: #4a90e2;
   font-size: 16px;
 }
 
+.auth-card .ant-input-password-icon {
+  color: #4a90e2;
+}
+
+/* BUTTON STYLING */
 .auth-card .ant-btn {
   font-size: 16px;
-  height: 40px;
+  height: 48px;
   font-weight: 600;
+  border-radius: 12px;
+  margin-top: 8px;
+  letter-spacing: 0.3px;
 }
 
-.ant-divider {
+.auth-card .ant-btn-primary {
+  background: linear-gradient(135deg, #0f5b8c, #4a90e2) !important;
+  border: none !important;
+  box-shadow: 0 8px 24px rgba(74, 144, 226, 0.35);
+  transition: all 0.35s ease;
+  width: 100%;
+}
+
+.auth-card .ant-btn-primary:hover,
+.auth-card .ant-btn-primary:focus {
+  background: linear-gradient(135deg, #4a90e2, #0f5b8c) !important;
+  transform: translateY(-4px);
+  box-shadow: 0 12px 36px rgba(74, 144, 226, 0.45);
+}
+
+.auth-card .ant-btn-primary:active {
+  transform: translateY(-2px);
+}
+
+.auth-card .ant-btn-primary:disabled {
+  opacity: 0.6;
+  transform: none;
+}
+
+/* FOOTER SECTION */
+.auth-card .text-center.space-y-3 {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #e0e7ff;
+}
+
+.auth-card p.text-gray-600 {
+  font-size: 14px;
+  color: #888888;
+  margin: 0;
+}
+
+.auth-card a {
+  color: #4a90e2;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.auth-card a:hover {
+  color: #0f5b8c;
+  text-shadow: 0 0 8px rgba(74, 144, 226, 0.3);
+}
+
+/* DIVIDER */
+.auth-card .ant-divider {
+  background: linear-gradient(90deg, transparent, #e0e7ff, transparent);
   margin: 24px 0;
+  border: none;
+  height: 1px;
 }
 
-/* Loading state */
+/* LOADING STATE */
 .ant-spin {
   display: inline-block;
+}
+
+.ant-spin-spinning {
+  opacity: 0.8;
+}
+
+.ant-spin-dot-item {
+  background-color: #4a90e2;
+}
+
+/* ERROR MESSAGES */
+.ant-form-item-has-error .ant-input,
+.ant-form-item-has-error .ant-input-password input {
+  border-color: #ef5350 !important;
+  background-color: rgba(239, 83, 80, 0.02) !important;
+}
+
+.ant-form-item-explain-error {
+  color: #ef5350;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+/* SUCCESS MESSAGE */
+.ant-message-success .ant-message-notice-content {
+  background: linear-gradient(135deg, #16a34a, #4caf50);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(76, 175, 80, 0.3);
+}
+
+.ant-message-error .ant-message-notice-content {
+  background: linear-gradient(135deg, #ef5350, #e53935);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(239, 83, 80, 0.3);
+}
+
+/* RESPONSIVE DESIGN */
+@media (max-width: 768px) {
+  .auth-card {
+    max-width: 100%;
+    padding: 32px 24px;
+  }
+
+  .auth-card h1 {
+    font-size: 28px;
+  }
+
+  .auth-card .ant-input,
+  .auth-card .ant-input-password input,
+  .auth-card .ant-input-password {
+    font-size: 14px;
+    height: 44px;
+  }
+
+  .auth-card .ant-btn {
+    font-size: 15px;
+    height: 44px;
+  }
+
+  .auth-container::before {
+    width: 300px;
+    height: 300px;
+    top: -30%;
+    right: -5%;
+  }
+
+  .auth-container::after {
+    width: 250px;
+    height: 250px;
+    bottom: -20%;
+    left: -10%;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 24px 16px;
+  }
+
+  .auth-card h1 {
+    font-size: 24px;
+  }
+
+  .auth-card p {
+    font-size: 13px;
+  }
+
+  .auth-card .ant-input,
+  .auth-card .ant-input-password input,
+  .auth-card .ant-input-password {
+    font-size: 14px;
+    height: 40px;
+  }
+
+  .auth-card .ant-btn {
+    font-size: 14px;
+    height: 40px;
+  }
+
+  .auth-card .flex.justify-center {
+    font-size: 40px;
+  }
+
+  .auth-container::before {
+    width: 200px;
+    height: 200px;
+  }
+
+  .auth-container::after {
+    width: 180px;
+    height: 180px;
+  }
 }
