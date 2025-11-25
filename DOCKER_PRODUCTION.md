@@ -3,6 +3,7 @@
 ## Quick Start
 
 ### Prerequisites
+
 - Docker Desktop (Windows/Mac) or Docker Engine (Linux)
 - Docker Compose v2.0+
 - Git
@@ -11,6 +12,7 @@
 ### Installation
 
 **Windows (PowerShell):**
+
 ```powershell
 # 1. Build images
 .\docker-manage.ps1 build
@@ -23,6 +25,7 @@
 ```
 
 **Linux/Mac (Bash):**
+
 ```bash
 # 1. Build images
 bash docker-setup.sh build
@@ -36,12 +39,12 @@ bash docker-setup.sh status
 
 ## Access Points
 
-| Service | URL | Port |
-|---------|-----|------|
-| Frontend | http://localhost:3000 | 3000 |
-| Backend API | http://localhost:5000 | 5000 |
-| MongoDB | mongodb://mongo:password@localhost:27017 | 27017 |
-| Nginx Proxy | http://localhost:80 | 80 |
+| Service     | URL                                      | Port  |
+| ----------- | ---------------------------------------- | ----- |
+| Frontend    | http://localhost:3000                    | 3000  |
+| Backend API | http://localhost:5000                    | 5000  |
+| MongoDB     | mongodb://mongo:password@localhost:27017 | 27017 |
+| Nginx Proxy | http://localhost:80                      | 80    |
 
 ## Default Credentials
 
@@ -73,6 +76,7 @@ SUPER_ADMIN_PASSWORD=@Admin123
 ```
 
 **Generate secure JWT secrets:**
+
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
@@ -247,20 +251,22 @@ docker inspect healthcare_backend
 ### SSL/HTTPS Setup
 
 1. **Obtain SSL Certificate:**
+
    ```bash
    # Using Let's Encrypt with Certbot
    certbot certonly --standalone -d yourdomain.com
    ```
 
 2. **Update nginx.conf:**
+
    ```nginx
    server {
        listen 443 ssl http2;
        server_name yourdomain.com;
-       
+
        ssl_certificate /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
        ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
-       
+
        # ... rest of config
    }
    ```
@@ -290,6 +296,7 @@ Then use docker stack deploy for swarm mode.
 **Error:** `Cannot connect to Docker daemon`
 
 **Solution:**
+
 - Windows: Start Docker Desktop
 - Linux: `sudo systemctl start docker`
 - Mac: Open Docker Desktop from Applications
@@ -299,6 +306,7 @@ Then use docker stack deploy for swarm mode.
 **Error:** `MongooseServerSelectionError`
 
 **Solution:**
+
 ```powershell
 # Check MongoDB logs
 .\docker-manage.ps1 logs mongodb
@@ -316,6 +324,7 @@ Then use docker stack deploy for swarm mode.
 **Error:** `ERR_CONNECTION_REFUSED` or `CORS error`
 
 **Solution:**
+
 1. Check backend is running: `.\docker-manage.ps1 status`
 2. Check CORS configuration in `.env.docker`
 3. Verify VITE_API_URL is correct
@@ -326,6 +335,7 @@ Then use docker stack deploy for swarm mode.
 **Error:** `Port 5000 is already allocated`
 
 **Solution:**
+
 ```powershell
 # Find process using port
 netstat -ano | findstr :5000
@@ -339,6 +349,7 @@ taskkill /PID <PID> /F
 ### Out of disk space
 
 **Solution:**
+
 ```powershell
 # Clean up unused images
 docker image prune -a
@@ -355,6 +366,7 @@ docker volume prune
 **Error:** Container exits immediately
 
 **Solution:**
+
 ```powershell
 # Check logs
 .\docker-manage.ps1 logs backend
@@ -373,6 +385,7 @@ npm list
 ### Memory Limit
 
 Edit `docker-compose.yml`:
+
 ```yaml
 services:
   backend:
@@ -391,17 +404,18 @@ services:
 deploy:
   resources:
     limits:
-      cpus: '1.0'
+      cpus: "1.0"
     reservations:
-      cpus: '0.5'
+      cpus: "0.5"
 ```
 
 ### Volume Performance (Docker Desktop)
 
 For Mac/Windows with volumes:
+
 ```yaml
 volumes:
-  - ./healthcare-backend:/app:delegated  # Improve performance
+  - ./healthcare-backend:/app:delegated # Improve performance
 ```
 
 ## Backup & Recovery
@@ -460,6 +474,7 @@ docker-compose logs > logs.txt
 ## Security Best Practices
 
 ✅ **DO:**
+
 - [ ] Change default passwords immediately
 - [ ] Use strong, unique JWT secrets
 - [ ] Enable HTTPS/SSL in production
@@ -472,6 +487,7 @@ docker-compose logs > logs.txt
 - [ ] Limit network exposure
 
 ❌ **DON'T:**
+
 - [ ] Don't expose MongoDB directly to internet
 - [ ] Don't store secrets in code
 - [ ] Don't use default credentials
@@ -491,6 +507,7 @@ docker-compose logs > logs.txt
 ## FAQ
 
 **Q: How do I update the application?**
+
 ```powershell
 git pull origin main
 .\docker-manage.ps1 build
@@ -498,6 +515,7 @@ git pull origin main
 ```
 
 **Q: How do I add a new npm package?**
+
 ```powershell
 # Edit package.json, then:
 .\docker-manage.ps1 build --no-cache
@@ -508,12 +526,14 @@ Yes, update `MONGO_URI` in `.env.docker` to point to your MongoDB instance.
 
 **Q: How do I enable debug logging?**
 Update `LOG_LEVEL=debug` in `.env.docker` and restart:
+
 ```powershell
 .\docker-manage.ps1 restart backend
 ```
 
 **Q: Is there a way to view the database?**
 Yes, use MongoDB Compass:
+
 ```
 mongodb://mongo:password@localhost:27017
 ```
