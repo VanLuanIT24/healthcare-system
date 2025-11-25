@@ -53,7 +53,6 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   EnvironmentOutlined,
-  PhoneOutlined as CallOutlined,
   IdcardOutlined,
   CameraOutlined,
   LockOutlined,
@@ -73,7 +72,6 @@ import {
   ExclamationCircleOutlined,
   CheckOutlined,
   CloseCircleOutlined,
-  CallOutlined as PhoneCallOutlined,
   ReloadOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
@@ -1961,7 +1959,7 @@ const PatientDashboard = () => {
                   </Col>
                   <Col xs={24}>
                     <Button
-                      icon={<PhoneCallOutlined />}
+                      icon={<PhoneOutlined />}
                       block
                       type="primary"
                       danger
