@@ -370,8 +370,148 @@
   font-size: 12px;
 }
 
+/* Modal Styles */
+.ant-modal {
+  border-radius: 12px !important;
+}
+
+.ant-modal-header {
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+/* Form Styles */
+.ant-form-item-label > label {
+  font-weight: 500 !important;
+  color: #333 !important;
+}
+
+.ant-input,
+.ant-input-number,
+.ant-picker,
+.ant-select-selector {
+  border-radius: 6px !important;
+  border: 1px solid #d9d9d9 !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-input:focus,
+.ant-input:hover,
+.ant-input-number:focus,
+.ant-input-number:hover,
+.ant-select-focused .ant-select-selector {
+  border-color: #00bcd4 !important;
+  box-shadow: 0 0 0 2px rgba(0, 188, 212, 0.1) !important;
+}
+
+/* File Upload */
+.ant-upload {
+  border-radius: 8px !important;
+}
+
+.ant-upload-drag {
+  border-radius: 8px !important;
+  background: #fafafa !important;
+}
+
+.ant-upload-drag:hover {
+  border-color: #00bcd4 !important;
+  background: #f5fbfc !important;
+}
+
+/* Table Styles */
+.ant-table {
+  font-size: 13px !important;
+}
+
+.ant-table-thead > tr > th {
+  background: #fafafa !important;
+  font-weight: 600 !important;
+  color: #333 !important;
+  border-bottom: 2px solid #e0e0e0 !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: #f5fbfc !important;
+}
+
+/* Tab Styles */
+.ant-tabs-tab {
+  border-radius: 6px 6px 0 0 !important;
+  margin-right: 4px !important;
+  transition: all 0.3s ease !important;
+}
+
+.ant-tabs-tab-active {
+  background: #e0f2f1 !important;
+  border-bottom-color: #00bcd4 !important;
+}
+
+/* Tag Styles */
+.ant-tag {
+  border-radius: 4px !important;
+  padding: 4px 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Button Enhancements */
+.ant-btn-primary {
+  background: #00bcd4 !important;
+  border-color: #00bcd4 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ant-btn-primary:hover {
+  background: #0097a7 !important;
+  border-color: #0097a7 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3) !important;
+}
+
+.ant-btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Rate Component */
+.ant-rate-star {
+  font-size: 28px !important;
+  margin-right: 4px !important;
+}
+
+.ant-rate-star-focused .ant-rate-star-first,
+.ant-rate-star-focused .ant-rate-star-second {
+  color: #ffc069 !important;
+}
+
+/* Drawer Styles */
+.ant-drawer-header {
+  border-bottom: 1px solid #f0f0f0 !important;
+}
+
+/* Badge Enhancements */
+.ant-badge-count {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  font-weight: 600 !important;
+}
+
+/* Dropdown Enhancements */
+.ant-dropdown-menu-item {
+  border-radius: 4px !important;
+  margin: 4px 0 !important;
+}
+
+.ant-dropdown-menu-item:hover {
+  background: #f5fbfc !important;
+  color: #00bcd4 !important;
+}
+
+/* Empty State */
+.ant-empty-description {
+  color: #999 !important;
+  font-size: 14px !important;
+}
+
 /* ==========================================
-   ANIMATIONS
+   ANIMATIONS - ADDITIONAL
    ========================================== */
 
 @keyframes fadeIn {
@@ -437,152 +577,85 @@
   }
 }
 
-/* ==========================================
-   RESPONSIVE DESIGN
-   ========================================== */
-
-@media (max-width: 1024px) {
-  .patient-horizontal-menu .ant-menu-item {
-    padding: 0 10px !important;
-    font-size: 12px;
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
   }
-
-  .header-brand {
-    font-size: 16px;
-  }
-
-  .header-brand span {
-    display: none;
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
+/* Hover Effects for Cards */
+.patient-card-animate {
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.patient-card-animate::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+
+.patient-card-animate:hover::before {
+  left: 100%;
+}
+
+/* Responsive Form Elements */
 @media (max-width: 768px) {
-  .patient-top-header {
-    padding: 12px 16px;
-    flex-direction: column;
-    align-items: flex-start;
+  .ant-form-item-label > label {
+    font-size: 13px !important;
   }
 
-  .header-brand {
-    width: 100%;
-    font-size: 16px;
+  .ant-input,
+  .ant-input-number,
+  .ant-select-selector {
+    font-size: 14px !important;
+    padding: 6px 11px !important;
   }
 
-  .header-user {
-    width: 100%;
-    justify-content: flex-end;
+  .ant-table {
+    font-size: 12px !important;
   }
 
-  .patient-nav-bar {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .patient-horizontal-menu {
-    min-width: 100%;
-    white-space: nowrap;
-  }
-
-  .patient-horizontal-menu .ant-menu-item {
-    padding: 0 8px !important;
-    height: 44px !important;
-    line-height: 44px !important;
-    font-size: 11px;
-  }
-
-  .stat-card .ant-statistic-content {
-    font-size: 24px !important;
-  }
-
-  .patient-content-modern {
-    padding: 16px !important;
-  }
-
-  .welcome-card {
-    padding: 12px !important;
-  }
-
-  .welcome-card h2 {
-    font-size: 20px !important;
+  .ant-modal {
+    width: 95% !important;
   }
 }
 
 @media (max-width: 576px) {
-  .patient-top-header {
-    padding: 8px 12px;
-    gap: 8px;
+  .ant-modal {
+    width: 90% !important;
   }
 
-  .header-brand {
-    font-size: 14px;
+  .ant-drawer {
+    width: 100% !important;
   }
 
-  .header-brand .anticon {
-    font-size: 20px !important;
-  }
-
-  .patient-nav-bar {
-    overflow-x: auto;
-  }
-
-  .patient-horizontal-menu .ant-menu-item {
-    padding: 0 6px !important;
-    height: 40px !important;
-    line-height: 40px !important;
-    font-size: 10px;
-    min-width: 80px;
-    text-align: center;
-  }
-
-  .patient-horizontal-menu .ant-menu-item-selected {
-    border-bottom: 2px solid #00bcd4 !important;
-  }
-
-  .header-user {
-    font-size: 11px;
-  }
-
-  .stat-card {
-    padding: 12px !important;
-  }
-
-  .stat-card .ant-statistic-content {
-    font-size: 20px !important;
-  }
-
-  .stat-card .ant-statistic-title {
+  .ant-table-wrapper {
     font-size: 11px !important;
   }
 
-  .quick-access-card {
-    padding: 12px !important;
+  .ant-table-thead > tr > th {
+    padding: 8px 4px !important;
   }
 
-  .patient-content-modern {
-    padding: 12px !important;
-    min-height: calc(100vh - 110px) !important;
-  }
-
-  .welcome-card {
-    padding: 12px !important;
-    margin-bottom: 16px !important;
-  }
-
-  .welcome-card h2 {
-    font-size: 18px !important;
-  }
-
-  .activity-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 12px;
-  }
-
-  .activity-title {
-    font-size: 12px;
-  }
-
-  .activity-time {
-    font-size: 11px;
+  .ant-table-tbody > tr > td {
+    padding: 8px 4px !important;
   }
 }
