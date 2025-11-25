@@ -14,6 +14,17 @@ import {
   Statistic,
   Badge,
   Menu,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  Table,
+  Timeline,
+  Tag,
+  Divider,
+  Modal,
+  Spin,
+  Tabs,
 } from "antd";
 import {
   UserOutlined,
@@ -51,7 +62,7 @@ const PatientDashboard = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [editValues, setEditValues] = useState({});
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
+
   // Check if user is a doctor
   const isDoctor = user?.role === "DOCTOR";
 
@@ -529,190 +540,494 @@ const PatientDashboard = () => {
     </div>
   );
 
+  // ===== RENDERER FUNCTIONS FOR EACH MODULE =====
+
+  // 1️⃣ DEMOGRAPHICS RENDERER
+  const renderDemographics = () => {
+    if (!data) return <Empty description="Chưa có thông tin cá nhân" />;
+
+    return (
+      <Row gutter={[24, 24]}>
+        <Col xs={24}>
+          <Card title="👤 Thông tin cá nhân" className="patient-card-animate">
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} md={8}>
+                <div style={{ padding: "12px", background: "#f5f9ff", borderRadius: "8px" }}>
+                  <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Tên đầu tiên</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{data?.firstName || "N/A"}</p>
+                </div>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <div style={{ padding: "12px", background: "#f5f9ff", borderRadius: "8px" }}>
+                  <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Tên cuối</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{data?.lastName || "N/A"}</p>
+                </div>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <div style={{ padding: "12px", background: "#f5f9ff", borderRadius: "8px" }}>
+                  <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Ngày sinh</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{data?.dateOfBirth?.slice(0, 10) || "N/A"}</p>
+                </div>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <div style={{ padding: "12px", background: "#f5f9ff", borderRadius: "8px" }}>
+                  <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Giới tính</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{data?.gender === "M" ? "Nam" : data?.gender === "F" ? "Nữ" : "Khác"}</p>
+                </div>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <div style={{ padding: "12px", background: "#f5f9ff", borderRadius: "8px" }}>
+                  <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Nhóm máu</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{data?.bloodType || "N/A"}</p>
+                </div>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <div style={{ padding: "12px", background: "#f5f9ff", borderRadius: "8px" }}>
+                  <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Tình trạng hôn nhân</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{data?.maritalStatus || "N/A"}</p>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+        </Col>
+
+        <Col xs={24}>
+          <Card title="📱 Thông tin liên lạc" className="patient-card-animate">
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12}>
+                <div style={{ padding: "12px", background: "#f0f7ff", borderRadius: "8px" }}>
+                  <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Email</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{data?.email || "N/A"}</p>
+                </div>
+              </Col>
+              <Col xs={24} sm={12}>
+                <div style={{ padding: "12px", background: "#f0f7ff", borderRadius: "8px" }}>
+                  <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Số điện thoại</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{data?.phoneNumber || "N/A"}</p>
+                </div>
+              </Col>
+              <Col xs={24} sm={12}>
+                <div style={{ padding: "12px", background: "#f0f7ff", borderRadius: "8px" }}>
+                  <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Số điện thoại khẩn cấp</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{data?.emergencyPhoneNumber || "N/A"}</p>
+                </div>
+              </Col>
+              <Col xs={24} sm={12}>
+                <div style={{ padding: "12px", background: "#f0f7ff", borderRadius: "8px" }}>
+                  <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Nghề nghiệp</p>
+                  <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{data?.occupation || "N/A"}</p>
+                </div>
+              </Col>
+            </Row>
+          </Card>
+        </Col>
+
+        {data?.addresses && data.addresses.length > 0 && (
+          <Col xs={24}>
+            <Card title="🏠 Địa chỉ" className="patient-card-animate">
+              <Row gutter={[16, 16]}>
+                {data.addresses.map((addr, idx) => (
+                  <Col xs={24} sm={12} key={idx}>
+                    <Card size="small" style={{ background: "#fffaf0", border: "1px solid #ffd591" }}>
+                      <div style={{ fontSize: "13px" }}>
+                        <p style={{ margin: "0 0 8px 0", fontWeight: 600, color: "#FF9800" }}>{addr.addressType}</p>
+                        <p style={{ margin: 0 }}>{addr.street}</p>
+                        <p style={{ margin: "4px 0" }}>{addr.city}, {addr.state} {addr.postalCode}</p>
+                        <p style={{ margin: "4px 0" }}>{addr.country}</p>
+                      </div>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            </Card>
+          </Col>
+        )}
+      </Row>
+    );
+  };
+
+  // 2️⃣ INSURANCE RENDERER
+  const renderInsurance = () => {
+    if (!data) return <Empty description="Chưa có thông tin bảo hiểm" />;
+
+    const insurance = Array.isArray(data) ? data[0] : data;
+    return (
+      <Card title="🛡️ Thông tin bảo hiểm" className="patient-card-animate">
+        <Row gutter={[24, 24]}>
+          <Col xs={24} sm={12} md={6}>
+            <div style={{ padding: "16px", background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", color: "white", borderRadius: "8px" }}>
+              <p style={{ margin: "0 0 8px 0", fontSize: "12px", opacity: 0.9 }}>Công ty bảo hiểm</p>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: "16px" }}>{insurance?.insuranceCompany || "N/A"}</p>
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div style={{ padding: "16px", background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)", color: "white", borderRadius: "8px" }}>
+              <p style={{ margin: "0 0 8px 0", fontSize: "12px", opacity: 0.9 }}>Số hợp đồng</p>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: "16px" }}>{insurance?.policyNumber || "N/A"}</p>
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div style={{ padding: "16px", background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", color: "white", borderRadius: "8px" }}>
+              <p style={{ margin: "0 0 8px 0", fontSize: "12px", opacity: 0.9 }}>Loại bảo hiểm</p>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: "16px" }}>{insurance?.insuranceType || "N/A"}</p>
+            </div>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <div style={{ padding: "16px", background: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)", color: "white", borderRadius: "8px" }}>
+              <p style={{ margin: "0 0 8px 0", fontSize: "12px", opacity: 0.9 }}>Trạng thái</p>
+              <Tag color={insurance?.status === "ACTIVE" ? "green" : "red"} style={{ margin: 0 }}>{insurance?.status === "ACTIVE" ? "Hoạt động" : "Hết hạn"}</Tag>
+            </div>
+          </Col>
+          <Col xs={24} sm={12}>
+            <div style={{ padding: "12px", background: "#f5f9ff", borderRadius: "8px" }}>
+              <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Ngày có hiệu lực</p>
+              <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{insurance?.startDate?.slice(0, 10) || "N/A"}</p>
+            </div>
+          </Col>
+          <Col xs={24} sm={12}>
+            <div style={{ padding: "12px", background: "#f5f9ff", borderRadius: "8px" }}>
+              <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Ngày hết hạn</p>
+              <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>{insurance?.endDate?.slice(0, 10) || "N/A"}</p>
+            </div>
+          </Col>
+        </Row>
+      </Card>
+    );
+  };
+
+  // 3️⃣ MEDICAL HISTORY RENDERER
+  const renderMedicalHistory = () => {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      return <Empty description="Chưa có bệnh sử" />;
+    }
+
+    const histories = Array.isArray(data) ? data : [data];
+    return (
+      <Card title="📋 Bệnh sử" className="patient-card-animate">
+        <Timeline
+          items={histories.map((item, idx) => ({
+            dot: <div style={{ width: "16px", height: "16px", background: "#00BCD4", borderRadius: "50%", border: "2px solid white" }} />,
+            children: (
+              <Card size="small" style={{ marginBottom: "12px" }}>
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12}>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Tên bệnh</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>{item?.conditionName || "N/A"}</p>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Trạng thái</p>
+                    <Tag color={item?.status === "ACTIVE" ? "red" : "green"}>{item?.status === "ACTIVE" ? "Đang mắc" : "Đã khỏi"}</Tag>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Ngày chẩn đoán</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>{item?.diagnosisDate?.slice(0, 10) || "N/A"}</p>
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Mô tả</p>
+                    <p style={{ margin: 0, fontSize: "13px" }}>{item?.description || "Không có mô tả"}</p>
+                  </Col>
+                </Row>
+              </Card>
+            ),
+          }))}
+        />
+      </Card>
+    );
+  };
+
+  // 4️⃣ EMERGENCY CONTACT RENDERER
+  const renderEmergencyContact = () => {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      return <Empty description="Chưa có liên hệ khẩn cấp" />;
+    }
+
+    const contacts = Array.isArray(data) ? data : [data];
+    return (
+      <Row gutter={[16, 16]}>
+        {contacts.map((contact, idx) => (
+          <Col xs={24} sm={12} lg={8} key={idx}>
+            <Card className="patient-card-animate" style={{ borderLeft: "4px solid #FF6B6B" }}>
+              <div>
+                <p style={{ margin: "0 0 12px 0", fontWeight: 700, fontSize: "15px", color: "#333" }}>
+                  👤 {contact?.name || "N/A"}
+                </p>
+                <Row gutter={[0, 8]}>
+                  <Col xs={24}>
+                    <p style={{ margin: "0 0 2px 0", color: "#999", fontSize: "12px" }}>Mối quan hệ</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>{contact?.relationship || "N/A"}</p>
+                  </Col>
+                  <Col xs={24}>
+                    <p style={{ margin: "0 0 2px 0", color: "#999", fontSize: "12px" }}>Số điện thoại</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>📞 {contact?.phoneNumber || "N/A"}</p>
+                  </Col>
+                  <Col xs={24}>
+                    <p style={{ margin: "0 0 2px 0", color: "#999", fontSize: "12px" }}>Email</p>
+                    <p style={{ margin: 0, fontWeight: 600, wordBreak: "break-all" }}>{contact?.email || "N/A"}</p>
+                  </Col>
+                  <Col xs={24}>
+                    <p style={{ margin: "0 0 2px 0", color: "#999", fontSize: "12px" }}>Địa chỉ</p>
+                    <p style={{ margin: 0, fontSize: "13px" }}>{contact?.address || "N/A"}</p>
+                  </Col>
+                </Row>
+              </div>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    );
+  };
+
+  // 5️⃣ VISITS RENDERER
+  const renderVisits = () => {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      return <Empty description="Chưa có lần khám nào" />;
+    }
+
+    const visits = Array.isArray(data) ? data : [data];
+    const columns = [
+      {
+        title: "📅 Ngày khám",
+        dataIndex: "visitDate",
+        key: "visitDate",
+        render: (date) => date?.slice(0, 10) || "N/A",
+      },
+      {
+        title: "⏱️ Thời gian",
+        dataIndex: "visitTime",
+        key: "visitTime",
+        render: (time) => time || "N/A",
+      },
+      {
+        title: "🏥 Bác sĩ",
+        dataIndex: "doctorName",
+        key: "doctorName",
+        render: (name) => name || "N/A",
+      },
+      {
+        title: "🔍 Lý do khám",
+        dataIndex: "reason",
+        key: "reason",
+        render: (reason) => reason || "N/A",
+      },
+      {
+        title: "💊 Chẩn đoán",
+        dataIndex: "diagnosis",
+        key: "diagnosis",
+        render: (diagnosis) => diagnosis || "N/A",
+      },
+      {
+        title: "📝 Ghi chú",
+        dataIndex: "notes",
+        key: "notes",
+        render: (notes) => notes || "N/A",
+      },
+    ];
+
+    return (
+      <Card title="🏥 Lần khám" className="patient-card-animate">
+        <Table
+          dataSource={visits.map((v, i) => ({ ...v, key: i }))}
+          columns={columns}
+          pagination={{ pageSize: 5 }}
+          scroll={{ x: 800 }}
+          size="small"
+        />
+      </Card>
+    );
+  };
+
+  // 6️⃣ APPOINTMENTS RENDERER
+  const renderAppointments = () => {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      return <Empty description="Chưa có lịch hẹn nào" />;
+    }
+
+    const appointments = Array.isArray(data) ? data : [data];
+    return (
+      <Row gutter={[16, 16]}>
+        {appointments.map((apt, idx) => (
+          <Col xs={24} md={12} lg={8} key={idx}>
+            <Card className="patient-card-animate" style={{ borderTop: "4px solid #00BCD4" }}>
+              <div>
+                <div style={{ marginBottom: "16px", paddingBottom: "12px", borderBottom: "1px solid #f0f0f0" }}>
+                  <Tag color="blue">{apt?.status === "CONFIRMED" ? "✅ Đã xác nhận" : apt?.status === "PENDING" ? "⏳ Chờ xác nhận" : "❌ Đã hủy"}</Tag>
+                </div>
+                <Row gutter={[0, 12]}>
+                  <Col xs={24}>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Ngày hẹn</p>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: "15px" }}>{apt?.appointmentDate?.slice(0, 10) || "N/A"}</p>
+                  </Col>
+                  <Col xs={24}>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Thời gian</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>{apt?.appointmentTime || "N/A"}</p>
+                  </Col>
+                  <Col xs={24}>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Bác sĩ</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>{apt?.doctorName || "N/A"}</p>
+                  </Col>
+                  <Col xs={24}>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Lý do</p>
+                    <p style={{ margin: 0, fontSize: "13px" }}>{apt?.reason || "N/A"}</p>
+                  </Col>
+                  <Col xs={24}>
+                    <Button type="primary" block size="small" style={{ marginTop: "8px" }}>
+                      Quản lý lịch hẹn
+                    </Button>
+                  </Col>
+                </Row>
+              </div>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    );
+  };
+
+  // 7️⃣ PRESCRIPTIONS RENDERER
+  const renderPrescriptions = () => {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      return <Empty description="Chưa có đơn thuốc nào" />;
+    }
+
+    const prescriptions = Array.isArray(data) ? data : [data];
+    return (
+      <Row gutter={[16, 16]}>
+        {prescriptions.map((rx, idx) => (
+          <Col xs={24} md={12} key={idx}>
+            <Card className="patient-card-animate" style={{ borderLeft: "4px solid #4CAF50" }}>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12}>
+                  <div>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Tên thuốc</p>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: "15px", color: "#333" }}>{rx?.medicationName || "N/A"}</p>
+                  </div>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <div>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Liều lượng</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>{rx?.dosage || "N/A"}</p>
+                  </div>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <div>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Tần suất</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>{rx?.frequency || "N/A"}</p>
+                  </div>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <div>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Số ngày</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>{rx?.durationDays || "N/A"} ngày</p>
+                  </div>
+                </Col>
+                <Col xs={24}>
+                  <div>
+                    <p style={{ margin: "0 0 4px 0", color: "#999", fontSize: "12px" }}>Chỉ dẫn</p>
+                    <p style={{ margin: 0, fontSize: "13px" }}>{rx?.instructions || "Không có chỉ dẫn"}</p>
+                  </div>
+                </Col>
+                <Col xs={24}>
+                  <div style={{ paddingTop: "12px", borderTop: "1px solid #f0f0f0" }}>
+                    <Tag color={rx?.status === "ACTIVE" ? "green" : "red"}>{rx?.status === "ACTIVE" ? "✅ Hiệu lực" : "❌ Hết hạn"}</Tag>
+                  </div>
+                </Col>
+              </Row>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    );
+  };
+
+  // 8️⃣ LAB RESULTS RENDERER
+  const renderLabResults = () => {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      return <Empty description="Chưa có kết quả xét nghiệm nào" />;
+    }
+
+    const results = Array.isArray(data) ? data : [data];
+    const columns = [
+      {
+        title: "📅 Ngày xét nghiệm",
+        dataIndex: "testDate",
+        key: "testDate",
+        render: (date) => date?.slice(0, 10) || "N/A",
+        width: 130,
+      },
+      {
+        title: "🔬 Tên xét nghiệm",
+        dataIndex: "testName",
+        key: "testName",
+        render: (name) => name || "N/A",
+      },
+      {
+        title: "📊 Kết quả",
+        dataIndex: "result",
+        key: "result",
+        render: (result) => result || "N/A",
+      },
+      {
+        title: "📏 Giới hạn bình thường",
+        dataIndex: "normalRange",
+        key: "normalRange",
+        render: (range) => range || "N/A",
+      },
+      {
+        title: "⚠️ Trạng thái",
+        dataIndex: "status",
+        key: "status",
+        render: (status) => (
+          <Tag color={status === "NORMAL" ? "green" : status === "ABNORMAL" ? "red" : "orange"}>
+            {status === "NORMAL" ? "✅ Bình thường" : status === "ABNORMAL" ? "⚠️ Bất thường" : "🔍 Chờ xác nhận"}
+          </Tag>
+        ),
+      },
+    ];
+
+    return (
+      <Card title="🔬 Kết quả xét nghiệm" className="patient-card-animate">
+        <Table
+          dataSource={results.map((r, i) => ({ ...r, key: i }))}
+          columns={columns}
+          pagination={{ pageSize: 8 }}
+          scroll={{ x: 1000 }}
+          size="small"
+        />
+      </Card>
+    );
+  };
+
+  // MAIN RENDER CONTENT FUNCTION
   const renderContent = () => {
     if (selectedMenu === "home") {
       return renderHome();
     }
 
-    if (!data) {
-      return (
-        <Empty description="Chưa có dữ liệu" style={{ marginTop: "40px" }} />
-      );
+    if (loading) {
+      return <Spin style={{ display: "flex", justifyContent: "center", marginTop: "40px" }} />;
     }
 
-    if (Array.isArray(data)) {
-      return (
-        <Row gutter={[16, 16]}>
-          {data.map((item, index) => (
-            <Col xs={24} key={index}>
-              <Card 
-                className="data-card patient-card-animate"
-                style={editingItem === index ? { background: "#f5f9ff" } : {}}
-              >
-                <div style={{ fontSize: "13px" }}>
-                  {typeof item === "object" ? (
-                    <div>
-                      {Object.entries(item).map(([key, value]) => (
-                        <div
-                          key={key}
-                          style={{
-                            display: "flex",
-                            marginBottom: "8px",
-                            borderBottom: "1px solid #f0f0f0",
-                            paddingBottom: "8px",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontWeight: 600,
-                              color: "#00BCD4",
-                              minWidth: "150px",
-                            }}
-                          >
-                            {key}:
-                          </span>
-                          <span style={{ flex: 1, color: "#666" }}>
-                            {editingItem === index ? (
-                              <Input
-                                value={editValues[key] || ""}
-                                onChange={(e) =>
-                                  setEditValues({
-                                    ...editValues,
-                                    [key]: e.target.value,
-                                  })
-                                }
-                                size="small"
-                              />
-                            ) : (
-                              <>
-                                {typeof value === "object"
-                                  ? JSON.stringify(value)
-                                  : String(value)}
-                              </>
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                      {isDoctor && (
-                        <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f0f0f0" }}>
-                          {editingItem === index ? (
-                            <Space>
-                              <Button
-                                type="primary"
-                                size="small"
-                                onClick={handleSaveEdit}
-                              >
-                                💾 Lưu
-                              </Button>
-                              <Button size="small" onClick={handleCancelEdit}>
-                                ❌ Hủy
-                              </Button>
-                            </Space>
-                          ) : (
-                            <Button
-                              type="default"
-                              size="small"
-                              onClick={() => handleEditItem(item, index)}
-                            >
-                              ✏️ Sửa
-                            </Button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    String(item)
-                  )}
-                </div>
-              </Card>
-            </Col>
-          ))}
-        </Row>
-      );
+    // Route to appropriate renderer
+    switch (selectedMenu) {
+      case "demographics":
+        return renderDemographics();
+      case "insurance":
+        return renderInsurance();
+      case "medicalHistory":
+        return renderMedicalHistory();
+      case "emergencyContact":
+        return renderEmergencyContact();
+      case "visits":
+        return renderVisits();
+      case "appointments":
+        return renderAppointments();
+      case "prescriptions":
+        return renderPrescriptions();
+      case "labResults":
+        return renderLabResults();
+      default:
+        return <Empty description="Chưa có dữ liệu" />;
     }
-
-    return (
-      <Card 
-        className="data-card patient-card-animate"
-        style={editingItem === 0 ? { background: "#f5f9ff" } : {}}
-      >
-        <div style={{ fontSize: "13px" }}>
-          {typeof data === "object" ? (
-            <div>
-              {Object.entries(data).map(([key, value]) => (
-                <div
-                  key={key}
-                  style={{
-                    display: "flex",
-                    marginBottom: "8px",
-                    borderBottom: "1px solid #f0f0f0",
-                    paddingBottom: "8px",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontWeight: 600,
-                      color: "#00BCD4",
-                      minWidth: "150px",
-                    }}
-                  >
-                    {key}:
-                  </span>
-                  <span style={{ flex: 1, color: "#666" }}>
-                    {editingItem === 0 ? (
-                      <Input
-                        value={editValues[key] || ""}
-                        onChange={(e) =>
-                          setEditValues({
-                            ...editValues,
-                            [key]: e.target.value,
-                          })
-                        }
-                        size="small"
-                      />
-                    ) : (
-                      <>
-                        {typeof value === "object"
-                          ? JSON.stringify(value)
-                          : String(value)}
-                      </>
-                    )}
-                  </span>
-                </div>
-              ))}
-              {isDoctor && (
-                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f0f0f0" }}>
-                  {editingItem === 0 ? (
-                    <Space>
-                      <Button
-                        type="primary"
-                        size="small"
-                        onClick={handleSaveEdit}
-                      >
-                        💾 Lưu
-                      </Button>
-                      <Button size="small" onClick={handleCancelEdit}>
-                        ❌ Hủy
-                      </Button>
-                    </Space>
-                  ) : (
-                    <Button
-                      type="default"
-                      size="small"
-                      onClick={() => handleEditItem(data, 0)}
-                    >
-                      ✏️ Sửa
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            String(data)
-          )}
-        </div>
-      </Card>
-    );
   };
 
   return (
