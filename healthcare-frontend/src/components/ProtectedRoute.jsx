@@ -20,8 +20,19 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     return <Navigate to="/superadmin/login" replace />;
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to="/" replace />;
+  if (requiredRole) {
+    const userRole = user?.role;
+
+    // Support array of allowed roles or single role string
+    if (Array.isArray(requiredRole)) {
+      if (!requiredRole.includes(userRole)) {
+        return <Navigate to="/" replace />;
+      }
+    } else {
+      if (userRole !== requiredRole) {
+        return <Navigate to="/" replace />;
+      }
+    }
   }
 
   return children;

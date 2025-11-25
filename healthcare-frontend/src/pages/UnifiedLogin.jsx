@@ -34,6 +34,15 @@ const UnifiedLogin = () => {
         setTimeout(() => {
           navigate("/patient/dashboard", { replace: true });
         }, 100);
+      } else if (userRole === "DOCTOR") {
+        // Doctors use the patient dashboard but have elevated permissions
+        console.log(
+          "👨‍⚕️ Doctor login - redirecting to Patient Dashboard with elevated access"
+        );
+        message.success("Đăng nhập thành công! Chào mừng Bác sĩ.");
+        setTimeout(() => {
+          navigate("/patient/dashboard", { replace: true });
+        }, 100);
       } else if (userRole === "SUPER_ADMIN" || userRole === "ADMIN") {
         console.log("👨‍💼 Redirecting to Super Admin Dashboard");
         message.success("Đăng nhập thành công! Chào mừng bạn.");
@@ -41,8 +50,8 @@ const UnifiedLogin = () => {
           navigate("/superadmin/dashboard", { replace: true });
         }, 100);
       } else {
-        // Other roles (DOCTOR, NURSE, etc.) → Super Admin dashboard
-        console.log("👨‍⚕️ Other role, redirecting to Super Admin Dashboard");
+        // Other roles (NURSE, RECEPTIONIST, etc.) → Super Admin dashboard for now
+        console.log("ℹ Other role, redirecting to Super Admin Dashboard");
         message.success("Đăng nhập thành công!");
         setTimeout(() => {
           navigate("/superadmin/dashboard", { replace: true });

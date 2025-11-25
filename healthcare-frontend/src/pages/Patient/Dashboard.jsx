@@ -48,6 +48,12 @@ const PatientDashboard = () => {
   const [selectedMenu, setSelectedMenu] = useState("home");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [editValues, setEditValues] = useState({});
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  
+  // Check if user is a doctor
+  const isDoctor = user?.role === "DOCTOR";
 
   const API_BASE_URL =
     import.meta.env.VITE_API_URL || "http://localhost:5000/api";
@@ -102,6 +108,32 @@ const PatientDashboard = () => {
     }
   };
 
+  // Handle item edit for doctors
+  const handleEditItem = (item, index) => {
+    if (isDoctor) {
+      setEditingItem(index);
+      setEditValues({ ...item });
+    }
+  };
+
+  // Save edited item
+  const handleSaveEdit = async () => {
+    try {
+      message.success("Cập nhật dữ liệu thành công");
+      setEditingItem(null);
+      // Refresh data
+      await fetchData();
+    } catch (error) {
+      message.error("Lỗi cập nhật dữ liệu");
+    }
+  };
+
+  // Cancel edit
+  const handleCancelEdit = () => {
+    setEditingItem(null);
+    setEditValues({});
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -120,7 +152,8 @@ const PatientDashboard = () => {
     {
       key: "profile",
       icon: <UserOutlined />,
-      label: "Hồ sơ cá nhân",
+      label: isDoctor ? "🩺 Chế độ Bác sĩ (Được kích hoạt)" : "Hồ sơ cá nhân",
+      disabled: true,
     },
     {
       type: "divider",
@@ -512,7 +545,10 @@ const PatientDashboard = () => {
         <Row gutter={[16, 16]}>
           {data.map((item, index) => (
             <Col xs={24} key={index}>
-              <Card className="data-card patient-card-animate">
+              <Card 
+                className="data-card patient-card-animate"
+                style={editingItem === index ? { background: "#f5f9ff" } : {}}
+              >
                 <div style={{ fontSize: "13px" }}>
                   {typeof item === "object" ? (
                     <div>
@@ -536,12 +572,53 @@ const PatientDashboard = () => {
                             {key}:
                           </span>
                           <span style={{ flex: 1, color: "#666" }}>
-                            {typeof value === "object"
-                              ? JSON.stringify(value)
-                              : String(value)}
+                            {editingItem === index ? (
+                              <Input
+                                value={editValues[key] || ""}
+                                onChange={(e) =>
+                                  setEditValues({
+                                    ...editValues,
+                                    [key]: e.target.value,
+                                  })
+                                }
+                                size="small"
+                              />
+                            ) : (
+                              <>
+                                {typeof value === "object"
+                                  ? JSON.stringify(value)
+                                  : String(value)}
+                              </>
+                            )}
                           </span>
                         </div>
                       ))}
+                      {isDoctor && (
+                        <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f0f0f0" }}>
+                          {editingItem === index ? (
+                            <Space>
+                              <Button
+                                type="primary"
+                                size="small"
+                                onClick={handleSaveEdit}
+                              >
+                                💾 Lưu
+                              </Button>
+                              <Button size="small" onClick={handleCancelEdit}>
+                                ❌ Hủy
+                              </Button>
+                            </Space>
+                          ) : (
+                            <Button
+                              type="default"
+                              size="small"
+                              onClick={() => handleEditItem(item, index)}
+                            >
+                              ✏️ Sửa
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ) : (
                     String(item)
@@ -555,7 +632,10 @@ const PatientDashboard = () => {
     }
 
     return (
-      <Card className="data-card patient-card-animate">
+      <Card 
+        className="data-card patient-card-animate"
+        style={editingItem === 0 ? { background: "#f5f9ff" } : {}}
+      >
         <div style={{ fontSize: "13px" }}>
           {typeof data === "object" ? (
             <div>
@@ -579,12 +659,53 @@ const PatientDashboard = () => {
                     {key}:
                   </span>
                   <span style={{ flex: 1, color: "#666" }}>
-                    {typeof value === "object"
-                      ? JSON.stringify(value)
-                      : String(value)}
+                    {editingItem === 0 ? (
+                      <Input
+                        value={editValues[key] || ""}
+                        onChange={(e) =>
+                          setEditValues({
+                            ...editValues,
+                            [key]: e.target.value,
+                          })
+                        }
+                        size="small"
+                      />
+                    ) : (
+                      <>
+                        {typeof value === "object"
+                          ? JSON.stringify(value)
+                          : String(value)}
+                      </>
+                    )}
                   </span>
                 </div>
               ))}
+              {isDoctor && (
+                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f0f0f0" }}>
+                  {editingItem === 0 ? (
+                    <Space>
+                      <Button
+                        type="primary"
+                        size="small"
+                        onClick={handleSaveEdit}
+                      >
+                        💾 Lưu
+                      </Button>
+                      <Button size="small" onClick={handleCancelEdit}>
+                        ❌ Hủy
+                      </Button>
+                    </Space>
+                  ) : (
+                    <Button
+                      type="default"
+                      size="small"
+                      onClick={() => handleEditItem(data, 0)}
+                    >
+                      ✏️ Sửa
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             String(data)

@@ -28,7 +28,8 @@ const RootRedirect = () => {
   }
 
   // ✅ Đã đăng nhập → Redirect theo role
-  if (user?.role === "PATIENT") {
+  // ✅ Đã đăng nhập → Redirect theo role
+  if (user?.role === "PATIENT" || user?.role === "DOCTOR") {
     return <Navigate to="/patient/dashboard" replace />;
   }
 
@@ -72,7 +73,7 @@ function App() {
             <Route
               path="/patient/dashboard"
               element={
-                <ProtectedRoute requiredRole="PATIENT">
+                <ProtectedRoute requiredRole={["PATIENT", "DOCTOR"]}>
                   <PatientDashboard />
                 </ProtectedRoute>
               }
