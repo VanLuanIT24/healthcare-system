@@ -94,31 +94,40 @@ function generateMedicalCode(length = 8) {
   return result;
 }
 
-/**
- * 🎯 KIỂM TRA ĐỘ ƯU TIÊN BỆNH NHÂN
- */
-function calculatePatientPriority(vitals, conditions = []) {
-  let priority = 5; // Mặc định: Không khẩn cấp
-  
-  // 🎯 KIỂM TRA DẤU HIỆU SINH TỒN
-  if (vitals) {
-    if (vitals.heartRate > 140 || vitals.heartRate < 40) priority = 1;
-    else if (vitals.bloodPressureSystolic > 180 || vitals.bloodPressureDiastolic > 120) priority = 1;
-    else if (vitals.oxygenSaturation < 90) priority = 2;
-    else if (vitals.temperature > 39.5) priority = 3;
+function calculatePatientPriority(patientData) {
+  let priorityScore = 0;
+
+  // Tuổi (trẻ em và người già có điểm cao hơn)
+  const age = calculateAge(patientData.dateOfBirth);
+  if (age < 5 || age > 65) priorityScore += 2;
+  if (age < 1 || age > 80) priorityScore += 3;
+
+  // Tình trạng bệnh mãn tính
+  if (patientData.chronicConditions && patientData.chronicConditions.length > 0) {
+    priorityScore += patientData.chronicConditions.length;
+    
+    // Bệnh nghiêm trọng
+    const severeConditions = ['DIABETES', 'HEART_DISEASE', 'CANCER', 'KIDNEY_FAILURE'];
+    patientData.chronicConditions.forEach(condition => {
+      if (severeConditions.includes(condition.condition.toUpperCase())) {
+        priorityScore += 2;
+      }
+    });
   }
-  
-  // 🎯 KIỂM TRA TÌNH TRẠNG BỆNH
-  const emergencyConditions = ['HEART_ATTACK', 'STROKE', 'SEVERE_TRAUMA', 'RESPIRATORY_FAILURE'];
-  if (conditions.some(condition => emergencyConditions.includes(condition))) {
-    priority = 1;
+
+  // Dị ứng nghiêm trọng
+  if (patientData.allergies && patientData.allergies.length > 0) {
+    const severeAllergies = patientData.allergies.filter(
+      allergy => allergy.severity === 'SEVERE' || allergy.severity === 'LIFE_THREATENING'
+    );
+    priorityScore += severeAllergies.length * 2;
   }
-  
-  return {
-    level: priority,
-    label: getPriorityLabel(priority),
-    color: getPriorityColor(priority)
-  };
+
+  // Phân loại dựa trên điểm
+  if (priorityScore >= 8) return 'CRITICAL';
+  if (priorityScore >= 5) return 'HIGH';
+  if (priorityScore >= 3) return 'MEDIUM';
+  return 'LOW';
 }
 
 function getPriorityLabel(priority) {
@@ -149,5 +158,7 @@ module.exports = {
   formatPhoneNumber,
   validateHealthcareEmail,
   generateMedicalCode,
-  calculatePatientPriority
+  calculatePatientPriority,
+  getPriorityLabel,
+  getPriorityColor
 };

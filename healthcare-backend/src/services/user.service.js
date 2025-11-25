@@ -16,18 +16,41 @@ const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
 const EmailService = require('../utils/email');
 
 class UserService {
-  /**
-   * 🎯 TẠO USER MỚI VỚI RBAC CHECK
-   */
-  async createUser(userData, currentUser) {
-    try {
-      console.log('🎯 [USER SERVICE] Creating new user:', {
-        email: userData.email,
-        role: userData.role,
-        requestedBy: currentUser.email
-      });
+// src/services/user.service.js - Sửa hàm createUser
+async createUser(userData, currentUser) {
+  try {
+    console.log('🎯 [USER SERVICE] Creating new user:', {
+      email: userData.email,
+      role: userData.role,
+      requestedBy: currentUser?.email,
+      currentUserRole: currentUser?.role,
+      currentUserId: currentUser?._id
+    });
 
-      // 🛡️ KIỂM TRA QUYỀN TẠO ROLE
+    // 🛡️ KIỂM TRA QUYỀN TẠO ROLE - FIX LỖI UNDEFINED
+    if (!currentUser || !currentUser.role) {
+      console.error('❌ [USER SERVICE] Invalid current user:', currentUser);
+      throw new AppError(
+        'Thông tin người dùng không hợp lệ',
+        401,
+        ERROR_CODES.AUTH_INVALID_TOKEN
+      );
+    }
+
+    // 🛡️ SUPER_ADMIN BYPASS - THÊM LOGIC NÀY
+    if (currentUser.role === ROLES.SUPER_ADMIN) {
+      console.log('👑 [SUPER_ADMIN BYPASS] Super admin creating:', userData.role);
+      // SUPER_ADMIN có thể tạo mọi role trừ chính nó
+      if (userData.role === ROLES.SUPER_ADMIN) {
+        throw new AppError(
+          'Không thể tạo tài khoản Super Admin',
+          403,
+          ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
+        );
+      }
+      // Bypass permission check cho SUPER_ADMIN
+    } else {
+      // 🛡️ KIỂM TRA QUYỀN TẠO ROLE CHO CÁC ROLE KHÁC
       if (!canCreateRole(currentUser.role, userData.role)) {
         throw new AppError(
           `Bạn không có quyền tạo user với vai trò ${userData.role}`,
@@ -35,62 +58,62 @@ class UserService {
           ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
         );
       }
-
-      // 🎯 KIỂM TRA EMAIL TỒN TẠI
-      const existingUser = await User.findOne({ email: userData.email.toLowerCase() });
-      if (existingUser) {
-        throw new AppError(
-          'Email đã tồn tại trong hệ thống',
-          400,
-          ERROR_CODES.USER_EMAIL_EXISTS
-        );
-      }
-
-      // 🎯 VALIDATE PASSWORD STRENGTH
-      if (userData.password.length < 8) {
-        throw new AppError(
-          'Mật khẩu phải có ít nhất 8 ký tự',
-          400,
-          ERROR_CODES.VALIDATION_FAILED
-        );
-      }
-
-      // 🎯 TẠO USER MỚI
-      const user = new User({
-        ...userData,
-        email: userData.email.toLowerCase(),
-        status: 'ACTIVE',
-        createdBy: currentUser._id
-      });
-
-      await user.save();
-      console.log('✅ [USER SERVICE] User created successfully:', user._id);
-
-      // 🎯 TẠO PATIENT PROFILE NẾU LÀ BỆNH NHÂN
-      if (userData.role === ROLES.PATIENT) {
-        await this.createPatientProfile(user);
-      }
-
-      // 📧 GỬI EMAIL CHÀO MỪNG
-      try {
-        await EmailService.sendWelcomeEmail(user);
-        console.log('✅ [USER SERVICE] Welcome email sent to:', user.email);
-      } catch (emailError) {
-        console.error('❌ [USER SERVICE] Failed to send welcome email:', emailError.message);
-        // Không throw error vì đây là feature, không phải core functionality
-      }
-
-      // 🎯 TRẢ VỀ USER (KHÔNG BAO GỒM PASSWORD)
-      const userResponse = user.toObject();
-      delete userResponse.password;
-      
-      return userResponse;
-
-    } catch (error) {
-      console.error('❌ [USER SERVICE] Create user error:', error);
-      throw error;
     }
+
+    // 🎯 KIỂM TRA EMAIL TỒN TẠI
+    const existingUser = await User.findOne({ email: userData.email.toLowerCase() });
+    if (existingUser) {
+      throw new AppError(
+        'Email đã tồn tại trong hệ thống',
+        400,
+        ERROR_CODES.USER_EMAIL_EXISTS
+      );
+    }
+
+    // 🎯 VALIDATE PASSWORD STRENGTH
+    if (userData.password && userData.password.length < 8) {
+      throw new AppError(
+        'Mật khẩu phải có ít nhất 8 ký tự',
+        400,
+        ERROR_CODES.VALIDATION_FAILED
+      );
+    }
+
+    // 🎯 TẠO USER MỚI
+    const user = new User({
+      ...userData,
+      email: userData.email.toLowerCase(),
+      status: 'ACTIVE',
+      createdBy: currentUser._id
+    });
+
+    await user.save();
+    console.log('✅ [USER SERVICE] User created successfully:', user._id);
+
+    // 🎯 TẠO PATIENT PROFILE NẾU LÀ BỆNH NHÂN
+    if (userData.role === ROLES.PATIENT) {
+      await this.createPatientProfile(user);
+    }
+
+    // 📧 GỬI EMAIL CHÀO MỪNG
+    try {
+      await EmailService.sendWelcomeEmail(user);
+      console.log('✅ [USER SERVICE] Welcome email sent to:', user.email);
+    } catch (emailError) {
+      console.error('❌ [USER SERVICE] Failed to send welcome email:', emailError.message);
+    }
+
+    // 🎯 TRẢ VỀ USER (KHÔNG BAO GỒM PASSWORD)
+    const userResponse = user.toObject();
+    delete userResponse.password;
+    
+    return userResponse;
+
+  } catch (error) {
+    console.error('❌ [USER SERVICE] Create user error:', error);
+    throw error;
   }
+}
 
   /**
    * 🎯 TẠO PATIENT PROFILE
@@ -372,51 +395,72 @@ class UserService {
     }
   }
 
-  /**
-   * 🎯 GÁN ROLE CHO USER
-   */
-  async assignRole(userId, newRole, currentUser) {
-    try {
-      console.log('🎯 [USER SERVICE] Assigning role:', { userId, newRole });
+async assignRole(userId, newRole, currentUser) {
+  try {
+    console.log('🎯 [USER SERVICE] Assigning role:', { 
+      userId, 
+      newRole,
+      currentUser: currentUser?.email,
+      currentUserRole: currentUser?.role 
+    });
 
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new AppError('Không tìm thấy user', 404, ERROR_CODES.USER_NOT_FOUND);
-      }
+    // 🛡️ KIỂM TRA THÔNG TIN CURRENT USER
+    if (!currentUser || !currentUser.role) {
+      console.error('❌ [USER SERVICE] Invalid current user in assignRole:', currentUser);
+      throw new AppError(
+        'Thông tin người dùng không hợp lệ',
+        401,
+        ERROR_CODES.AUTH_INVALID_TOKEN
+      );
+    }
 
-      // 🛡️ KIỂM TRA QUYỀN GÁN ROLE
-      if (!canCreateRole(currentUser.role, newRole)) {
-        throw new AppError(
-          `Bạn không có quyền gán role ${newRole}`,
-          403,
-          ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
-        );
-      }
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('Không tìm thấy user', 404, ERROR_CODES.USER_NOT_FOUND);
+    }
 
-      // 🛡️ KHÔNG CHO GÁN ROLE SUPER ADMIN
-      if (newRole === ROLES.SUPER_ADMIN && currentUser.role !== ROLES.SUPER_ADMIN) {
+    // 🛡️ SUPER_ADMIN BYPASS
+    if (currentUser.role === ROLES.SUPER_ADMIN) {
+      console.log('👑 [SUPER_ADMIN BYPASS] Super admin assigning role:', newRole);
+      // SUPER_ADMIN có thể gán mọi role trừ chính nó
+      if (newRole === ROLES.SUPER_ADMIN) {
         throw new AppError(
           'Chỉ Super Admin mới có thể gán role Super Admin',
           403,
           ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
         );
       }
-
-      user.role = newRole;
-      user.lastModifiedBy = currentUser._id;
-      await user.save();
-
-      console.log('✅ [USER SERVICE] Role assigned successfully:', { userId, newRole });
-      
-      const updatedUser = user.toObject();
-      delete updatedUser.password;
-      return updatedUser;
-
-    } catch (error) {
-      console.error('❌ [USER SERVICE] Assign role error:', error);
-      throw error;
+      // Bypass permission check cho SUPER_ADMIN
+    } else {
+      // 🛡️ KIỂM TRA QUYỀN GÁN ROLE CHO CÁC ROLE KHÁC
+      if (!canCreateRole(currentUser.role, newRole)) {
+        console.error('❌ [USER SERVICE] Role assignment denied:', {
+          currentRole: currentUser.role,
+          targetRole: newRole
+        });
+        throw new AppError(
+          `Bạn không có quyền gán role ${newRole}`,
+          403,
+          ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
+        );
+      }
     }
+
+    user.role = newRole;
+    user.lastModifiedBy = currentUser._id;
+    await user.save();
+
+    console.log('✅ [USER SERVICE] Role assigned successfully:', { userId, newRole });
+    
+    const updatedUser = user.toObject();
+    delete updatedUser.password;
+    return updatedUser;
+
+  } catch (error) {
+    console.error('❌ [USER SERVICE] Assign role error:', error);
+    throw error;
   }
+}
 
   /**
    * 🎯 LẤY PERMISSIONS CỦA USER
@@ -692,12 +736,23 @@ async cleanupUserData(userId) {
   }
 }
 
-/**
- * 🎯 KHÔI PHỤC USER ĐÃ XÓA
- */
 async restoreUser(userId, currentUser) {
   try {
-    console.log('🎯 [USER SERVICE] Restoring user:', userId);
+    console.log('🎯 [USER SERVICE] Restoring user:', {
+      userId,
+      currentUser: currentUser?.email,
+      currentUserRole: currentUser?.role
+    });
+
+    // 🛡️ KIỂM TRA THÔNG TIN CURRENT USER
+    if (!currentUser || !currentUser.role) {
+      console.error('❌ [USER SERVICE] Invalid current user in restoreUser:', currentUser);
+      throw new AppError(
+        'Thông tin người dùng không hợp lệ',
+        401,
+        ERROR_CODES.AUTH_INVALID_TOKEN
+      );
+    }
 
     const user = await User.findOne({ 
       _id: userId, 
@@ -712,13 +767,36 @@ async restoreUser(userId, currentUser) {
       );
     }
 
-    // 🛡️ KIỂM TRA QUYỀN KHÔI PHỤC
-    if (!hasPermission(currentUser.role, PERMISSIONS.UPDATE_USER)) {
-      throw new AppError(
-        'Bạn không có quyền khôi phục user',
-        403,
-        ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
-      );
+    // 🛡️ SUPER_ADMIN BYPASS - CHO PHÉP SUPER_ADMIN KHÔI PHỤC MỌI USER
+    if (currentUser.role === ROLES.SUPER_ADMIN) {
+      console.log('👑 [SUPER_ADMIN BYPASS] Super admin restoring user:', userId);
+      // SUPER_ADMIN có thể khôi phục mọi user
+    } else {
+      // 🛡️ KIỂM TRA QUYỀN KHÔI PHỤC CHO CÁC ROLE KHÁC
+      if (!hasPermission(currentUser.role, PERMISSIONS.USER_UPDATE)) {
+        console.error('❌ [USER SERVICE] Restore permission denied:', {
+          currentRole: currentUser.role,
+          requiredPermission: PERMISSIONS.USER_UPDATE
+        });
+        throw new AppError(
+          'Bạn không có quyền khôi phục user',
+          403,
+          ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
+        );
+      }
+
+      // 🛡️ KIỂM TRA QUYỀN KHÔI PHỤC ROLE CAO HƠN
+      if (ROLE_HIERARCHY.indexOf(user.role) < ROLE_HIERARCHY.indexOf(currentUser.role)) {
+        console.error('❌ [USER SERVICE] Cannot restore higher role:', {
+          currentRole: currentUser.role,
+          targetRole: user.role
+        });
+        throw new AppError(
+          'Không có quyền khôi phục user có role cao hơn',
+          403,
+          ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
+        );
+      }
     }
 
     // 🎯 KHÔI PHỤC USER
@@ -838,8 +916,137 @@ async listDeletedUsers(options = {}) {
     throw error;
   }
 }
+
+// Bổ sung vào user.service.js - trong class UserService
+
+/**
+ * 🎯 UPLOAD PROFILE PICTURE
+ */
+async uploadProfilePicture(userId, file) {
+  try {
+    console.log('🎯 [USER SERVICE] Uploading profile picture:', { userId, filename: file.filename });
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('Không tìm thấy user', 404, ERROR_CODES.USER_NOT_FOUND);
+    }
+
+    // Xóa ảnh cũ nếu có
+    if (user.personalInfo.profilePicture) {
+      const oldFilePath = path.join(__dirname, '../../uploads/profiles', user.personalInfo.profilePicture);
+      await deleteFile(oldFilePath);
+    }
+
+    // Cập nhật ảnh mới
+    user.personalInfo.profilePicture = file.filename;
+    await user.save();
+
+    console.log('✅ [USER SERVICE] Profile picture uploaded successfully:', file.filename);
+    return user;
+  } catch (error) {
+    console.error('❌ [USER SERVICE] Upload profile picture error:', error);
+    throw error;
+  }
 }
 
+/**
+ * 🎯 VERIFY EMAIL
+ */
+async verifyEmail(token) {
+  try {
+    console.log('🎯 [USER SERVICE] Verifying email with token');
 
+    const user = await User.findByVerificationToken(token);
+    if (!user) {
+      throw new AppError(
+        'Token xác thực không hợp lệ hoặc đã hết hạn',
+        400,
+        ERROR_CODES.VALIDATION_FAILED
+      );
+    }
 
+    user.verifyEmail();
+    await user.save();
+
+    console.log('✅ [USER SERVICE] Email verified successfully:', user.email);
+    return user;
+  } catch (error) {
+    console.error('❌ [USER SERVICE] Verify email error:', error);
+    throw error;
+  }
+}
+
+/**
+ * 🎯 RESEND VERIFICATION EMAIL
+ */
+async resendVerificationEmail(userId) {
+  try {
+    console.log('🎯 [USER SERVICE] Resending verification email:', userId);
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new AppError('Không tìm thấy user', 404, ERROR_CODES.USER_NOT_FOUND);
+    }
+
+    if (user.isEmailVerified) {
+      throw new AppError('Email đã được xác thực', 400, ERROR_CODES.OPERATION_NOT_ALLOWED);
+    }
+
+    const token = user.generateEmailVerificationToken();
+    await user.save();
+
+    // Gửi email xác thực
+    try {
+      await EmailService.sendVerificationEmail(user, token);
+      console.log('✅ [USER SERVICE] Verification email sent:', user.email);
+    } catch (emailError) {
+      console.error('❌ [USER SERVICE] Send verification email error:', emailError.message);
+    }
+
+    return { email: user.email, token };
+  } catch (error) {
+    console.error('❌ [USER SERVICE] Resend verification email error:', error);
+    throw error;
+  }
+}
+
+/**
+ * 🎯 GET USER BY EMAIL
+ */
+async getUserByEmail(email) {
+  try {
+    console.log('🎯 [USER SERVICE] Getting user by email:', email);
+
+    const user = await User.findByEmail(email);
+    if (!user) {
+      return null;
+    }
+
+    const userData = user.toObject();
+    delete userData.password;
+    delete userData.emailVerificationToken;
+    delete userData.resetPasswordToken;
+
+    return userData;
+  } catch (error) {
+    console.error('❌ [USER SERVICE] Get user by email error:', error);
+    throw error;
+  }
+}
+
+/**
+ * 🎯 GET USER STATISTICS
+ */
+async getUserStatistics() {
+  try {
+    console.log('🎯 [USER SERVICE] Getting user statistics');
+
+    const stats = await User.getUserStats();
+    return stats;
+  } catch (error) {
+    console.error('❌ [USER SERVICE] Get user statistics error:', error);
+    throw error;
+  }
+}
+}
 module.exports = new UserService();

@@ -17,13 +17,16 @@ const { AppError, ERROR_CODES } = require('./error.middleware');
  * - Kiểm tra hierarchy trong tổ chức y tế
  */
 
-/**
- * 🎯 MIDDLEWARE KIỂM TRA VAI TRÒ
- */
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user) {
       return next(new AppError('Yêu cầu xác thực', 401, ERROR_CODES.AUTH_INVALID_TOKEN));
+    }
+
+    // 🎯 SUPER_ADMIN BYPASS - CHO PHÉP SUPER_ADMIN TRUY CẬP MỌI THỨ
+    if (req.user.role === ROLES.SUPER_ADMIN) {
+      console.log('👑 [SUPER_ADMIN BYPASS] Role check bypassed for SUPER_ADMIN');
+      return next();
     }
 
     // 🎯 CHO PHÉP TRUY CẬP KHẨN CẤP

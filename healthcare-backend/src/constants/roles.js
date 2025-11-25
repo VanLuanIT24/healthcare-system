@@ -1,129 +1,149 @@
 // src/constants/roles.js
 /**
- * HỆ THỐNG PHÂN QUYỀN RBAC CHUẨN HEALTHCARE ENTERPRISE
- * Author: Senior Dev Team (Healthcare Edition)
- * Description:
- *  - Thiết kế chuyên biệt cho hệ thống y tế
- *  - Hỗ trợ đa dạng vai trò và quyền hạn theo chuẩn bệnh viện
- *  - Bảo mật dữ liệu bệnh nhân theo HIPAA và các tiêu chuẩn y tế
+ * 🏥 HỆ THỐNG PHÂN QUYỀN RBAC CHUẨN HEALTHCARE ENTERPRISE
+ * Author: Healthcare Development Team
+ * Description: Hệ thống phân quyền theo vai trò cho hệ thống y tế
+ * - Tuân thủ HIPAA và tiêu chuẩn bảo mật y tế
+ * - Hỗ trợ đa dạng vai trò trong bệnh viện
+ * - Bảo vệ dữ liệu bệnh nhân theo nguyên tắc "least privilege"
  */
 
+// ===== ĐỊNH NGHĨA ROLES =====
 const ROLES = Object.freeze({
-  // ===== HỆ THỐNG =====
-  SUPER_ADMIN: 'SUPER_ADMIN',      // Toàn quyền hệ thống (IT System Admin)
+  // ===== HỆ THỐNG & QUẢN TRỊ =====
+  SUPER_ADMIN: 'SUPER_ADMIN',           // Quản trị hệ thống cao nhất
+  HOSPITAL_ADMIN: 'HOSPITAL_ADMIN',     // Quản trị bệnh viện
+  DEPARTMENT_HEAD: 'DEPARTMENT_HEAD',   // Trưởng khoa/phòng
   
+  // ===== NHÂN VIÊN Y TẾ =====
+  DOCTOR: 'DOCTOR',                     // Bác sĩ điều trị
+  NURSE: 'NURSE',                       // Y tá/Điều dưỡng
+  PHARMACIST: 'PHARMACIST',             // Dược sĩ
+  LAB_TECHNICIAN: 'LAB_TECHNICIAN',     // Kỹ thuật viên xét nghiệm
   
-  // ===== QUẢN TRỊ =====
-  HOSPITAL_ADMIN: 'HOSPITAL_ADMIN',  // Quản trị bệnh viện
-  DEPARTMENT_HEAD: 'DEPARTMENT_HEAD', // Trưởng khoa/phòng
-  
-  // ===== Y BÁC SĨ =====
-  DOCTOR: 'DOCTOR',                  // Bác sĩ điều trị
-  NURSE: 'NURSE',                    // Y tá/Điều dưỡng
-  PHARMACIST: 'PHARMACIST',          // Dược sĩ
-  LAB_TECHNICIAN: 'LAB_TECHNICIAN',  // Kỹ thuật viên xét nghiệm
-  
-  // ===== HÀNH CHÍNH =====
-  RECEPTIONIST: 'RECEPTIONIST',      // Lễ tân
-  BILLING_STAFF: 'BILLING_STAFF',    // Nhân viên kế toán
+  // ===== NHÂN VIÊN HÀNH CHÍNH =====
+  RECEPTIONIST: 'RECEPTIONIST',         // Lễ tân
+  BILLING_STAFF: 'BILLING_STAFF',       // Nhân viên kế toán
   
   // ===== NGƯỜI DÙNG =====
-  PATIENT: 'PATIENT',                // Bệnh nhân
-  GUEST: 'GUEST',                    // Khách (chưa đăng nhập)
+  PATIENT: 'PATIENT',                   // Bệnh nhân
+  GUEST: 'GUEST',                       // Khách (chưa đăng nhập)
 });
 
+// ===== ĐỊNH NGHĨA PERMISSIONS =====
 const PERMISSIONS = Object.freeze({
-  // ===== AUTHENTICATION & CƠ BẢN =====
-  LOGIN: 'AUTH.LOGIN',
-  LOGOUT: 'AUTH.LOGOUT',
-  SELF_REGISTER: 'AUTH.SELF_REGISTER',
+  // ===== AUTHENTICATION =====
+  'AUTH.LOGIN': 'AUTH.LOGIN',
+  'AUTH.LOGOUT': 'AUTH.LOGOUT',
+  'AUTH.SELF_REGISTER': 'AUTH.SELF_REGISTER',
   
   // ===== ĐĂNG KÝ TÀI KHOẢN =====
-  REGISTER_PATIENT: 'AUTH.REGISTER_PATIENT',
-  REGISTER_RECEPTIONIST: 'AUTH.REGISTER_RECEPTIONIST',
-  REGISTER_BILLING_STAFF: 'AUTH.REGISTER_BILLING_STAFF',
-  REGISTER_LAB_TECHNICIAN: 'AUTH.REGISTER_LAB_TECHNICIAN',
-  REGISTER_PHARMACIST: 'AUTH.REGISTER_PHARMACIST',
-  REGISTER_NURSE: 'AUTH.REGISTER_NURSE',
-  REGISTER_DOCTOR: 'AUTH.REGISTER_DOCTOR',
-  REGISTER_DEPARTMENT_HEAD: 'AUTH.REGISTER_DEPARTMENT_HEAD',
-  REGISTER_HOSPITAL_ADMIN: 'AUTH.REGISTER_HOSPITAL_ADMIN',
+  'AUTH.REGISTER_PATIENT': 'AUTH.REGISTER_PATIENT',
+  'AUTH.REGISTER_RECEPTIONIST': 'AUTH.REGISTER_RECEPTIONIST',
+  'AUTH.REGISTER_BILLING_STAFF': 'AUTH.REGISTER_BILLING_STAFF',
+  'AUTH.REGISTER_LAB_TECHNICIAN': 'AUTH.REGISTER_LAB_TECHNICIAN',
+  'AUTH.REGISTER_PHARMACIST': 'AUTH.REGISTER_PHARMACIST',
+  'AUTH.REGISTER_NURSE': 'AUTH.REGISTER_NURSE',
+  'AUTH.REGISTER_DOCTOR': 'AUTH.REGISTER_DOCTOR',
+  'AUTH.REGISTER_DEPARTMENT_HEAD': 'AUTH.REGISTER_DEPARTMENT_HEAD',
+  'AUTH.REGISTER_HOSPITAL_ADMIN': 'AUTH.REGISTER_HOSPITAL_ADMIN',
 
   // ===== QUẢN LÝ NGƯỜI DÙNG =====
-  VIEW_USER: 'USER.VIEW',
-  UPDATE_USER: 'USER.UPDATE',
-  DISABLE_USER: 'USER.DISABLE',
-  DELETE_USER: 'USER.DELETE',
-  VIEW_USER_SENSITIVE: 'USER.VIEW_SENSITIVE', // Xem thông tin nhạy cảm
-  ENABLE_USER: 'USER.ENABLE', // Kích hoạt lại user
-  RESTORE_USER: 'USER.RESTORE', // Khôi phục user đã xóa
+  'USER.VIEW': 'USER.VIEW',
+  'USER.CREATE': 'USER.CREATE',
+  'USER.UPDATE': 'USER.UPDATE',
+  'USER.DELETE': 'USER.DELETE',
+  'USER.DISABLE': 'USER.DISABLE',
+  'USER.ENABLE': 'USER.ENABLE',
+  'USER.RESTORE': 'USER.RESTORE',
+  'USER.VIEW_SENSITIVE': 'USER.VIEW_SENSITIVE',
 
-  // ===== HỒ SƠ BỆNH ÁN ===== (Quan trọng nhất)
-  VIEW_MEDICAL_RECORDS: 'MEDICAL.VIEW_RECORDS',
-  CREATE_MEDICAL_RECORDS: 'MEDICAL.CREATE_RECORDS',
-  UPDATE_MEDICAL_RECORDS: 'MEDICAL.UPDATE_RECORDS',
-  DELETE_MEDICAL_RECORDS: 'MEDICAL.DELETE_RECORDS',
-  EXPORT_MEDICAL_RECORDS: 'MEDICAL.EXPORT_RECORDS',
+  // ===== QUẢN LÝ BỆNH NHÂN =====
+  'PATIENT.VIEW': 'PATIENT.VIEW',
+  'PATIENT.CREATE': 'PATIENT.CREATE',
+  'PATIENT.UPDATE': 'PATIENT.UPDATE',
+  'PATIENT.DELETE': 'PATIENT.DELETE',
+  'PATIENT.ADMIT': 'PATIENT.ADMIT',
+  'PATIENT.DISCHARGE': 'PATIENT.DISCHARGE',
+  'PATIENT.VIEW_SENSITIVE': 'PATIENT.VIEW_SENSITIVE',
+
+  // ===== HỒ SƠ BỆNH ÁN =====
+  'MEDICAL.VIEW_RECORDS': 'MEDICAL.VIEW_RECORDS',
+  'MEDICAL.CREATE_RECORDS': 'MEDICAL.CREATE_RECORDS',
+  'MEDICAL.UPDATE_RECORDS': 'MEDICAL.UPDATE_RECORDS',
+  'MEDICAL.DELETE_RECORDS': 'MEDICAL.DELETE_RECORDS',
+  'MEDICAL.EXPORT_RECORDS': 'MEDICAL.EXPORT_RECORDS',
   
-  // ===== CHẨN ĐOÁN & ĐIỀU TRỊ =====
-  CREATE_DIAGNOSIS: 'MEDICAL.CREATE_DIAGNOSIS',
-  UPDATE_DIAGNOSIS: 'MEDICAL.UPDATE_DIAGNOSIS',
-  VIEW_TREATMENT_PLANS: 'MEDICAL.VIEW_TREATMENT_PLANS',
-  CREATE_TREATMENT_PLANS: 'MEDICAL.CREATE_TREATMENT_PLANS',
-  UPDATE_TREATMENT_PLANS: 'MEDICAL.UPDATE_TREATMENT_PLANS',
+  // ===== TƯ VẤN/KHÁM BỆNH =====
+  'CONSULTATION.VIEW': 'CONSULTATION.VIEW',
+  'CONSULTATION.CREATE': 'CONSULTATION.CREATE',
+  'CONSULTATION.UPDATE': 'CONSULTATION.UPDATE',
+  'CONSULTATION.DELETE': 'CONSULTATION.DELETE',
+  
+  // ===== CHẨN ĐOÁN =====
+  'DIAGNOSIS.VIEW': 'DIAGNOSIS.VIEW',
+  'DIAGNOSIS.CREATE': 'DIAGNOSIS.CREATE',
+  'DIAGNOSIS.UPDATE': 'DIAGNOSIS.UPDATE',
+  'DIAGNOSIS.DELETE': 'DIAGNOSIS.DELETE',
+  
+  // ===== ĐIỀU TRỊ =====
+  'TREATMENT.VIEW_PLANS': 'TREATMENT.VIEW_PLANS',
+  'TREATMENT.CREATE_PLANS': 'TREATMENT.CREATE_PLANS',
+  'TREATMENT.UPDATE_PLANS': 'TREATMENT.UPDATE_PLANS',
 
   // ===== ĐƠN THUỐC =====
-  VIEW_PRESCRIPTIONS: 'PRESCRIPTION.VIEW',
-  CREATE_PRESCRIPTIONS: 'PRESCRIPTION.CREATE',
-  UPDATE_PRESCRIPTIONS: 'PRESCRIPTION.UPDATE',
-  DISPENSE_MEDICATION: 'PRESCRIPTION.DISPENSE', // Phát thuốc
+  'PRESCRIPTION.VIEW': 'PRESCRIPTION.VIEW',
+  'PRESCRIPTION.CREATE': 'PRESCRIPTION.CREATE',
+  'PRESCRIPTION.UPDATE': 'PRESCRIPTION.UPDATE',
+  'PRESCRIPTION.DELETE': 'PRESCRIPTION.DELETE',
+  'PRESCRIPTION.DISPENSE': 'PRESCRIPTION.DISPENSE',
 
   // ===== LỊCH HẸN =====
-  VIEW_APPOINTMENTS: 'APPOINTMENT.VIEW',
-  CREATE_APPOINTMENTS: 'APPOINTMENT.CREATE',
-  UPDATE_APPOINTMENTS: 'APPOINTMENT.UPDATE',
-  CANCEL_APPOINTMENTS: 'APPOINTMENT.CANCEL',
-  VIEW_SCHEDULE: 'APPOINTMENT.VIEW_SCHEDULE', // Lịch làm việc
+  'APPOINTMENT.VIEW': 'APPOINTMENT.VIEW',
+  'APPOINTMENT.CREATE': 'APPOINTMENT.CREATE',
+  'APPOINTMENT.UPDATE': 'APPOINTMENT.UPDATE',
+  'APPOINTMENT.CANCEL': 'APPOINTMENT.CANCEL',
+  'APPOINTMENT.VIEW_SCHEDULE': 'APPOINTMENT.VIEW_SCHEDULE',
 
-  // ===== XÉT NGHIỆM & CẬN LÂM SÀNG =====
-  VIEW_LAB_RESULTS: 'LAB.VIEW_RESULTS',
-  CREATE_LAB_RESULTS: 'LAB.CREATE_RESULTS',
-  UPDATE_LAB_RESULTS: 'LAB.UPDATE_RESULTS',
-  APPROVE_LAB_RESULTS: 'LAB.APPROVE_RESULTS',
+  // ===== XÉT NGHIỆM =====
+  'LAB.VIEW_ORDERS': 'LAB.VIEW_ORDERS',
+  'LAB.CREATE_ORDERS': 'LAB.CREATE_ORDERS',
+  'LAB.UPDATE_ORDERS': 'LAB.UPDATE_ORDERS',
+  'LAB.VIEW_RESULTS': 'LAB.VIEW_RESULTS',
+  'LAB.CREATE_RESULTS': 'LAB.CREATE_RESULTS',
+  'LAB.UPDATE_RESULTS': 'LAB.UPDATE_RESULTS',
+  'LAB.APPROVE_RESULTS': 'LAB.APPROVE_RESULTS',
 
-  // ===== THANH TOÁN & HÓA ĐƠN =====
-  VIEW_BILLS: 'BILL.VIEW',
-  CREATE_BILLS: 'BILL.CREATE',
-  UPDATE_BILLS: 'BILL.UPDATE',
-  PROCESS_PAYMENTS: 'BILL.PROCESS_PAYMENTS',
-  VIEW_FINANCIAL_REPORTS: 'BILL.VIEW_REPORTS',
+  // ===== TÀI CHÍNH =====
+  'BILL.VIEW': 'BILL.VIEW',
+  'BILL.CREATE': 'BILL.CREATE',
+  'BILL.UPDATE': 'BILL.UPDATE',
+  'BILL.DELETE': 'BILL.DELETE',
+  'BILL.PROCESS_PAYMENTS': 'BILL.PROCESS_PAYMENTS',
+  'BILL.VIEW_REPORTS': 'BILL.VIEW_REPORTS',
 
   // ===== QUẢN LÝ KHO =====
-  VIEW_INVENTORY: 'INVENTORY.VIEW',
-  UPDATE_INVENTORY: 'INVENTORY.UPDATE',
-  MANAGE_MEDICATION_STOCK: 'INVENTORY.MANAGE_MEDICATION',
+  'INVENTORY.VIEW': 'INVENTORY.VIEW',
+  'INVENTORY.UPDATE': 'INVENTORY.UPDATE',
+  'INVENTORY.MANAGE_MEDICATION': 'INVENTORY.MANAGE_MEDICATION',
 
-  // ===== BÁO CÁO & THỐNG KÊ =====
-  VIEW_REPORTS: 'REPORT.VIEW',
-  GENERATE_REPORTS: 'REPORT.GENERATE',
-  EXPORT_REPORTS: 'REPORT.EXPORT',
+  // ===== BÁO CÁO =====
+  'REPORT.VIEW': 'REPORT.VIEW',
+  'REPORT.GENERATE': 'REPORT.GENERATE',
+  'REPORT.EXPORT': 'REPORT.EXPORT',
 
-  // ===== QUYỀN KHẨN CẤP ===== (Y tế đặc thù)
-  EMERGENCY_ACCESS: 'EMERGENCY.ACCESS', // Truy cập khẩn trong tình huống cấp cứu
-  BYPASS_APPROVAL: 'EMERGENCY.BYPASS_APPROVAL',
+  // ===== KHẨN CẤP =====
+  'EMERGENCY.ACCESS': 'EMERGENCY.ACCESS',
+  'EMERGENCY.BYPASS_APPROVAL': 'EMERGENCY.BYPASS_APPROVAL',
 
   // ===== HỆ THỐNG =====
-  SYSTEM_CONFIG: 'SYSTEM.CONFIG',
-  AUDIT_LOG_VIEW: 'SYSTEM.VIEW_AUDIT_LOG',
-  BACKUP_DATA: 'SYSTEM.BACKUP_DATA',
-  RESTORE_DATA: 'SYSTEM.RESTORE_DATA',
+  'SYSTEM.CONFIG': 'SYSTEM.CONFIG',
+  'SYSTEM.VIEW_AUDIT_LOG': 'SYSTEM.VIEW_AUDIT_LOG',
+  'SYSTEM.BACKUP_DATA': 'SYSTEM.BACKUP_DATA',
+  'SYSTEM.RESTORE_DATA': 'SYSTEM.RESTORE_DATA',
 });
 
-/**
- * PHÂN QUYỀN CHI TIẾT THEO VAI TRÒ
- * - Mỗi role có tập permissions phù hợp với công việc
- * - Tuân thủ nguyên tắc "least privilege" trong bảo mật y tế
- */
+// ===== PHÂN QUYỀN THEO ROLE =====
 const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.SUPER_ADMIN]: [
     // Toàn quyền hệ thống
@@ -131,189 +151,296 @@ const ROLE_PERMISSIONS = Object.freeze({
   ],
 
   [ROLES.HOSPITAL_ADMIN]: [
-    // Quản trị bệnh viện
-    PERMISSIONS.LOGIN, PERMISSIONS.LOGOUT,
-    PERMISSIONS.REGISTER_DEPARTMENT_HEAD, PERMISSIONS.REGISTER_DOCTOR,
-    PERMISSIONS.REGISTER_NURSE, PERMISSIONS.REGISTER_PHARMACIST,
-    PERMISSIONS.REGISTER_LAB_TECHNICIAN, PERMISSIONS.REGISTER_BILLING_STAFF,
-    PERMISSIONS.REGISTER_RECEPTIONIST, PERMISSIONS.REGISTER_PATIENT,
-    PERMISSIONS.VIEW_USER, PERMISSIONS.UPDATE_USER, PERMISSIONS.DISABLE_USER,
-    PERMISSIONS.DELETE_USER, PERMISSIONS.ENABLE_USER, PERMISSIONS.RESTORE_USER,
-    PERMISSIONS.VIEW_USER_SENSITIVE,
-    PERMISSIONS.VIEW_MEDICAL_RECORDS, PERMISSIONS.EXPORT_MEDICAL_RECORDS,
-    PERMISSIONS.VIEW_APPOINTMENTS, PERMISSIONS.VIEW_SCHEDULE,
-    PERMISSIONS.VIEW_LAB_RESULTS, PERMISSIONS.VIEW_BILLS,
-    PERMISSIONS.VIEW_FINANCIAL_REPORTS, PERMISSIONS.VIEW_REPORTS,
-    PERMISSIONS.GENERATE_REPORTS, PERMISSIONS.EXPORT_REPORTS,
-    PERMISSIONS.EMERGENCY_ACCESS, PERMISSIONS.AUDIT_LOG_VIEW,
-    PERMISSIONS.SYSTEM_CONFIG, PERMISSIONS.BACKUP_DATA,
+    // Authentication
+    PERMISSIONS['AUTH.LOGIN'], PERMISSIONS['AUTH.LOGOUT'],
+    
+    // User Management
+    PERMISSIONS['USER.VIEW'], PERMISSIONS['USER.CREATE'], 
+    PERMISSIONS['USER.UPDATE'], PERMISSIONS['USER.DISABLE'],
+    PERMISSIONS['USER.DELETE'], PERMISSIONS['USER.ENABLE'],
+    PERMISSIONS['USER.RESTORE'], PERMISSIONS['USER.VIEW_SENSITIVE'],
+    
+    // Patient Management
+    PERMISSIONS['PATIENT.VIEW'], PERMISSIONS['PATIENT.CREATE'],
+    PERMISSIONS['PATIENT.UPDATE'], PERMISSIONS['PATIENT.DELETE'],
+    PERMISSIONS['PATIENT.ADMIT'], PERMISSIONS['PATIENT.DISCHARGE'],
+    PERMISSIONS['PATIENT.VIEW_SENSITIVE'],
+    
+    // Medical Records
+    PERMISSIONS['MEDICAL.VIEW_RECORDS'], PERMISSIONS['MEDICAL.EXPORT_RECORDS'],
+    
+    // Registration Permissions
+    PERMISSIONS['AUTH.REGISTER_PATIENT'], PERMISSIONS['AUTH.REGISTER_RECEPTIONIST'],
+    PERMISSIONS['AUTH.REGISTER_BILLING_STAFF'], PERMISSIONS['AUTH.REGISTER_LAB_TECHNICIAN'],
+    PERMISSIONS['AUTH.REGISTER_PHARMACIST'], PERMISSIONS['AUTH.REGISTER_NURSE'],
+    PERMISSIONS['AUTH.REGISTER_DOCTOR'], PERMISSIONS['AUTH.REGISTER_DEPARTMENT_HEAD'],
+    
+    // Other modules
+    PERMISSIONS['APPOINTMENT.VIEW'], PERMISSIONS['APPOINTMENT.VIEW_SCHEDULE'],
+    PERMISSIONS['LAB.VIEW_ORDERS'], PERMISSIONS['LAB.VIEW_RESULTS'],
+    PERMISSIONS['BILL.VIEW'], PERMISSIONS['BILL.CREATE'], PERMISSIONS['BILL.UPDATE'],
+    PERMISSIONS['BILL.VIEW_REPORTS'], PERMISSIONS['REPORT.VIEW'],
+    PERMISSIONS['REPORT.GENERATE'], PERMISSIONS['REPORT.EXPORT'],
+    PERMISSIONS['INVENTORY.VIEW'], PERMISSIONS['INVENTORY.UPDATE'],
+    PERMISSIONS['EMERGENCY.ACCESS'], PERMISSIONS['SYSTEM.VIEW_AUDIT_LOG'],
+    PERMISSIONS['SYSTEM.CONFIG'], PERMISSIONS['SYSTEM.BACKUP_DATA'],
   ],
 
   [ROLES.DEPARTMENT_HEAD]: [
-    // Trưởng khoa
-    PERMISSIONS.LOGIN, PERMISSIONS.LOGOUT,
-    PERMISSIONS.REGISTER_DOCTOR, PERMISSIONS.REGISTER_NURSE,
-    PERMISSIONS.REGISTER_LAB_TECHNICIAN,
-    PERMISSIONS.VIEW_USER, PERMISSIONS.UPDATE_USER, PERMISSIONS.ENABLE_USER,
-    PERMISSIONS.VIEW_MEDICAL_RECORDS, PERMISSIONS.CREATE_MEDICAL_RECORDS,
-    PERMISSIONS.UPDATE_MEDICAL_RECORDS, PERMISSIONS.EXPORT_MEDICAL_RECORDS,
-    PERMISSIONS.CREATE_DIAGNOSIS, PERMISSIONS.UPDATE_DIAGNOSIS,
-    PERMISSIONS.VIEW_TREATMENT_PLANS, PERMISSIONS.CREATE_TREATMENT_PLANS,
-    PERMISSIONS.UPDATE_TREATMENT_PLANS,
-    PERMISSIONS.VIEW_PRESCRIPTIONS, PERMISSIONS.CREATE_PRESCRIPTIONS,
-    PERMISSIONS.VIEW_APPOINTMENTS, PERMISSIONS.CREATE_APPOINTMENTS,
-    PERMISSIONS.UPDATE_APPOINTMENTS, PERMISSIONS.VIEW_SCHEDULE,
-    PERMISSIONS.VIEW_LAB_RESULTS, PERMISSIONS.APPROVE_LAB_RESULTS,
-    PERMISSIONS.VIEW_REPORTS, PERMISSIONS.GENERATE_REPORTS,
-    PERMISSIONS.EMERGENCY_ACCESS,
+    // Authentication
+    PERMISSIONS['AUTH.LOGIN'], PERMISSIONS['AUTH.LOGOUT'],
+    
+    // User Management
+    PERMISSIONS['USER.VIEW'], PERMISSIONS['USER.UPDATE'], PERMISSIONS['USER.ENABLE'],
+    
+    // Patient Management
+    PERMISSIONS['PATIENT.VIEW'], PERMISSIONS['PATIENT.CREATE'],
+    PERMISSIONS['PATIENT.UPDATE'], PERMISSIONS['PATIENT.ADMIT'],
+    PERMISSIONS['PATIENT.DISCHARGE'],
+    
+    // Medical Records
+    PERMISSIONS['MEDICAL.VIEW_RECORDS'], PERMISSIONS['MEDICAL.CREATE_RECORDS'],
+    PERMISSIONS['MEDICAL.UPDATE_RECORDS'], PERMISSIONS['MEDICAL.EXPORT_RECORDS'],
+    
+    // Registration Permissions
+    PERMISSIONS['AUTH.REGISTER_DOCTOR'], PERMISSIONS['AUTH.REGISTER_NURSE'],
+    PERMISSIONS['AUTH.REGISTER_LAB_TECHNICIAN'],
+    
+    // Medical modules
+    PERMISSIONS['CONSULTATION.VIEW'], PERMISSIONS['CONSULTATION.CREATE'],
+    PERMISSIONS['CONSULTATION.UPDATE'], PERMISSIONS['DIAGNOSIS.VIEW'],
+    PERMISSIONS['DIAGNOSIS.CREATE'], PERMISSIONS['DIAGNOSIS.UPDATE'],
+    PERMISSIONS['TREATMENT.VIEW_PLANS'], PERMISSIONS['TREATMENT.CREATE_PLANS'],
+    PERMISSIONS['TREATMENT.UPDATE_PLANS'], PERMISSIONS['PRESCRIPTION.VIEW'],
+    PERMISSIONS['PRESCRIPTION.CREATE'], PERMISSIONS['APPOINTMENT.VIEW'],
+    PERMISSIONS['APPOINTMENT.CREATE'], PERMISSIONS['APPOINTMENT.UPDATE'],
+    PERMISSIONS['APPOINTMENT.VIEW_SCHEDULE'], PERMISSIONS['LAB.VIEW_ORDERS'],
+    PERMISSIONS['LAB.CREATE_ORDERS'], PERMISSIONS['LAB.VIEW_RESULTS'],
+    PERMISSIONS['LAB.APPROVE_RESULTS'], PERMISSIONS['REPORT.VIEW'],
+    PERMISSIONS['REPORT.GENERATE'], PERMISSIONS['EMERGENCY.ACCESS'],
   ],
 
   [ROLES.DOCTOR]: [
-    // Bác sĩ điều trị
-    PERMISSIONS.LOGIN, PERMISSIONS.LOGOUT,
-    PERMISSIONS.VIEW_USER,
-    PERMISSIONS.VIEW_MEDICAL_RECORDS, PERMISSIONS.CREATE_MEDICAL_RECORDS,
-    PERMISSIONS.UPDATE_MEDICAL_RECORDS,
-    PERMISSIONS.CREATE_DIAGNOSIS, PERMISSIONS.UPDATE_DIAGNOSIS,
-    PERMISSIONS.VIEW_TREATMENT_PLANS, PERMISSIONS.CREATE_TREATMENT_PLANS,
-    PERMISSIONS.UPDATE_TREATMENT_PLANS,
-    PERMISSIONS.VIEW_PRESCRIPTIONS, PERMISSIONS.CREATE_PRESCRIPTIONS,
-    PERMISSIONS.UPDATE_PRESCRIPTIONS,
-    PERMISSIONS.VIEW_APPOINTMENTS, PERMISSIONS.CREATE_APPOINTMENTS,
-    PERMISSIONS.UPDATE_APPOINTMENTS, PERMISSIONS.VIEW_SCHEDULE,
-    PERMISSIONS.VIEW_LAB_RESULTS, PERMISSIONS.CREATE_LAB_RESULTS,
-    PERMISSIONS.EMERGENCY_ACCESS,
+    // Authentication
+    PERMISSIONS['AUTH.LOGIN'], PERMISSIONS['AUTH.LOGOUT'],
+    
+    // User Management
+    PERMISSIONS['USER.VIEW'],
+    
+    // Patient Management
+    PERMISSIONS['PATIENT.VIEW'], PERMISSIONS['PATIENT.UPDATE'],
+    PERMISSIONS['PATIENT.ADMIT'], PERMISSIONS['PATIENT.DISCHARGE'],
+    
+    // Medical Records
+    PERMISSIONS['MEDICAL.VIEW_RECORDS'], PERMISSIONS['MEDICAL.CREATE_RECORDS'],
+    PERMISSIONS['MEDICAL.UPDATE_RECORDS'],
+    
+    // Medical modules
+    PERMISSIONS['CONSULTATION.VIEW'], PERMISSIONS['CONSULTATION.CREATE'],
+    PERMISSIONS['CONSULTATION.UPDATE'], PERMISSIONS['DIAGNOSIS.VIEW'],
+    PERMISSIONS['DIAGNOSIS.CREATE'], PERMISSIONS['DIAGNOSIS.UPDATE'],
+    PERMISSIONS['TREATMENT.VIEW_PLANS'], PERMISSIONS['TREATMENT.CREATE_PLANS'],
+    PERMISSIONS['TREATMENT.UPDATE_PLANS'], PERMISSIONS['PRESCRIPTION.VIEW'],
+    PERMISSIONS['PRESCRIPTION.CREATE'], PERMISSIONS['PRESCRIPTION.UPDATE'],
+    PERMISSIONS['APPOINTMENT.VIEW'], PERMISSIONS['APPOINTMENT.CREATE'],
+    PERMISSIONS['APPOINTMENT.UPDATE'], PERMISSIONS['APPOINTMENT.VIEW_SCHEDULE'],
+    PERMISSIONS['LAB.VIEW_ORDERS'], PERMISSIONS['LAB.CREATE_ORDERS'],
+    PERMISSIONS['LAB.VIEW_RESULTS'], PERMISSIONS['LAB.CREATE_RESULTS'],
+    PERMISSIONS['EMERGENCY.ACCESS'],
   ],
 
   [ROLES.NURSE]: [
-    // Y tá/Điều dưỡng
-    PERMISSIONS.LOGIN, PERMISSIONS.LOGOUT,
-    PERMISSIONS.VIEW_USER,
-    PERMISSIONS.VIEW_MEDICAL_RECORDS, PERMISSIONS.UPDATE_MEDICAL_RECORDS,
-    PERMISSIONS.VIEW_TREATMENT_PLANS, PERMISSIONS.UPDATE_TREATMENT_PLANS,
-    PERMISSIONS.VIEW_PRESCRIPTIONS, PERMISSIONS.DISPENSE_MEDICATION,
-    PERMISSIONS.VIEW_APPOINTMENTS, PERMISSIONS.UPDATE_APPOINTMENTS,
-    PERMISSIONS.VIEW_SCHEDULE,
-    PERMISSIONS.VIEW_LAB_RESULTS, PERMISSIONS.CREATE_LAB_RESULTS,
-    PERMISSIONS.EMERGENCY_ACCESS,
+    // Authentication
+    PERMISSIONS['AUTH.LOGIN'], PERMISSIONS['AUTH.LOGOUT'],
+    
+    // User Management
+    PERMISSIONS['USER.VIEW'],
+    
+    // Patient Management
+    PERMISSIONS['PATIENT.VIEW'], PERMISSIONS['PATIENT.UPDATE'],
+    
+    // Medical Records
+    PERMISSIONS['MEDICAL.VIEW_RECORDS'], PERMISSIONS['MEDICAL.UPDATE_RECORDS'],
+    
+    // Medical modules
+    PERMISSIONS['CONSULTATION.VIEW'], PERMISSIONS['CONSULTATION.UPDATE'],
+    PERMISSIONS['DIAGNOSIS.VIEW'], PERMISSIONS['TREATMENT.VIEW_PLANS'],
+    PERMISSIONS['TREATMENT.UPDATE_PLANS'], PERMISSIONS['PRESCRIPTION.VIEW'],
+    PERMISSIONS['PRESCRIPTION.DISPENSE'], PERMISSIONS['APPOINTMENT.VIEW'],
+    PERMISSIONS['APPOINTMENT.UPDATE'], PERMISSIONS['APPOINTMENT.VIEW_SCHEDULE'],
+    PERMISSIONS['LAB.VIEW_ORDERS'], PERMISSIONS['LAB.VIEW_RESULTS'],
+    PERMISSIONS['LAB.CREATE_RESULTS'], PERMISSIONS['EMERGENCY.ACCESS'],
   ],
 
   [ROLES.PHARMACIST]: [
-    // Dược sĩ
-    PERMISSIONS.LOGIN, PERMISSIONS.LOGOUT,
-    PERMISSIONS.VIEW_USER,
-    PERMISSIONS.VIEW_PRESCRIPTIONS, PERMISSIONS.DISPENSE_MEDICATION,
-    PERMISSIONS.VIEW_INVENTORY, PERMISSIONS.UPDATE_INVENTORY,
-    PERMISSIONS.MANAGE_MEDICATION_STOCK,
+    // Authentication
+    PERMISSIONS['AUTH.LOGIN'], PERMISSIONS['AUTH.LOGOUT'],
+    
+    // User Management
+    PERMISSIONS['USER.VIEW'],
+    
+    // Pharmacy specific
+    PERMISSIONS['PRESCRIPTION.VIEW'], PERMISSIONS['PRESCRIPTION.DISPENSE'],
+    PERMISSIONS['INVENTORY.VIEW'], PERMISSIONS['INVENTORY.UPDATE'],
+    PERMISSIONS['INVENTORY.MANAGE_MEDICATION'],
   ],
 
   [ROLES.LAB_TECHNICIAN]: [
-    // Kỹ thuật viên xét nghiệm
-    PERMISSIONS.LOGIN, PERMISSIONS.LOGOUT,
-    PERMISSIONS.VIEW_USER,
-    PERMISSIONS.VIEW_LAB_RESULTS, PERMISSIONS.CREATE_LAB_RESULTS,
-    PERMISSIONS.UPDATE_LAB_RESULTS,
+    // Authentication
+    PERMISSIONS['AUTH.LOGIN'], PERMISSIONS['AUTH.LOGOUT'],
+    
+    // User Management
+    PERMISSIONS['USER.VIEW'],
+    
+    // Lab specific
+    PERMISSIONS['LAB.VIEW_ORDERS'], PERMISSIONS['LAB.VIEW_RESULTS'],
+    PERMISSIONS['LAB.CREATE_RESULTS'], PERMISSIONS['LAB.UPDATE_RESULTS'],
   ],
 
   [ROLES.RECEPTIONIST]: [
-    // Lễ tân
-    PERMISSIONS.LOGIN, PERMISSIONS.LOGOUT,
-    PERMISSIONS.REGISTER_PATIENT,
-    PERMISSIONS.VIEW_USER,
-    PERMISSIONS.VIEW_APPOINTMENTS, PERMISSIONS.CREATE_APPOINTMENTS,
-    PERMISSIONS.UPDATE_APPOINTMENTS, PERMISSIONS.CANCEL_APPOINTMENTS,
-    PERMISSIONS.VIEW_SCHEDULE,
+    // Authentication
+    PERMISSIONS['AUTH.LOGIN'], PERMISSIONS['AUTH.LOGOUT'],
+    
+    // Patient Registration
+    PERMISSIONS['AUTH.REGISTER_PATIENT'],
+    
+    // User Management
+    PERMISSIONS['USER.VIEW'],
+    
+    // Patient Management
+    PERMISSIONS['PATIENT.VIEW'], PERMISSIONS['PATIENT.CREATE'],
+    
+    // Appointments
+    PERMISSIONS['APPOINTMENT.VIEW'], PERMISSIONS['APPOINTMENT.CREATE'],
+    PERMISSIONS['APPOINTMENT.UPDATE'], PERMISSIONS['APPOINTMENT.CANCEL'],
+    PERMISSIONS['APPOINTMENT.VIEW_SCHEDULE'],
+    
+    // Billing
+    PERMISSIONS['BILL.VIEW'], PERMISSIONS['BILL.CREATE'],
   ],
 
   [ROLES.BILLING_STAFF]: [
-    // Nhân viên kế toán
-    PERMISSIONS.LOGIN, PERMISSIONS.LOGOUT,
-    PERMISSIONS.VIEW_USER,
-    PERMISSIONS.VIEW_BILLS, PERMISSIONS.CREATE_BILLS,
-    PERMISSIONS.UPDATE_BILLS, PERMISSIONS.PROCESS_PAYMENTS,
-    PERMISSIONS.VIEW_FINANCIAL_REPORTS,
+    // Authentication
+    PERMISSIONS['AUTH.LOGIN'], PERMISSIONS['AUTH.LOGOUT'],
+    
+    // User Management
+    PERMISSIONS['USER.VIEW'],
+    
+    // Billing
+    PERMISSIONS['BILL.VIEW'], PERMISSIONS['BILL.CREATE'],
+    PERMISSIONS['BILL.UPDATE'], PERMISSIONS['BILL.DELETE'],
+    PERMISSIONS['BILL.PROCESS_PAYMENTS'], PERMISSIONS['BILL.VIEW_REPORTS'],
   ],
 
   [ROLES.PATIENT]: [
-    // Bệnh nhân
-    PERMISSIONS.LOGIN, PERMISSIONS.LOGOUT,
-    PERMISSIONS.VIEW_MEDICAL_RECORDS, // Chỉ xem của bản thân
-    PERMISSIONS.VIEW_PRESCRIPTIONS,   // Chỉ xem của bản thân
-    PERMISSIONS.VIEW_APPOINTMENTS,    // Chỉ xem của bản thân
-    PERMISSIONS.CREATE_APPOINTMENTS,  // Đặt lịch hẹn
-    PERMISSIONS.CANCEL_APPOINTMENTS,  // Hủy lịch của bản thân
-    PERMISSIONS.VIEW_BILLS,           // Chỉ xem của bản thân
+    // Authentication
+    PERMISSIONS['AUTH.LOGIN'], PERMISSIONS['AUTH.LOGOUT'],
+    
+    // Self data access only
+    PERMISSIONS['MEDICAL.VIEW_RECORDS'],   // Only own records
+    PERMISSIONS['CONSULTATION.VIEW'],      // Only own consultations
+    PERMISSIONS['DIAGNOSIS.VIEW'],         // Only own diagnosis
+    PERMISSIONS['PRESCRIPTION.VIEW'],      // Only own prescriptions
+    PERMISSIONS['APPOINTMENT.VIEW'],       // Only own appointments
+    PERMISSIONS['APPOINTMENT.CREATE'],     // Create own appointments
+    PERMISSIONS['APPOINTMENT.CANCEL'],     // Cancel own appointments
+    PERMISSIONS['BILL.VIEW'],              // Only own bills
+    PERMISSIONS['LAB.VIEW_RESULTS'],       // Only own lab results
   ],
 
   [ROLES.GUEST]: [
-    // Khách (chưa đăng nhập)
-    PERMISSIONS.LOGIN,
-    PERMISSIONS.SELF_REGISTER,        // Tự đăng ký tài khoản bệnh nhân
+    // Limited access
+    PERMISSIONS['AUTH.LOGIN'],
+    PERMISSIONS['AUTH.SELF_REGISTER'],     // Self-register as patient
   ],
 });
 
-/**
- * HIERARCHY CHUẨN Y TẾ
- * - Thứ tự từ cao xuống thấp
- * - Phản ánh cơ cấu tổ chức bệnh viện thực tế
- */
-const ROLE_HIERARCHY = Object.freeze([
-  ROLES.SUPER_ADMIN,          // Cấp cao nhất
-  ROLES.HOSPITAL_ADMIN,       // Quản trị bệnh viện
-  ROLES.DEPARTMENT_HEAD,      // Trưởng khoa
-  ROLES.DOCTOR,               // Bác sĩ
-  ROLES.PHARMACIST,           // Dược sĩ
-  ROLES.NURSE,                // Y tá
-  ROLES.LAB_TECHNICIAN,       // Kỹ thuật viên
-  ROLES.BILLING_STAFF,        // Kế toán
-  ROLES.RECEPTIONIST,         // Lễ tân
-  ROLES.PATIENT,              // Bệnh nhân
-  ROLES.GUEST,                // Khách
-]);
+// ===== HIERARCHY & WEIGHTS =====
+const ROLE_HIERARCHY = [
+  ROLES.SUPER_ADMIN,          // 0 - Highest
+  ROLES.HOSPITAL_ADMIN,       // 1
+  ROLES.DEPARTMENT_HEAD,      // 2
+  ROLES.DOCTOR,               // 3
+  ROLES.PHARMACIST,           // 4
+  ROLES.NURSE,                // 5
+  ROLES.LAB_TECHNICIAN,       // 6
+  ROLES.BILLING_STAFF,        // 7
+  ROLES.RECEPTIONIST,         // 8
+  ROLES.PATIENT,              // 9
+  ROLES.GUEST,                // 10 - Lowest
+];
+
+const ROLE_WEIGHTS = Object.freeze({
+  [ROLES.SUPER_ADMIN]: 0,
+  [ROLES.HOSPITAL_ADMIN]: 1,
+  [ROLES.DEPARTMENT_HEAD]: 2,
+  [ROLES.DOCTOR]: 3,
+  [ROLES.PHARMACIST]: 4,
+  [ROLES.NURSE]: 5,
+  [ROLES.LAB_TECHNICIAN]: 6,
+  [ROLES.BILLING_STAFF]: 7,
+  [ROLES.RECEPTIONIST]: 8,
+  [ROLES.PATIENT]: 9,
+  [ROLES.GUEST]: 10,
+});
+
+// ===== HELPER FUNCTIONS =====
 
 /**
- * HÀM HỖ TRỢ KIỂM TRA QUYỀN
- * Kiểm tra xem vai trò có quyền thực hiện hành động không
+ * Kiểm tra quyền của role
+ * @param {string} role - Vai trò cần kiểm tra
+ * @param {string} permission - Quyền cần kiểm tra
+ * @returns {boolean}
  */
 function hasPermission(role, permission) {
-  if (!role || !permission) return false;
-  const allowed = ROLE_PERMISSIONS[role];
-  if (!allowed) return false;
-  return allowed.includes(permission);
+  if (!role || !permission) {
+    console.warn('❌ [RBAC] Missing role or permission:', { role, permission });
+    return false;
+  }
+  
+  const permissions = ROLE_PERMISSIONS[role];
+  if (!permissions) {
+    console.warn('❌ [RBAC] Role not found:', role);
+    return false;
+  }
+  
+  return permissions.includes(permission);
 }
 
 /**
- * KIỂM TRA QUYỀN TẠO ROLE
- * Đảm bảo người dùng chỉ có thể tạo tài khoản cấp thấp hơn
+ * Kiểm tra quyền tạo role
+ * @param {string} currentRole - Vai trò hiện tại
+ * @param {string} targetRole - Vai trò muốn tạo
+ * @returns {boolean}
  */
 function canCreateRole(currentRole, targetRole) {
-  const currentIndex = ROLE_HIERARCHY.indexOf(currentRole);
-  const targetIndex = ROLE_HIERARCHY.indexOf(targetRole);
+  // Validate input
+  if (!currentRole || !targetRole) {
+    console.error('❌ [RBAC] Invalid input for canCreateRole:', { currentRole, targetRole });
+    return false;
+  }
 
-  if (currentIndex < 0 || targetIndex < 0) return false;
-
-  // SUPER_ADMIN có thể tạo mọi role (trừ chính nó trong logic khác)
+  // SUPER_ADMIN can create any role except itself
   if (currentRole === ROLES.SUPER_ADMIN) {
     return targetRole !== ROLES.SUPER_ADMIN;
   }
 
-  // HOSPITAL_ADMIN có thể tạo DEPARTMENT_HEAD, DOCTOR và các role thấp hơn
-  if (currentRole === ROLES.HOSPITAL_ADMIN) {
-    return targetIndex >= 2; // Từ DEPARTMENT_HEAD trở xuống
+  // Get weights
+  const currentWeight = ROLE_WEIGHTS[currentRole];
+  const targetWeight = ROLE_WEIGHTS[targetRole];
+
+  // Validate weights exist
+  if (currentWeight === undefined || targetWeight === undefined) {
+    console.error('❌ [RBAC] Invalid role weights:', { currentRole, targetRole, currentWeight, targetWeight });
+    return false;
   }
 
-  // DEPARTMENT_HEAD có thể tạo DOCTOR, NURSE, LAB_TECHNICIAN
-  if (currentRole === ROLES.DEPARTMENT_HEAD) {
-    return [ROLES.DOCTOR, ROLES.NURSE, ROLES.LAB_TECHNICIAN].includes(targetRole);
-  }
-
-  // Mặc định: không được tạo cùng cấp hoặc cao hơn
-  return targetIndex > currentIndex;
+  // Higher role can create lower roles (higher weight number = lower role)
+  return targetWeight > currentWeight;
 }
 
 /**
- * KIỂM TRA QUYỀN TRUY CẬP DỮ LIỆU BỆNH NHÂN
- * Quan trọng: Tuân thủ HIPAA và bảo vệ quyền riêng tư
+ * Kiểm tra quyền truy cập dữ liệu bệnh nhân
  * @param {string} userRole - Vai trò người truy cập
  * @param {string} patientId - ID bệnh nhân
  * @param {string} accessorId - ID người truy cập
@@ -321,31 +448,36 @@ function canCreateRole(currentRole, targetRole) {
  * @returns {boolean}
  */
 function canAccessPatientData(userRole, patientId, accessorId, isEmergency = false) {
-  // TRƯỜNG HỢP KHẨN CẤP: Cho phép truy cập
-  if (isEmergency && hasPermission(userRole, PERMISSIONS.EMERGENCY_ACCESS)) {
+  // Emergency access override
+  if (isEmergency && hasPermission(userRole, PERMISSIONS['EMERGENCY.ACCESS'])) {
     return true;
   }
 
-  // 👤 BỆNH NHÂN: Chỉ xem dữ liệu của chính mình
+  // Patients can only access their own data
   if (userRole === ROLES.PATIENT) {
     return patientId === accessorId;
   }
 
-  // NHÂN VIÊN Y TẾ: Được xem theo phân quyền
+  // Medical staff can access based on permissions
   const medicalStaff = [
     ROLES.DOCTOR, ROLES.NURSE, ROLES.DEPARTMENT_HEAD, 
     ROLES.HOSPITAL_ADMIN, ROLES.SUPER_ADMIN
   ];
   
   if (medicalStaff.includes(userRole)) {
-    return hasPermission(userRole, PERMISSIONS.VIEW_MEDICAL_RECORDS);
+    return hasPermission(userRole, PERMISSIONS['MEDICAL.VIEW_RECORDS']);
+  }
+
+  // Administrative staff with patient view permission
+  if ([ROLES.RECEPTIONIST, ROLES.BILLING_STAFF].includes(userRole)) {
+    return hasPermission(userRole, PERMISSIONS['PATIENT.VIEW']);
   }
 
   return false;
 }
 
 /**
- * LẤY DANH SÁCH ROLE CÓ THỂ TẠO
+ * Lấy danh sách role có thể tạo
  * @param {string} currentRole - Vai trò hiện tại
  * @returns {string[]}
  */
@@ -354,9 +486,9 @@ function getCreatableRoles(currentRole) {
 }
 
 /**
- * 🔍 KIỂM TRA QUYỀN THEO MODULE
+ * Kiểm tra quyền theo module
  * @param {string} role - Vai trò
- * @param {string} module - Module cần kiểm tra (USER, MEDICAL, etc.)
+ * @param {string} module - Module cần kiểm tra
  * @returns {boolean}
  */
 function hasModuleAccess(role, module) {
@@ -368,7 +500,7 @@ function hasModuleAccess(role, module) {
 }
 
 /**
- * LẤY DANH SÁCH PERMISSIONS THEO ROLE
+ * Lấy danh sách permissions theo role
  * @param {string} role - Vai trò
  * @returns {string[]}
  */
@@ -377,28 +509,30 @@ function getRolePermissions(role) {
 }
 
 /**
- * KIỂM TRA QUYỀN QUẢN LÝ USER
+ * Kiểm tra quyền quản lý user
  * @param {string} currentRole - Vai trò hiện tại
  * @param {string} targetRole - Vai trò mục tiêu
  * @returns {boolean}
  */
 function canManageUser(currentRole, targetRole) {
-  const currentIndex = ROLE_HIERARCHY.indexOf(currentRole);
-  const targetIndex = ROLE_HIERARCHY.indexOf(targetRole);
+  if (!currentRole || !targetRole) return false;
 
-  if (currentIndex < 0 || targetIndex < 0) return false;
-
-  // SUPER_ADMIN có thể quản lý mọi role (trừ chính nó trong logic khác)
+  // SUPER_ADMIN can manage all roles except itself
   if (currentRole === ROLES.SUPER_ADMIN) {
     return targetRole !== ROLES.SUPER_ADMIN;
   }
 
-  // Các role khác chỉ có thể quản lý role thấp hơn
-  return targetIndex > currentIndex;
+  const currentWeight = ROLE_WEIGHTS[currentRole];
+  const targetWeight = ROLE_WEIGHTS[targetRole];
+
+  if (currentWeight === undefined || targetWeight === undefined) return false;
+
+  // Higher roles can manage lower roles
+  return targetWeight > currentWeight;
 }
 
 /**
- * LẤY DANH SÁCH PERMISSIONS THEO NHÓM
+ * Lấy permissions theo nhóm
  * @returns {Object}
  */
 function getPermissionsByGroup() {
@@ -415,36 +549,13 @@ function getPermissionsByGroup() {
   return groups;
 }
 
-/**
- * KIỂM TRA QUYỀN XEM THÔNG TIN NHẠY CẢM
- * @param {string} role - Vai trò
- * @returns {boolean}
- */
-function canViewSensitiveInfo(role) {
-  return hasPermission(role, PERMISSIONS.VIEW_USER_SENSITIVE);
-}
-
-/**
- * KIỂM TRA QUYỀN HỆ THỐNG
- * @param {string} role - Vai trò
- * @returns {boolean}
- */
-function hasSystemAccess(role) {
-  const systemPermissions = [
-    PERMISSIONS.SYSTEM_CONFIG,
-    PERMISSIONS.AUDIT_LOG_VIEW,
-    PERMISSIONS.BACKUP_DATA,
-    PERMISSIONS.RESTORE_DATA
-  ];
-  
-  return systemPermissions.some(permission => hasPermission(role, permission));
-}
-
+// ===== EXPORT =====
 module.exports = {
   ROLES,
   PERMISSIONS,
   ROLE_PERMISSIONS,
   ROLE_HIERARCHY,
+  ROLE_WEIGHTS,
   hasPermission,
   canCreateRole,
   canAccessPatientData,
@@ -453,6 +564,26 @@ module.exports = {
   getRolePermissions,
   canManageUser,
   getPermissionsByGroup,
-  canViewSensitiveInfo,
-  hasSystemAccess,
 };
+
+// ===== DEBUG UTILITY =====
+if (require.main === module) {
+  console.log('=== RBAC SYSTEM DEBUG ===');
+  
+  // Test role creation permissions
+  const testCases = [
+    { current: ROLES.SUPER_ADMIN, target: ROLES.DOCTOR, expected: true },
+    { current: ROLES.SUPER_ADMIN, target: ROLES.HOSPITAL_ADMIN, expected: true },
+    { current: ROLES.SUPER_ADMIN, target: ROLES.SUPER_ADMIN, expected: false },
+    { current: ROLES.HOSPITAL_ADMIN, target: ROLES.DOCTOR, expected: true },
+    { current: ROLES.HOSPITAL_ADMIN, target: ROLES.DEPARTMENT_HEAD, expected: true },
+    { current: ROLES.DEPARTMENT_HEAD, target: ROLES.DOCTOR, expected: true },
+    { current: ROLES.DOCTOR, target: ROLES.NURSE, expected: false }
+  ];
+
+  testCases.forEach((test, index) => {
+    const result = canCreateRole(test.current, test.target);
+    const status = result === test.expected ? '✅' : '❌';
+    console.log(`${status} Test ${index + 1}: ${test.current} -> ${test.target} = ${result}`);
+  });
+}

@@ -1,4 +1,3 @@
-// src/models/medicalRecord.model.js
 const mongoose = require('mongoose');
 
 const medicalRecordSchema = new mongoose.Schema({
@@ -59,7 +58,12 @@ const medicalRecordSchema = new mongoose.Schema({
     temperature: Number,
     oxygenSaturation: Number,
     height: Number,
-    weight: Number
+    weight: Number,
+    recordedAt: Date,
+    recordedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }
   },
   
   // Khám thực thể
@@ -71,6 +75,8 @@ const medicalRecordSchema = new mongoose.Schema({
     neurological: String,
     musculoskeletal: String,
     skin: String,
+    findings: String,
+    observations: String,
     notes: String
   },
   
@@ -104,6 +110,33 @@ const medicalRecordSchema = new mongoose.Schema({
         type: String,
         enum: ['ROUTINE', 'URGENT', 'EMERGENCY']
       }
+    }],
+    medicalHistory: [{
+      category: {
+        type: String,
+        enum: ['CHRONIC_CONDITION', 'SURGERY', 'ALLERGY', 'MEDICATION', 'FAMILY_HISTORY', 'OTHER']
+      },
+      condition: String,
+      description: String,
+      onsetDate: Date,
+      status: {
+        type: String,
+        enum: ['ACTIVE', 'RESOLVED', 'CHRONIC']
+      },
+      severity: {
+        type: String,
+        enum: ['MILD', 'MODERATE', 'SEVERE']
+      },
+      treatment: String,
+      notes: String,
+      addedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      addedAt: {
+        type: Date,
+        default: Date.now
+      }
     }]
   },
   
@@ -120,6 +153,9 @@ const medicalRecordSchema = new mongoose.Schema({
     enum: ['STANDARD', 'SENSITIVE', 'RESTRICTED'],
     default: 'STANDARD'
   },
+  
+  // Thời gian điều trị
+  duration: Number, // minutes
   
   // Audit trail
   createdBy: {
@@ -142,6 +178,9 @@ medicalRecordSchema.index({ patientId: 1, visitDate: -1 });
 medicalRecordSchema.index({ doctorId: 1 });
 medicalRecordSchema.index({ recordId: 1 });
 medicalRecordSchema.index({ 'diagnoses.code': 1 });
+medicalRecordSchema.index({ status: 1 });
+medicalRecordSchema.index({ department: 1 });
+medicalRecordSchema.index({ visitType: 1 });
 
 // Virtuals
 medicalRecordSchema.virtual('consultations', {
@@ -173,6 +212,30 @@ medicalRecordSchema.methods.hasDiagnosis = function(diagnosisCode) {
   return this.diagnoses.some(d => d.code === diagnosisCode);
 };
 
+medicalRecordSchema.methods.getRecentVitalSigns = function() {
+  if (!this.vitalSigns) return null;
+  return {
+    bloodPressure: this.vitalSigns.bloodPressure,
+    heartRate: this.vitalSigns.heartRate,
+    respiratoryRate: this.vitalSigns.respiratoryRate,
+    temperature: this.vitalSigns.temperature,
+    recordedAt: this.vitalSigns.recordedAt || this.updatedAt
+  };
+};
+
+medicalRecordSchema.methods.hasActiveDiagnosis = function() {
+  return this.diagnoses && this.diagnoses.some(d => 
+    d.certainty === 'CONFIRMED'
+  );
+};
+
+medicalRecordSchema.methods.getActiveMedications = function() {
+  if (!this.treatmentPlan || !this.treatmentPlan.medicalHistory) return [];
+  return this.treatmentPlan.medicalHistory.filter(history =>
+    history.category === 'MEDICATION' && history.status === 'ACTIVE'
+  );
+};
+
 // Statics
 medicalRecordSchema.statics.findByDiagnosis = function(diagnosisCode) {
   return this.find({ 'diagnoses.code': diagnosisCode });
@@ -186,6 +249,41 @@ medicalRecordSchema.statics.findByPatientAndDateRange = function(patientId, star
       $lte: endDate
     }
   }).sort({ visitDate: -1 });
+};
+
+medicalRecordSchema.statics.getDepartmentStats = async function(department, startDate, endDate) {
+  const stats = await this.aggregate([
+    {
+      $match: {
+        department,
+        visitDate: {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate)
+        }
+      }
+    },
+    {
+      $group: {
+        _id: '$visitType',
+        total: { $sum: 1 },
+        completed: {
+          $sum: { $cond: [{ $eq: ['$status', 'COMPLETED'] }, 1, 0] }
+        },
+        averageDuration: { $avg: '$duration' }
+      }
+    }
+  ]);
+
+  return stats;
+};
+
+medicalRecordSchema.statics.getPatientMedicalHistory = async function(patientId) {
+  const records = await this.find({ patientId })
+    .select('visitDate visitType chiefComplaint diagnoses treatmentPlan.medicalHistory')
+    .sort({ visitDate: -1 })
+    .populate('doctorId', 'personalInfo.name specialization');
+
+  return records;
 };
 
 module.exports = mongoose.model('MedicalRecord', medicalRecordSchema);

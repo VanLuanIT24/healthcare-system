@@ -1,11 +1,8 @@
-// src/validations/auth.validation.js
 const Joi = require('joi');
 const { commonSchemas } = require('../middlewares/validation.middleware');
 
 /**
- * 🛡️ VALIDATION SCHEMAS CHO AUTHENTICATION
- * - Xác thực dữ liệu đầu vào cho các API auth
- * - Hiển thị thông báo lỗi rõ ràng, thân thiện
+ * 🛡️ VALIDATION SCHEMAS CHO AUTHENTICATION - HOÀN THIỆN
  */
 
 const authValidation = {
@@ -24,7 +21,7 @@ const authValidation = {
     }).options({ abortEarly: false })
   },
 
-  // 🎯 ĐĂNG KÝ USER - ✅ MESSAGES THÂN THIỆN, RÕ RÀNG
+  // 🎯 ĐĂNG KÝ USER
   registerUser: {
     body: Joi.object({
       email: commonSchemas.email.required()
@@ -156,6 +153,34 @@ const authValidation = {
         .messages({
           'string.empty': 'Refresh token không được để trống',
           'any.required': 'Refresh token là bắt buộc'
+        })
+    })
+  },
+
+  // 🎯 ĐĂNG XUẤT - VALIDATION MỚI
+  logout: {
+    body: Joi.object({
+      refreshToken: Joi.string().optional()
+        .messages({
+          'string.empty': 'Refresh token không được để trống'
+        }),
+      sessionId: Joi.string().optional()
+        .messages({
+          'string.empty': 'Session ID không được để trống'
+        })
+    }).or('refreshToken', 'sessionId')
+      .messages({
+        'object.missing': 'Cần cung cấp refreshToken hoặc sessionId'
+      })
+  },
+
+  // 🎯 THU HỒI SESSION - VALIDATION MỚI
+  revokeSession: {
+    body: Joi.object({
+      sessionId: Joi.string().required()
+        .messages({
+          'string.empty': 'Session ID không được để trống',
+          'any.required': 'Session ID là bắt buộc'
         })
     })
   },

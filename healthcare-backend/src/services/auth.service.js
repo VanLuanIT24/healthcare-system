@@ -1,6 +1,7 @@
 const User = require('../models/user.model');
 const Patient = require('../models/patient.model');
 const AuditLog = require('../models/auditLog.model');
+const Session = require('../models/session.model'); // Thêm model session mới
 const { 
   hashPassword, 
   comparePassword, 
@@ -17,14 +18,12 @@ const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 const emailService = require('../utils/email');
 
 /**
- * 🛡️ AUTHENTICATION SERVICE CHO HEALTHCARE SYSTEM
- * - Xử lý logic nghiệp vụ authentication
- * - Tuân thủ bảo mật HIPAA và healthcare
+ * 🛡️ AUTHENTICATION SERVICE CHO HEALTHCARE SYSTEM - HOÀN THIỆN
  */
 
 class AuthService {
   /**
-   * 🎯 ĐĂNG NHẬP
+   * 🎯 ĐĂNG NHẬP - HOÀN THIỆN
    */
   async login(email, password, ipAddress, userAgent) {
     try {
@@ -44,6 +43,16 @@ class AuthService {
       if (userStatus !== 'ACTIVE') {
         await this.logFailedLoginAttempt(user.email, ipAddress, 'ACCOUNT_INACTIVE');
         throw new AppError(this.getAccountStatusMessage(userStatus), 403, ERROR_CODES.AUTH_ACCOUNT_LOCKED);
+      }
+
+      // 🎯 KIỂM TRA TÀI KHOẢN BỊ KHÓA
+      if (user.lockUntil && user.lockUntil > Date.now()) {
+        await this.logFailedLoginAttempt(user.email, ipAddress, 'ACCOUNT_LOCKED');
+        throw new AppError(
+          'Tài khoản đã bị khóa do đăng nhập sai nhiều lần. Vui lòng thử lại sau 2 giờ.',
+          423,
+          ERROR_CODES.AUTH_ACCOUNT_LOCKED
+        );
       }
 
       // 🎯 XÁC THỰC MẬT KHẨU
@@ -103,6 +112,9 @@ class AuthService {
       // 🎯 TẠO TOKENS
       const tokens = generateTokenPair(user);
 
+      // 🎯 TẠO SESSION MỚI
+      const session = await this.createSession(user._id, ipAddress, userAgent, tokens.refreshToken);
+
       // 🎯 LOG HOẠT ĐỘNG ĐĂNG NHẬP THÀNH CÔNG
       await AuditLog.logAction({
         action: 'LOGIN',
@@ -115,14 +127,16 @@ class AuthService {
         resource: 'User',
         resourceId: user._id,
         success: true,
-        category: 'AUTHENTICATION'
+        category: 'AUTHENTICATION',
+        metadata: { sessionId: session._id }
       });
 
       console.log(`✅ User logged in successfully: ${user.email}`);
 
       return {
         user: this.sanitizeUser(user),
-        tokens
+        tokens,
+        sessionId: session._id
       };
 
     } catch (error) {
@@ -132,17 +146,43 @@ class AuthService {
   }
 
   /**
-   * 🎯 ĐĂNG XUẤT
+   * 🎯 ĐĂNG XUẤT - HOÀN THIỆN
    */
-  async logout(userId, refreshToken) {
+  async logout(userId, refreshToken = null, sessionId = null) {
     try {
+      // 🎯 NẾU CÓ SESSION ID, ĐÓNG SESSION ĐÓ
+      if (sessionId) {
+        await this.revokeSession(sessionId);
+      } 
+      // 🎯 NẾU CÓ REFRESH TOKEN, TÌM VÀ ĐÓNG SESSION
+      else if (refreshToken) {
+        await Session.findOneAndUpdate(
+          { userId, refreshToken, isActive: true },
+          { 
+            isActive: false,
+            logoutAt: new Date()
+          }
+        );
+      }
+      // 🎯 NẾU KHÔNG CÓ THÔNG TIN, ĐÓNG TẤT CẢ SESSION CỦA USER
+      else if (userId) {
+        await Session.updateMany(
+          { userId, isActive: true },
+          { 
+            isActive: false,
+            logoutAt: new Date()
+          }
+        );
+      }
+
       await AuditLog.logAction({
         action: 'LOGOUT',
         userId,
         resource: 'User',
         resourceId: userId,
         success: true,
-        category: 'AUTHENTICATION'
+        category: 'AUTHENTICATION',
+        metadata: { sessionId, logoutType: refreshToken ? 'TOKEN_LOGOUT' : 'FULL_LOGOUT' }
       });
 
       console.log(`✅ User logged out: ${userId}`);
@@ -154,7 +194,7 @@ class AuthService {
   }
 
   /**
-   * 🎯 REFRESH TOKEN
+   * 🎯 REFRESH TOKEN - HOÀN THIỆN
    */
   async refreshToken(refreshToken) {
     try {
@@ -163,6 +203,17 @@ class AuthService {
       const user = await User.findById(payload.sub);
       if (!user || (user.status && user.status !== 'ACTIVE')) {
         throw new AppError('Token không hợp lệ', 401, ERROR_CODES.AUTH_INVALID_TOKEN);
+      }
+
+      // 🎯 KIỂM TRA SESSION CÓ TỒN TẠI VÀ ACTIVE
+      const session = await Session.findOne({
+        userId: user._id,
+        refreshToken,
+        isActive: true
+      });
+
+      if (!session) {
+        throw new AppError('Session không tồn tại hoặc đã bị thu hồi', 401, ERROR_CODES.AUTH_INVALID_TOKEN);
       }
 
       const accessToken = signAccessToken(user);
@@ -175,12 +226,13 @@ class AuthService {
         resource: 'User',
         resourceId: user._id,
         success: true,
-        category: 'AUTHENTICATION'
+        category: 'AUTHENTICATION',
+        metadata: { sessionId: session._id }
       });
 
       return {
         accessToken,
-        expiresIn: 15 * 60
+        expiresIn: 15 * 60 // 15 phút
       };
 
     } catch (error) {
@@ -190,7 +242,7 @@ class AuthService {
   }
 
   /**
-   * 🎯 ĐĂNG KÝ USER
+   * 🎯 ĐĂNG KÝ USER - HOÀN THIỆN
    */
   async registerUser(userData, ipAddress = '0.0.0.0') {
     try {
@@ -231,14 +283,13 @@ class AuthService {
         await this.createPatientProfile(user);
       }
 
-      // 🎯 GỬI EMAIL CHÀO MỪNG - SỬA LỖI Ở ĐÂY
+      // 🎯 GỬI EMAIL CHÀO MỪNG
       if (process.env.SEND_WELCOME_EMAIL === 'true') {
         try {
           await emailService.sendWelcomeEmail(user);
           console.log('✅ Welcome email sent successfully');
         } catch (emailError) {
           console.error('❌ Welcome email failed, but user was created:', emailError.message);
-          // Không throw error để không ảnh hưởng đến quá trình đăng ký
         }
       }
 
@@ -273,7 +324,7 @@ class AuthService {
   }
 
   /**
-   * 🎯 QUÊN MẬT KHẨU - SỬA LỖI GỬI EMAIL
+   * 🎯 QUÊN MẬT KHẨU - HOÀN THIỆN
    */
   async forgotPassword(email) {
     try {
@@ -303,13 +354,12 @@ class AuthService {
       user.resetPasswordExpires = resetTokenExpiry;
       await user.save();
 
-      // 🎯 GỬI EMAIL ĐẶT LẠI MẬT KHẨU - SỬA LỖI Ở ĐÂY
+      // 🎯 GỬI EMAIL ĐẶT LẠI MẬT KHẨU
       try {
         await emailService.sendPasswordResetEmail(user, resetToken);
         console.log(`✅ Password reset email sent to: ${user.email}`);
       } catch (emailError) {
         console.error('❌ Password reset email failed:', emailError.message);
-        // Vẫn trả về success để không tiết lộ thông tin
       }
 
       // 🎯 LOG HOẠT ĐỘNG
@@ -335,7 +385,7 @@ class AuthService {
   }
 
   /**
-   * 🎯 ĐẶT LẠI MẬT KHẨU
+   * 🎯 ĐẶT LẠI MẬT KHẨU - HOÀN THIỆN
    */
   async resetPassword(token, newPassword) {
     try {
@@ -373,13 +423,22 @@ class AuthService {
       user.status = 'ACTIVE';
       await user.save();
 
-      // 🎯 GỬI EMAIL THÔNG BÁO - SỬA LỖI Ở ĐÂY
+      // 🎯 ĐÓNG TẤT CẢ SESSION CŨ (FORCE LOGOUT)
+      await Session.updateMany(
+        { userId: user._id, isActive: true },
+        { 
+          isActive: false,
+          logoutAt: new Date(),
+          logoutReason: 'PASSWORD_RESET'
+        }
+      );
+
+      // 🎯 GỬI EMAIL THÔNG BÁO
       try {
         await emailService.sendPasswordChangedConfirmation(user);
         console.log(`✅ Password changed confirmation sent to: ${user.email}`);
       } catch (emailError) {
         console.error('❌ Password changed email failed:', emailError.message);
-        // Không throw error để không ảnh hưởng đến quá trình reset
       }
 
       // 🎯 LOG HOẠT ĐỘNG
@@ -405,7 +464,7 @@ class AuthService {
   }
 
   /**
-   * 🎯 ĐỔI MẬT KHẨU
+   * 🎯 ĐỔI MẬT KHẨU - HOÀN THIỆN
    */
   async changePassword(userId, currentPassword, newPassword) {
     try {
@@ -452,13 +511,22 @@ class AuthService {
       user.password = await hashPassword(newPassword);
       await user.save();
 
-      // 🎯 GỬI EMAIL THÔNG BÁO - SỬA LỖI Ở ĐÂY
+      // 🎯 ĐÓNG TẤT CẢ SESSION CŨ (FORCE LOGOUT)
+      await Session.updateMany(
+        { userId: user._id, isActive: true },
+        { 
+          isActive: false,
+          logoutAt: new Date(),
+          logoutReason: 'PASSWORD_CHANGE'
+        }
+      );
+
+      // 🎯 GỬI EMAIL THÔNG BÁO
       try {
         await emailService.sendPasswordChangedConfirmation(user);
         console.log(`✅ Password changed confirmation sent to: ${user.email}`);
       } catch (emailError) {
         console.error('❌ Password changed email failed:', emailError.message);
-        // Không throw error để không ảnh hưởng đến quá trình đổi mật khẩu
       }
 
       // 🎯 LOG HOẠT ĐỘNG
@@ -484,7 +552,7 @@ class AuthService {
   }
 
   /**
-   * 🎯 LẤY THÔNG TIN USER HIỆN TẠI
+   * 🎯 LẤY THÔNG TIN USER HIỆN TẠI - HOÀN THIỆN
    */
   async getCurrentUser(userId) {
     try {
@@ -500,6 +568,96 @@ class AuthService {
 
     } catch (error) {
       console.error('❌ Get current user error:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 LẤY TẤT CẢ SESSION CỦA USER - HÀM MỚI
+   */
+  async getUserSessions(userId) {
+    try {
+      const sessions = await Session.find({ userId })
+        .sort({ loginAt: -1 })
+        .lean();
+
+      return sessions.map(session => ({
+        sessionId: session._id,
+        ipAddress: session.ipAddress,
+        userAgent: session.userAgent,
+        loginAt: session.loginAt,
+        logoutAt: session.logoutAt,
+        isActive: session.isActive,
+        lastActivity: session.lastActivity,
+        logoutReason: session.logoutReason
+      }));
+
+    } catch (error) {
+      console.error('❌ Get user sessions error:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 THU HỒI SESSION - HÀM MỚI
+   */
+  async revokeSession(sessionId) {
+    try {
+      const session = await Session.findById(sessionId);
+      
+      if (!session) {
+        throw new AppError('Session không tồn tại', 404);
+      }
+
+      if (!session.isActive) {
+        throw new AppError('Session đã bị thu hồi trước đó', 400);
+      }
+
+      session.isActive = false;
+      session.logoutAt = new Date();
+      session.logoutReason = 'MANUALLY_REVOKED';
+      await session.save();
+
+      // 🎯 LOG HOẠT ĐỘNG
+      await AuditLog.logAction({
+        action: 'SESSION_REVOKED',
+        userId: session.userId,
+        resource: 'Session',
+        resourceId: session._id,
+        success: true,
+        category: 'AUTHENTICATION',
+        metadata: { sessionId: session._id }
+      });
+
+      console.log(`✅ Session revoked: ${sessionId}`);
+
+      return { message: 'Session đã được thu hồi thành công' };
+
+    } catch (error) {
+      console.error('❌ Revoke session error:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 TẠO SESSION MỚI - HÀM HỖ TRỢ
+   */
+  async createSession(userId, ipAddress, userAgent, refreshToken) {
+    try {
+      const session = new Session({
+        userId,
+        ipAddress,
+        userAgent,
+        refreshToken,
+        loginAt: new Date(),
+        lastActivity: new Date(),
+        isActive: true
+      });
+
+      await session.save();
+      return session;
+    } catch (error) {
+      console.error('❌ Create session error:', error.message);
       throw error;
     }
   }
@@ -574,38 +732,6 @@ class AuthService {
     };
     
     return messages[status] || 'Tài khoản không hoạt động';
-  }
-
-  /**
-   * 🧪 TEST EMAIL FUNCTIONALITY
-   */
-  async testEmailFunctionality() {
-    try {
-      console.log('🧪 Testing email functionality...');
-      
-      // Test với user mẫu
-      const testUser = {
-        email: 'test@healthcare.vn',
-        personalInfo: {
-          firstName: 'Test',
-          lastName: 'User'
-        },
-        role: 'PATIENT'
-      };
-
-      // Test welcome email
-      const welcomeResult = await emailService.sendWelcomeEmail(testUser);
-      console.log('✅ Welcome email test:', welcomeResult);
-
-      // Test reset password email
-      const resetResult = await emailService.sendPasswordResetEmail(testUser, 'test_token_123');
-      console.log('✅ Reset password email test:', resetResult);
-
-      return { success: true, message: 'Email functionality test completed' };
-    } catch (error) {
-      console.error('❌ Email functionality test failed:', error.message);
-      return { success: false, error: error.message };
-    }
   }
 }
 

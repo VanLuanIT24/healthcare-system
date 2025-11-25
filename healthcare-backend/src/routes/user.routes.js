@@ -1,3 +1,4 @@
+// src/routes/user.routes.js
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/user.controller');
@@ -12,7 +13,13 @@ const {
   validateCombined 
 } = require('../middlewares/validation.middleware');
 const userValidation = require('../validations/user.validation');
-const { PERMISSIONS, ROLES } = require('../constants/roles');
+const { 
+  PERMISSIONS, 
+  ROLES, 
+  ROLE_HIERARCHY,  // 🎯 THÊM IMPORT NÀY
+  canCreateRole    // 🎯 THÊM IMPORT NÀY
+} = require('../constants/roles');  // 🎯 ĐẢM BẢO ĐÚNG PATH
+const { upload } = require('../utils/fileUpload');
 
 // 🔐 TẤT CẢ ROUTES ĐỀU YÊU CẦU XÁC THỰC
 router.use(authenticate);
@@ -26,6 +33,14 @@ router.post(
   (req, res, next) => {
     const { role } = req.body;
     
+    console.log('🎯 [ROUTE ROLE CHECK]', {
+      currentUser: req.user?.email,
+      currentRole: req.user?.role,
+      targetRole: role,
+      hierarchy: ROLE_HIERARCHY,
+      canCreate: canCreateRole(req.user?.role, role)
+    });
+
     if (!role) {
       return res.status(400).json({
         success: false,
@@ -33,7 +48,13 @@ router.post(
       });
     }
 
-    // Map role to corresponding permission - ĐÃ BỔ SUNG
+    // SUPER_ADMIN có thể tạo mọi role (trừ chính nó)
+    if (req.user?.role === ROLES.SUPER_ADMIN && role !== ROLES.SUPER_ADMIN) {
+      console.log('👑 [SUPER_ADMIN BYPASS] Super admin creating:', role);
+      return next(); // Cho phép Super Admin tạo bất kỳ role nào
+    }
+
+    // Map role to corresponding permission
     const permissionMap = {
       [ROLES.PATIENT]: PERMISSIONS.REGISTER_PATIENT,
       [ROLES.DOCTOR]: PERMISSIONS.REGISTER_DOCTOR,
@@ -44,7 +65,6 @@ router.post(
       [ROLES.BILLING_STAFF]: PERMISSIONS.REGISTER_BILLING_STAFF,
       [ROLES.DEPARTMENT_HEAD]: PERMISSIONS.REGISTER_DEPARTMENT_HEAD,
       [ROLES.HOSPITAL_ADMIN]: PERMISSIONS.REGISTER_HOSPITAL_ADMIN,
-      [ROLES.SUPER_ADMIN]: PERMISSIONS.REGISTER_HOSPITAL_ADMIN // SUPER_ADMIN có thể tạo HOSPITAL_ADMIN
     };
 
     const requiredPermission = permissionMap[role];
@@ -86,6 +106,20 @@ router.put(
   userController.updateUserProfile
 );
 
+// 🎯 UPLOAD PROFILE PICTURE - POST /api/users/profile/picture
+router.post(
+  '/profile/picture',
+  upload.single('profilePicture'),
+  validateBody(userValidation.schemas.uploadProfilePictureBody),
+  userController.uploadProfilePicture
+);
+
+// 🎯 RESEND VERIFICATION EMAIL - POST /api/users/profile/resend-verification
+router.post(
+  '/profile/resend-verification',
+  userController.resendVerificationEmail
+);
+
 // 🎯 LẤY USER THEO ID - GET /api/users/:userId
 router.get(
   '/:userId',
@@ -94,10 +128,18 @@ router.get(
   userController.getUserById
 );
 
+// 🎯 LẤY USER THEO EMAIL - GET /api/users/email/:email
+router.get(
+  '/email/:email',
+  rbacRequirePermission(PERMISSIONS.VIEW_USER),
+  validateParams(userValidation.schemas.userEmailParams),
+  userController.getUserByEmail
+);
+
 // 🎯 CẬP NHẬT USER - PUT /api/users/:userId
 router.put(
   '/:userId',
-  rbacRequirePermission(PERMISSIONS.UPDATE_USER), // Sửa thành UPDATE_USER thống nhất
+  rbacRequirePermission(PERMISSIONS.UPDATE_USER),
   validateCombined({
     params: userValidation.schemas.userIdParams,
     body: userValidation.schemas.updateUserBody
@@ -116,7 +158,13 @@ router.patch(
   userController.disableUser
 );
 
-
+// 🎯 KÍCH HOẠT LẠI USER - PATCH /api/users/:userId/enable
+router.patch(
+  '/:userId/enable',
+  rbacRequirePermission(PERMISSIONS.UPDATE_USER),
+  validateParams(userValidation.schemas.userIdParams),
+  userController.enableUser
+);
 
 // 🎯 GÁN ROLE CHO USER - PATCH /api/users/:userId/role
 router.patch(
@@ -148,22 +196,13 @@ router.post(
   userController.checkUserPermission
 );
 
-// 🎯 KÍCH HOẠT LẠI USER - PATCH /api/users/:userId/enable
-router.patch(
-  '/:userId/enable',
-  rbacRequirePermission(PERMISSIONS.UPDATE_USER),
-  validateParams(userValidation.schemas.userIdParams),
-  userController.enableUser
-);
-
-
 // 🎯 XÓA USER (SOFT DELETE) - DELETE /api/users/:userId
 router.delete(
   '/:userId',
   rbacRequirePermission(PERMISSIONS.DELETE_USER),
   validateCombined({
     params: userValidation.schemas.userIdParams,
-    body: userValidation.schemas.disableUserBody // Dùng chung schema với disable
+    body: userValidation.schemas.deleteUserBody
   }),
   userController.deleteUser
 );
@@ -182,6 +221,20 @@ router.get(
   rbacRequirePermission(PERMISSIONS.VIEW_USER),
   validateQuery(userValidation.schemas.listUsersQuery),
   userController.listDeletedUsers
+);
+
+// 🎯 THỐNG KÊ USER - GET /api/users/stats/overview
+router.get(
+  '/stats/overview',
+  rbacRequirePermission(PERMISSIONS.VIEW_REPORTS),
+  userController.getUserStatistics
+);
+
+// 🎯 VERIFY EMAIL - POST /api/users/verify-email
+router.post(
+  '/verify-email',
+  validateBody(userValidation.schemas.verifyEmailBody),
+  userController.verifyEmail
 );
 
 module.exports = router;

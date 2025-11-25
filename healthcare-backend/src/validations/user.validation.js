@@ -1,8 +1,9 @@
+// src/validations/user.validation.js
 const Joi = require('joi');
 const { ROLES } = require('../constants/roles');
 const { commonSchemas } = require('../middlewares/validation.middleware');
 
-// 🎯 TẠO SCHEMAS RIÊNG BIỆT CHO TỪNG LOẠI VALIDATION
+// 🎯 SCHEMAS CHO TẤT CẢ CÁC HÀM
 const createUserBody = Joi.object({
   email: commonSchemas.email.required(),
   password: commonSchemas.password.required(),
@@ -52,7 +53,8 @@ const createUserBody = Joi.object({
     department: Joi.string().max(100).optional(),
     qualifications: Joi.array().items(Joi.string().max(200)).optional(),
     yearsOfExperience: Joi.number().min(0).max(50).optional(),
-    hireDate: Joi.date().max('now').optional()
+    hireDate: Joi.date().max('now').optional(),
+    position: Joi.string().max(100).optional()
   }).when('role', {
     is: Joi.valid(ROLES.DOCTOR, ROLES.NURSE, ROLES.PHARMACIST, ROLES.LAB_TECHNICIAN),
     then: Joi.object({
@@ -67,7 +69,18 @@ const createUserBody = Joi.object({
       })
     }).required(),
     otherwise: Joi.object().optional()
-  })
+  }),
+
+  settings: Joi.object({
+    language: Joi.string().valid('vi', 'en').default('vi'),
+    notifications: Joi.object({
+      email: Joi.boolean().default(true),
+      sms: Joi.boolean().default(false),
+      push: Joi.boolean().default(true)
+    }).optional(),
+    theme: Joi.string().valid('light', 'dark').default('light'),
+    timezone: Joi.string().default('Asia/Ho_Chi_Minh')
+  }).optional()
 });
 
 const updateUserBody = Joi.object({
@@ -90,14 +103,17 @@ const updateUserBody = Joi.object({
       phone: commonSchemas.phone.optional()
     }).optional()
   }).optional(),
+
   professionalInfo: Joi.object({
     licenseNumber: Joi.string().max(50).optional(),
     specialization: Joi.string().max(100).optional(),
     department: Joi.string().max(100).optional(),
     qualifications: Joi.array().items(Joi.string().max(200)).optional(),
     yearsOfExperience: Joi.number().min(0).max(50).optional(),
-    hireDate: Joi.date().max('now').optional()
+    hireDate: Joi.date().max('now').optional(),
+    position: Joi.string().max(100).optional()
   }).optional(),
+
   settings: Joi.object({
     language: Joi.string().valid('vi', 'en').optional(),
     notifications: Joi.object({
@@ -105,9 +121,11 @@ const updateUserBody = Joi.object({
       sms: Joi.boolean().optional(),
       push: Joi.boolean().optional()
     }).optional(),
-    theme: Joi.string().valid('light', 'dark').optional()
+    theme: Joi.string().valid('light', 'dark').optional(),
+    timezone: Joi.string().optional()
   }).optional(),
-  status: Joi.string().valid('ACTIVE', 'INACTIVE', 'SUSPENDED').optional()
+
+  status: Joi.string().valid('ACTIVE', 'INACTIVE', 'SUSPENDED', 'LOCKED').optional()
 }).min(1).messages({
   'object.min': 'Phải cung cấp ít nhất một trường để cập nhật'
 });
@@ -130,6 +148,7 @@ const updateUserProfileBody = Joi.object({
       phone: commonSchemas.phone.optional()
     }).optional()
   }).optional(),
+
   settings: Joi.object({
     language: Joi.string().valid('vi', 'en').optional(),
     notifications: Joi.object({
@@ -137,7 +156,8 @@ const updateUserProfileBody = Joi.object({
       sms: Joi.boolean().optional(),
       push: Joi.boolean().optional()
     }).optional(),
-    theme: Joi.string().valid('light', 'dark').optional()
+    theme: Joi.string().valid('light', 'dark').optional(),
+    timezone: Joi.string().optional()
   }).optional()
 }).min(1).messages({
   'object.min': 'Phải cung cấp ít nhất một trường để cập nhật'
@@ -163,13 +183,18 @@ const userIdParams = Joi.object({
   userId: commonSchemas.objectId.required()
 });
 
+const userEmailParams = Joi.object({
+  email: commonSchemas.email.required()
+});
+
 const listUsersQuery = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
   role: Joi.string().valid(...Object.values(ROLES)).optional(),
   search: Joi.string().max(100).optional(),
   status: Joi.string().valid('ACTIVE', 'INACTIVE', 'SUSPENDED', 'LOCKED', 'PENDING_APPROVAL').optional(),
-  sortBy: Joi.string().valid('createdAt', 'email', 'lastLogin', 'personalInfo.firstName').default('createdAt'),
+  includeDeleted: Joi.boolean().default(false),
+  sortBy: Joi.string().valid('createdAt', 'email', 'lastLogin', 'personalInfo.firstName', 'updatedAt').default('createdAt'),
   sortOrder: Joi.string().valid('asc', 'desc').default('desc')
 });
 
@@ -188,6 +213,17 @@ const deleteUserBody = Joi.object({
     'any.required': 'Lý do xóa là bắt buộc'
   })
 });
+
+const verifyEmailBody = Joi.object({
+  token: Joi.string().required().messages({
+    'string.empty': 'Token xác thực là bắt buộc',
+    'any.required': 'Token xác thực là bắt buộc'
+  })
+});
+
+const uploadProfilePictureBody = Joi.object({
+  // File upload validation sẽ được xử lý bằng multer
+}).unknown(true);
 
 // 🎯 EXPORT CÁC SCHEMAS CHO TỪNG ROUTE
 module.exports = {
@@ -223,6 +259,13 @@ module.exports = {
   getUserById: {
     params: userIdParams
   },
+
+  // 🎯 CHO GET USER BY EMAIL
+  getUserByEmail: {
+    params: userEmailParams
+  },
+
+  // 🎯 CHO DELETE USER
   deleteUser: {
     params: userIdParams,
     body: deleteUserBody
@@ -239,7 +282,15 @@ module.exports = {
     body: checkUserPermissionBody
   },
 
-  
+  // 🎯 CHO VERIFY EMAIL
+  verifyEmail: {
+    body: verifyEmailBody
+  },
+
+  // 🎯 CHO UPLOAD PROFILE PICTURE
+  uploadProfilePicture: {
+    body: uploadProfilePictureBody
+  },
 
   // 🎯 EXPORT CÁC SCHEMAS RIÊNG LẺ (CHO LINH HOẠT)
   schemas: {
@@ -249,7 +300,11 @@ module.exports = {
     disableUserBody,
     assignRoleBody,
     userIdParams,
+    userEmailParams,
     listUsersQuery,
-    checkUserPermissionBody
+    checkUserPermissionBody,
+    deleteUserBody,
+    verifyEmailBody,
+    uploadProfilePictureBody
   }
 };

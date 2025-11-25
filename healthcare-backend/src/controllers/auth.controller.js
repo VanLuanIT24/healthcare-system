@@ -3,9 +3,7 @@ const { asyncHandler } = require('../middlewares/error.middleware');
 const { AUDIT_ACTIONS, auditLog } = require('../middlewares/audit.middleware');
 
 /**
- * 🛡️ AUTHENTICATION CONTROLLER CHO HEALTHCARE SYSTEM
- * - Xử lý HTTP requests và responses
- * - Gọi service layer và trả về response phù hợp
+ * 🛡️ AUTHENTICATION CONTROLLER CHO HEALTHCARE SYSTEM - HOÀN THIỆN
  */
 
 class AuthController {
@@ -36,11 +34,10 @@ class AuthController {
   });
 
   /**
-   * 🎯 ĐĂNG XUẤT
+   * 🎯 ĐĂNG XUẤT - CẬP NHẬT: HỖ TRỢ NHIỀU CÁCH ĐĂNG XUẤT
    */
   logout = asyncHandler(async (req, res) => {
-    // ✅ SỬA LỖI: KIỂM TRA req.user TỒN TẠI
-    const { refreshToken } = req.body;
+    const { refreshToken, sessionId } = req.body;
     const userId = req.user?._id;
 
     if (!userId) {
@@ -51,7 +48,7 @@ class AuthController {
       });
     }
 
-    const result = await authService.logout(userId, refreshToken);
+    const result = await authService.logout(userId, refreshToken, sessionId);
 
     res.status(200).json({
       success: true,
@@ -59,7 +56,6 @@ class AuthController {
       data: null
     });
   });
-
 
   /**
    * 🎯 REFRESH TOKEN
@@ -77,15 +73,14 @@ class AuthController {
   });
 
   /**
-   * 🎯 ĐĂNG KÝ USER - ✅ ĐÃ SỬA: THÊM IP ADDRESS
+   * 🎯 ĐĂNG KÝ USER
    */
   registerUser = [
     auditLog(AUDIT_ACTIONS.USER_CREATE, { metadata: { registrationType: 'SELF_REGISTER' } }),
     asyncHandler(async (req, res) => {
       const userData = req.body;
-      const ipAddress = req.ip || req.connection.remoteAddress; // ✅ LẤY IP
+      const ipAddress = req.ip || req.connection.remoteAddress;
 
-      // ✅ KIỂM TRA BODY
       if (!userData.email || !userData.password) {
         return res.status(400).json({
           success: false,
@@ -94,7 +89,7 @@ class AuthController {
         });
       }
 
-      const result = await authService.registerUser(userData, ipAddress); // ✅ TRUYỀN IP
+      const result = await authService.registerUser(userData, ipAddress);
 
       res.status(201).json({
         success: true,
@@ -112,7 +107,6 @@ class AuthController {
   forgotPassword = asyncHandler(async (req, res) => {
     console.log('🔑 [FORGOT PASSWORD] Request body:', req.body);
     
-    // ✅ SỬA LỖI: SỬ DỤNG req.body || {}
     const { email } = req.body || {};
 
     if (!email) {
@@ -131,7 +125,6 @@ class AuthController {
       data: null
     });
   });
-
 
   /**
    * 🎯 ĐẶT LẠI MẬT KHẨU
@@ -154,7 +147,6 @@ class AuthController {
   changePassword = [
     auditLog(AUDIT_ACTIONS.PASSWORD_CHANGE),
     asyncHandler(async (req, res) => {
-      // ✅ SỬA LỖI: KIỂM TRA req.user TỒN TẠI
       const { currentPassword, newPassword } = req.body;
       const userId = req.user?._id;
 
@@ -180,50 +172,134 @@ class AuthController {
    * 🎯 LẤY THÔNG TIN USER HIỆN TẠI
    */
   getCurrentUser = asyncHandler(async (req, res) => {
-  console.log('🔍 [AUTH CONTROLLER] getCurrentUser started');
-  console.log('🔍 [AUTH CONTROLLER] req.user:', req.user);
-  console.log('🔍 [AUTH CONTROLLER] req.headers:', req.headers);
-  
-  // ✅ KIỂM TRA CHI TIẾT req.user
-  if (!req.user) {
-    console.error('❌ [AUTH CONTROLLER] req.user is UNDEFINED');
-    return res.status(401).json({
-      success: false,
-      message: 'Không tìm thấy thông tin xác thực người dùng',
-      data: null
-    });
-  }
-
-  if (!req.user._id) {
-    console.error('❌ [AUTH CONTROLLER] req.user._id is MISSING');
-    console.error('❌ [AUTH CONTROLLER] req.user content:', JSON.stringify(req.user, null, 2));
-    return res.status(401).json({
-      success: false,
-      message: 'Thông tin người dùng không đầy đủ',
-      data: null
-    });
-  }
-
-  const userId = req.user._id;
-  console.log('🔍 [AUTH CONTROLLER] Getting current user with ID:', userId);
-
-  try {
-    const user = await authService.getCurrentUser(userId);
+    console.log('🔍 [AUTH CONTROLLER] getCurrentUser started');
     
-    console.log('✅ [AUTH CONTROLLER] User data retrieved successfully');
-    res.status(200).json({
-      success: true,
-      message: 'Lấy thông tin user thành công',
-      data: { user }
-    });
-  } catch (error) {
-    console.error('❌ [AUTH CONTROLLER] Error getting current user:', error.message);
-    throw error;
-  }
-});
+    if (!req.user) {
+      console.error('❌ [AUTH CONTROLLER] req.user is UNDEFINED');
+      return res.status(401).json({
+        success: false,
+        message: 'Không tìm thấy thông tin xác thực người dùng',
+        data: null
+      });
+    }
+
+    if (!req.user._id) {
+      console.error('❌ [AUTH CONTROLLER] req.user._id is MISSING');
+      return res.status(401).json({
+        success: false,
+        message: 'Thông tin người dùng không đầy đủ',
+        data: null
+      });
+    }
+
+    const userId = req.user._id;
+    console.log('🔍 [AUTH CONTROLLER] Getting current user with ID:', userId);
+
+    try {
+      const user = await authService.getCurrentUser(userId);
+      
+      console.log('✅ [AUTH CONTROLLER] User data retrieved successfully');
+      res.status(200).json({
+        success: true,
+        message: 'Lấy thông tin user thành công',
+        data: { user }
+      });
+    } catch (error) {
+      console.error('❌ [AUTH CONTROLLER] Error getting current user:', error.message);
+      throw error;
+    }
+  });
 
   /**
-   * 🎯 HEALTH CHECK (CHO LOAD BALANCER)
+   * 🎯 LẤY DANH SÁCH SESSION CỦA USER - HÀM MỚI
+   */
+  getUserSessions = [
+    auditLog(AUDIT_ACTIONS.USER_VIEW_SESSIONS),
+    asyncHandler(async (req, res) => {
+      const userId = req.user?._id;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Không tìm thấy thông tin người dùng',
+          data: null
+        });
+      }
+
+      const sessions = await authService.getUserSessions(userId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Lấy danh sách session thành công',
+        data: { sessions }
+      });
+    })
+  ];
+
+  /**
+   * 🎯 THU HỒI SESSION - HÀM MỚI
+   */
+  revokeSession = [
+    auditLog(AUDIT_ACTIONS.SESSION_REVOKE),
+    asyncHandler(async (req, res) => {
+      const { sessionId } = req.body;
+      const userId = req.user?._id;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Không tìm thấy thông tin người dùng',
+          data: null
+        });
+      }
+
+      if (!sessionId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Session ID là bắt buộc',
+          data: null
+        });
+      }
+
+      const result = await authService.revokeSession(sessionId);
+
+      res.status(200).json({
+        success: true,
+        message: result.message,
+        data: null
+      });
+    })
+  ];
+
+  /**
+   * 🎯 THU HỒI TẤT CẢ SESSION (LOGOUT ALL) - HÀM MỚI
+   */
+  logoutAllSessions = [
+    auditLog(AUDIT_ACTIONS.SESSION_REVOKE_ALL),
+    asyncHandler(async (req, res) => {
+      const userId = req.user?._id;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: 'Không tìm thấy thông tin người dùng',
+          data: null
+        });
+      }
+
+      // Gọi logout mà không có refreshToken hoặc sessionId để logout tất cả
+      const result = await authService.logout(userId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Đã đăng xuất khỏi tất cả thiết bị',
+        data: null
+      });
+    })
+  ];
+
+  /**
+   * 🎯 HEALTH CHECK
    */
   healthCheck = asyncHandler(async (req, res) => {
     res.status(200).json({

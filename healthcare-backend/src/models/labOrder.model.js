@@ -1,4 +1,3 @@
-// src/models/labOrder.model.js
 const mongoose = require('mongoose');
 
 const labOrderSchema = new mongoose.Schema({
@@ -9,8 +8,7 @@ const labOrderSchema = new mongoose.Schema({
   },
   medicalRecordId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'MedicalRecord',
-    required: true
+    ref: 'MedicalRecord'
   },
   patientId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -23,7 +21,7 @@ const labOrderSchema = new mongoose.Schema({
     required: true
   },
   
-  // Thông tin đơn xét nghiệm
+  // Thông tin chỉ định
   orderDate: {
     type: Date,
     default: Date.now
@@ -33,9 +31,15 @@ const labOrderSchema = new mongoose.Schema({
     enum: ['ROUTINE', 'URGENT', 'STAT'],
     default: 'ROUTINE'
   },
+  department: String,
   
   // Danh sách xét nghiệm
   tests: [{
+    testId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'LabTest',
+      required: true
+    },
     testCode: String,
     testName: {
       type: String,
@@ -44,10 +48,11 @@ const labOrderSchema = new mongoose.Schema({
     category: String,
     specimenType: {
       type: String,
-      enum: ['BLOOD', 'URINE', 'STOOL', 'TISSUE', 'SALIVA', 'OTHER']
+      enum: ['BLOOD', 'URINE', 'STOOL', 'TISSUE', 'SALIVA', 'CSF', 'OTHER']
     },
     specimenRequirements: String,
     instructions: String,
+    price: Number,
     
     // Kết quả
     result: {
@@ -56,9 +61,14 @@ const labOrderSchema = new mongoose.Schema({
       normalRange: String,
       flag: {
         type: String,
-        enum: ['NORMAL', 'LOW', 'HIGH', 'CRITICAL']
+        enum: ['NORMAL', 'LOW', 'HIGH', 'CRITICAL', 'ABNORMAL']
       },
-      notes: String
+      notes: String,
+      verifiedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      verifiedAt: Date
     },
     
     // Trạng thái
@@ -70,6 +80,8 @@ const labOrderSchema = new mongoose.Schema({
     
     // Thời gian
     collectionDate: Date,
+    receivedDate: Date,
+    startedDate: Date,
     completedDate: Date,
     
     // Người thực hiện
@@ -86,13 +98,18 @@ const labOrderSchema = new mongoose.Schema({
     attachedFiles: [{
       name: String,
       fileUrl: String,
-      uploadDate: Date
+      uploadDate: Date,
+      uploadedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }
     }]
   }],
   
   // Chỉ định lâm sàng
   clinicalIndication: String,
   differentialDiagnosis: [String],
+  preTestConditions: String,
   
   // Trạng thái tổng
   status: {
@@ -110,7 +127,18 @@ const labOrderSchema = new mongoose.Schema({
   
   // Ghi chú
   notes: String,
-  specialInstructions: String
+  specialInstructions: String,
+  
+  // Kết quả tổng
+  overallInterpretation: String,
+  recommendations: String,
+  
+  // Metadata
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
@@ -123,6 +151,7 @@ labOrderSchema.index({ doctorId: 1 });
 labOrderSchema.index({ orderId: 1 });
 labOrderSchema.index({ status: 1 });
 labOrderSchema.index({ 'tests.status': 1 });
+labOrderSchema.index({ priority: 1 });
 
 // Virtuals
 labOrderSchema.virtual('completedTests').get(function() {
@@ -139,37 +168,69 @@ labOrderSchema.virtual('hasCriticalResults').get(function() {
   return this.tests.some(test => test.result && test.result.flag === 'CRITICAL');
 });
 
+labOrderSchema.virtual('isUrgent').get(function() {
+  return this.priority === 'URGENT' || this.priority === 'STAT';
+});
+
 // Methods
-labOrderSchema.methods.addTestResult = function(testIndex, result, performedBy) {
-  if (testIndex >= this.tests.length) {
-    throw new Error('Invalid test index');
+labOrderSchema.methods.addTestResult = function(testId, result, performedBy) {
+  const test = this.tests.id(testId);
+  if (!test) {
+    throw new Error('Test not found in order');
   }
   
-  const test = this.tests[testIndex];
   test.result = result;
   test.status = 'COMPLETED';
   test.completedDate = new Date();
   test.performedBy = performedBy;
+  
+  // Update overall status if all tests are completed
+  const allCompleted = this.tests.every(t => t.status === 'COMPLETED');
+  if (allCompleted) {
+    this.status = 'COMPLETED';
+  }
 };
 
-labOrderSchema.methods.markTestInProgress = function(testIndex, performedBy) {
-  if (testIndex >= this.tests.length) {
-    throw new Error('Invalid test index');
+labOrderSchema.methods.markTestInProgress = function(testId, performedBy) {
+  const test = this.tests.id(testId);
+  if (!test) {
+    throw new Error('Test not found in order');
   }
   
-  this.tests[testIndex].status = 'IN_PROGRESS';
-  this.tests[testIndex].performedBy = performedBy;
+  test.status = 'IN_PROGRESS';
+  test.startedDate = new Date();
+  test.performedBy = performedBy;
+  
+  if (this.status === 'ORDERED') {
+    this.status = 'IN_PROGRESS';
+  }
+};
+
+labOrderSchema.methods.verifyTestResult = function(testId, verifiedBy) {
+  const test = this.tests.id(testId);
+  if (!test) {
+    throw new Error('Test not found in order');
+  }
+  
+  if (!test.result) {
+    throw new Error('No result to verify');
+  }
+  
+  test.result.verifiedBy = verifiedBy;
+  test.result.verifiedAt = new Date();
 };
 
 // Statics
 labOrderSchema.statics.findByStatus = function(status) {
-  return this.find({ status }).populate('patientId doctorId');
+  return this.find({ status })
+    .populate('patientId doctorId')
+    .populate('tests.testId');
 };
 
 labOrderSchema.statics.findPendingOrders = function() {
   return this.find({
     status: { $in: ['ORDERED', 'IN_PROGRESS'] }
-  });
+  }).populate('patientId doctorId');
 };
 
 labOrderSchema.statics.findCriticalResults = function(startDate, endDate) {
@@ -179,7 +240,17 @@ labOrderSchema.statics.findCriticalResults = function(startDate, endDate) {
       $gte: startDate,
       $lte: endDate
     }
-  });
+  }).populate('patientId doctorId');
+};
+
+labOrderSchema.statics.findByPatientAndDate = function(patientId, startDate, endDate) {
+  return this.find({
+    patientId,
+    orderDate: {
+      $gte: startDate,
+      $lte: endDate
+    }
+  }).populate('doctorId tests.testId');
 };
 
 module.exports = mongoose.model('LabOrder', labOrderSchema);

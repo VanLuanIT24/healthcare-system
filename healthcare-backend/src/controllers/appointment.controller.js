@@ -286,6 +286,184 @@ class AppointmentController {
       next(error);
     }
   }
+
+  /**
+   * 🎯 ĐẶT LẠI LỊCH HẸN
+   */
+  async rescheduleAppointment(req, res, next) {
+    try {
+      const { appointmentId } = req.params;
+      const { newTime } = req.body;
+      
+      console.log('🔄 [APPOINTMENT] Rescheduling appointment:', appointmentId);
+
+      const rescheduledAppointment = await appointmentService.rescheduleAppointment(
+        appointmentId, 
+        newTime,
+        req.user._id
+      );
+
+      // 🎯 AUDIT LOG
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
+        resource: 'Appointment',
+        resourceId: appointmentId,
+        category: 'APPOINTMENT_RESCHEDULE',
+        metadata: { 
+          newTime,
+          rescheduledBy: req.user._id 
+        }
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: 'Đặt lại lịch hẹn thành công',
+        data: rescheduledAppointment
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 TÌM KIẾM LỊCH HẸN NÂNG CAO
+   */
+  async searchAppointments(req, res, next) {
+    try {
+      const filters = req.query;
+      
+      console.log('🔍 [APPOINTMENT] Searching appointments with filters:', filters);
+
+      const result = await appointmentService.searchAppointments(filters);
+
+      // 🎯 AUDIT LOG
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW, {
+        resource: 'Appointment',
+        category: 'APPOINTMENT_SEARCH',
+        metadata: { filters }
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: 'Tìm kiếm lịch hẹn thành công',
+        data: result
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 LẤY LỊCH HẸN THEO DEPARTMENT
+   */
+  async getDepartmentAppointments(req, res, next) {
+    try {
+      const { departmentId } = req.params;
+      const { date } = req.query;
+      
+      console.log('🏥 [APPOINTMENT] Getting department appointments:', departmentId);
+
+      const result = await appointmentService.getDepartmentAppointments(departmentId, date);
+
+      res.json({
+        success: true,
+        message: 'Lấy lịch hẹn theo khoa thành công',
+        data: result
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 CẬP NHẬT LỊCH LÀM VIỆC
+   */
+  async updateSchedule(req, res, next) {
+    try {
+      const { scheduleId } = req.params;
+      const updateData = req.body;
+      
+      console.log('📋 [APPOINTMENT] Updating schedule:', scheduleId);
+
+      const result = await appointmentService.updateSchedule(
+        scheduleId, 
+        updateData,
+        req.user._id
+      );
+
+      // 🎯 AUDIT LOG
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
+        resource: 'Schedule',
+        resourceId: scheduleId,
+        category: 'SCHEDULE_UPDATE',
+        metadata: { 
+          updatedBy: req.user._id,
+          changes: updateData.changes 
+        }
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: 'Cập nhật lịch làm việc thành công',
+        data: result
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 GỬI THÔNG BÁO NHẮC LỊCH HẸN
+   */
+  async sendAppointmentReminder(req, res, next) {
+    try {
+      const { appointmentId } = req.params;
+      
+      console.log('🔔 [APPOINTMENT] Sending reminder for appointment:', appointmentId);
+
+      const result = await appointmentService.sendAppointmentReminder(appointmentId);
+
+      // 🎯 AUDIT LOG
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
+        resource: 'Appointment',
+        resourceId: appointmentId,
+        category: 'APPOINTMENT_REMINDER',
+        metadata: { reminderSent: true }
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: 'Gửi thông báo nhắc lịch thành công',
+        data: result
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 TỰ ĐỘNG GỬI NHẮC NHỞ (INTERNAL/ADMIN)
+   */
+  async sendScheduledReminders(req, res, next) {
+    try {
+      console.log('⏰ [APPOINTMENT] Sending scheduled reminders');
+
+      const result = await appointmentService.sendScheduledReminders();
+
+      res.json({
+        success: true,
+        message: 'Gửi nhắc nhở tự động hoàn tất',
+        data: result
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new AppointmentController();

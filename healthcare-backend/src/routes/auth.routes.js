@@ -1,4 +1,3 @@
-// src/routes/auth.routes.js
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
@@ -12,10 +11,10 @@ const { authenticate } = require('../middlewares/auth.middleware');
 const { loginLimiter } = require('../middlewares/rateLimiter');
 
 /**
- * 🛡️ AUTHENTICATION ROUTES CHO HEALTHCARE SYSTEM
+ * 🛡️ AUTHENTICATION ROUTES CHO HEALTHCARE SYSTEM - HOÀN THIỆN
  */
 
-// 🎯 ÁP DỤNG markPublic CHO CÁC ROUTE CỤ THỂ THAY VÌ TẤT CẢ
+// 🎯 ÁP DỤNG markPublic CHO CÁC ROUTE CÔNG KHAI
 const publicRoutes = [
   '/login',
   '/register', 
@@ -26,7 +25,6 @@ const publicRoutes = [
 ];
 
 router.use((req, res, next) => {
-  // Kiểm tra nếu route hiện tại nằm trong danh sách public
   if (publicRoutes.some(route => req.path.includes(route))) {
     req.isPublic = true;
   }
@@ -83,8 +81,8 @@ router.get('/health', authController.healthCheck);
 router.post(
   '/logout',
   authenticate,
-  sanitizeInput(['refreshToken']),
-  validateBody(authValidation.refreshToken.body),
+  sanitizeInput(['refreshToken', 'sessionId']),
+  validateBody(authValidation.logout.body),
   authController.logout
 );
 
@@ -102,6 +100,29 @@ router.get(
   '/me',
   authenticate,
   authController.getCurrentUser
+);
+
+// 🎯 LẤY DANH SÁCH SESSION CỦA USER - ROUTE MỚI
+router.get(
+  '/sessions',
+  authenticate,
+  authController.getUserSessions
+);
+
+// 🎯 THU HỒI SESSION CỤ THỂ - ROUTE MỚI
+router.post(
+  '/sessions/revoke',
+  authenticate,
+  sanitizeInput(['sessionId']),
+  validateBody(authValidation.revokeSession.body),
+  authController.revokeSession
+);
+
+// 🎯 ĐĂNG XUẤT TẤT CẢ SESSION - ROUTE MỚI
+router.post(
+  '/sessions/logout-all',
+  authenticate,
+  authController.logoutAllSessions
 );
 
 module.exports = router;

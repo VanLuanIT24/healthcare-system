@@ -12,7 +12,13 @@
     "admin:status": "node src/scripts/superAdminCli.js status",
     "admin:reset": "node src/scripts/superAdminCli.js reset",
     "admin:info": "node src/scripts/superAdminCli.js info",
-    "admin:help": "node src/scripts/superAdminCli.js help"
+    "admin:help": "node src/scripts/superAdminCli.js help",
+    "test:auth": "jest tests/auth.system.test.js --verbose",
+    "test:user": "jest tests/user.system.test.js --verbose",
+    "test:all": "jest tests/ --verbose",
+    "test:auth:watch": "jest tests/auth.system.test.js --watch",
+    "test:user:watch": "jest tests/user.system.test.js --watch",
+    "test:coverage": "jest tests/ --coverage"
   },
   "keywords": [],
   "author": "",
@@ -26,7 +32,7 @@
     "express-validator": "^7.2.1",
     "jest": "^30.2.0",
     "jsonwebtoken": "^9.0.2",
-    "mongodb-memory-server": "^10.2.1",
+    "mongodb-memory-server": "^10.3.0",
     "mongoose": "^8.19.1",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",

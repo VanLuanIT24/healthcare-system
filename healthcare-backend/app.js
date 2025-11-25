@@ -15,11 +15,12 @@ const { initializeConfig } = require('./src/config');
 const authRoutes = require('./src/routes/auth.routes');
 const userRoutes = require('./src/routes/user.routes');
 const superAdminRoutes = require('./src/routes/superAdmin.routes');
-
-// 🆕 THÊM CÁC ROUTES KHÁC (khi có)
-// const patientRoutes = require('./src/routes/patient.routes');
-// const appointmentRoutes = require('./src/routes/appointment.routes');
-// const medicalRoutes = require('./src/routes/medical.routes');
+const appointmentRoutes = require('./src/routes/appointment.routes');
+const medicalRecordRoutes = require('./src/routes/medicalRecord.routes');
+const clinicalRoutes = require('./src/routes/clinical.routes');
+const patientRoutes = require('./src/routes/patient.routes');
+const prescriptionRoutes = require('./src/routes/prescription.routes');
+const laboratoryRoutes = require('./src/routes/laboratory.routes');
 
 /**
  * ỨNG DỤNG EXPRESS CHÍNH - ĐÃ CẬP NHẬT
@@ -159,20 +160,27 @@ app.get('/', (req, res) => {
       auth: '/api/auth',
       users: '/api/users',
       superAdmin: '/api/super-admin',
+      appointments: '/api/appointments',
+      medicalRecords: '/api/medical-records',
+      clinical: '/api/clinical',
+      patients: '/api/patients',
+      prescriptions: '/api/prescriptions',
+      laboratory: '/api/laboratory',
       health: '/health'
     }
   });
 });
 
-// 🎯 API ROUTES - ĐÃ THÊM USER ROUTES
+// 🎯 API ROUTES - ĐÃ SỬA LỖI (SỬ DỤNG app.use THAY VÌ router.use)
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/super-admin', superAdminRoutes);
-
-// 🆕 THÊM CÁC ROUTES KHÁC KHI CẦN
-// app.use('/api/patients', patientRoutes);
-// app.use('/api/appointments', appointmentRoutes);
-// app.use('/api/medical', medicalRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/medical-records', medicalRecordRoutes);
+app.use('/api/clinical', clinicalRoutes);
+app.use('/api/patients', patientRoutes);
+app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/laboratory', laboratoryRoutes);
 
 // 🔍 DEBUG ENDPOINT (chỉ trong development) - CẢI THIỆN
 if (appConfig.isDev) {

@@ -12,12 +12,10 @@ const commonSchemas = {
   objectId: Joi.string()
     .hex()
     .length(24)
-    .required()
     .messages({
       'string.base': 'ID phải là chuỗi hợp lệ',
       'string.length': 'ID phải có 24 ký tự',
       'string.hex': 'ID phải là dạng hex hợp lệ',
-      'any.required': 'ID không được bỏ trống',
     }),
 
   email: Joi.string()
@@ -39,8 +37,7 @@ const commonSchemas = {
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .messages({
       'string.min': 'Mật khẩu phải có ít nhất 8 ký tự',
-      'string.pattern.base':
-        'Mật khẩu phải bao gồm ít nhất 1 chữ hoa, 1 chữ thường và 1 số',
+      'string.pattern.base': 'Mật khẩu phải bao gồm ít nhất 1 chữ hoa, 1 chữ thường và 1 số',
     }),
 
   date: Joi.date()
@@ -50,8 +47,6 @@ const commonSchemas = {
       'date.format': 'Ngày phải theo định dạng ISO (YYYY-MM-DD)',
     }),
 };
-
-
 
 // 🎯 SCHEMAS ĐẶC THÙ Y TẾ
 const medicalSchemas = {
@@ -124,42 +119,83 @@ const medicalSchemas = {
 };
 
 /**
- * 🎯 MIDDLEWARE VALIDATION CHÍNH
+ * 🎯 MIDDLEWARE VALIDATION CHÍNH (ĐÃ SỬA)
  */
 function validate(schema, source = 'body') {
   return (req, res, next) => {
-    const data = req[source];
-    
-    const { error, value } = schema.validate(data, {
-      abortEarly: false,
-      stripUnknown: true,
-      allowUnknown: true,
-    });
-
-    if (error) {
-      const errorDetails = error.details.map(detail => ({
-        field: detail.path.join('.'),
-        message: detail.message,
-        type: detail.type,
-      }));
-
-      const validationError = new AppError(
-        'Dữ liệu không hợp lệ',
-        422,
-        ERROR_CODES.VALIDATION_FAILED
-      );
-      validationError.details = errorDetails;
+    try {
+      const data = req[source];
       
-      return next(validationError);
-    }
+      console.log(`🔍 [VALIDATION-${source.toUpperCase()}] Validating:`, {
+        dataExists: !!data,
+        dataKeys: data ? Object.keys(data) : 'NO DATA',
+        dataSample: data ? 
+          (source === 'body' ? {
+            email: data.email,
+            firstName: data.firstName,
+            hasPassword: !!data.password
+          } : data) : 'NO DATA'
+      });
 
-    // 🎯 GÁN DỮ LIỆU ĐÃ ĐƯỢC VALIDATE VÀO REQUEST
-    req[source] = value;
-    req.validatedData = value;
-    
-    next();
+      // 🎯 KIỂM TRA DỮ LIỆU TỒN TẠI (chỉ cho body)
+      if (source === 'body' && (!data || Object.keys(data).length === 0)) {
+        console.log('❌ [VALIDATION] Request body is empty or missing');
+        return res.status(400).json({
+          success: false,
+          message: 'Dữ liệu request không được để trống',
+          error: 'REQUEST_BODY_EMPTY'
+        });
+      }
+
+      const { error, value } = schema.validate(data, {
+        abortEarly: false,
+        stripUnknown: true,
+        allowUnknown: true,
+      });
+
+      if (error) {
+        console.log(`❌ [VALIDATION-${source.toUpperCase()}] Validation errors:`, error.details);
+        
+        const errorDetails = error.details.map(detail => ({
+          field: detail.path.join('.'),
+          message: detail.message,
+          type: detail.type,
+        }));
+
+        const validationError = new AppError(
+          'Dữ liệu không hợp lệ',
+          422,
+          ERROR_CODES.VALIDATION_FAILED
+        );
+        validationError.details = errorDetails;
+        
+        return next(validationError);
+      }
+
+      // 🎯 GÁN DỮ LIỆU ĐÃ VALIDATE
+      req[source] = value;
+      req.validatedData = value;
+      
+      console.log(`✅ [VALIDATION-${source.toUpperCase()}] Validation passed`);
+      next();
+      
+    } catch (validationError) {
+      console.error(`❌ [VALIDATION-${source.toUpperCase()}] Middleware error:`, validationError);
+      return res.status(500).json({
+        success: false,
+        message: 'Lỗi xác thực dữ liệu',
+        error: 'VALIDATION_ERROR'
+      });
+    }
   };
 }
+
+/**
+ * 🎯 VALIDATE BODY (WRAPPER)
+ */
+const validateBody = (schema) => {
+  return validate(schema, 'body');
+};
 
 /**
  * 🎯 VALIDATE PARAMS (URL PARAMETERS)
@@ -176,16 +212,7 @@ function validateQuery(schema) {
 }
 
 /**
- * 🎯 VALIDATE BODY (REQUEST BODY)
- */
-function validateBody(schema) {
-  return validate(schema, 'body');
-}
-
-/**
  * 🎯 SANITIZE INPUT DATA
- * - Loại bỏ các trường không cần thiết
- * - Chuẩn hóa dữ liệu
  */
 function sanitizeInput(allowedFields = []) {
   return (req, res, next) => {
