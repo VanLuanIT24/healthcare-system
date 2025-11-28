@@ -29,14 +29,38 @@ const SuperAdminLogin = () => {
       // 🎯 Auto-redirect based on user role
       if (userRole === "PATIENT") {
         console.log("🏥 Redirecting to Patient Dashboard");
-        message.success("Đăng nhập thành công! Chào mừng bạn.");
+        message.success("Đăng nhập thành công! Chào mừng bệnh nhân.");
         setTimeout(() => {
           navigate("/patient/dashboard", { replace: true });
+        }, 100);
+      } else if (userRole === "DOCTOR") {
+        console.log("👨‍⚕️ Redirecting to Doctor Dashboard");
+        message.success("Đăng nhập thành công! Chào mừng Bác sĩ.");
+        setTimeout(() => {
+          navigate("/doctor/dashboard", { replace: true });
+        }, 100);
+      } else if (userRole === "NURSE") {
+        console.log("👩‍⚕️ Redirecting to Nurse Dashboard");
+        message.success("Đăng nhập thành công! Chào mừng Y tá.");
+        setTimeout(() => {
+          navigate("/nurse/dashboard", { replace: true });
+        }, 100);
+      } else if (userRole === "PHARMACIST") {
+        console.log("💊 Redirecting to Pharmacist Dashboard");
+        message.success("Đăng nhập thành công! Chào mừng Dược sĩ.");
+        setTimeout(() => {
+          navigate("/pharmacist/dashboard", { replace: true });
+        }, 100);
+      } else if (userRole === "LAB_TECHNICIAN") {
+        console.log("🧪 Redirecting to Lab Technician Dashboard");
+        message.success("Đăng nhập thành công! Chào mừng Kỹ thuật viên.");
+        setTimeout(() => {
+          navigate("/lab-technician/dashboard", { replace: true });
         }, 100);
       } else {
         // Admin / SuperAdmin / Other roles
         console.log("👨‍💼 Redirecting to Super Admin Dashboard");
-        message.success("Đăng nhập thành công! Chào mừng bạn.");
+        message.success("Đăng nhập thành công! Chào mừng Quản trị viên.");
         setTimeout(() => {
           navigate("/superadmin/dashboard", { replace: true });
         }, 100);

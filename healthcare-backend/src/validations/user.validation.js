@@ -26,15 +26,9 @@ const createUserBody = Joi.object({
       "string.empty": "Vui lòng nhập tên",
       "any.required": "Tên là bắt buộc",
     }),
-    dateOfBirth: Joi.date().max("now").required().messages({
-      "date.max": "Ngày sinh không được ở tương lai",
-      "any.required": "Ngày sinh là bắt buộc",
-    }),
-    gender: Joi.string().valid("MALE", "FEMALE", "OTHER").required().messages({
-      "any.only": "Giới tính không hợp lệ",
-      "any.required": "Giới tính là bắt buộc",
-    }),
-    phone: commonSchemas.phone.required(),
+    dateOfBirth: Joi.date().optional(),
+    gender: Joi.string().valid("MALE", "FEMALE", "OTHER").optional(),
+    phone: Joi.string().optional().allow(""),
     address: Joi.object({
       street: Joi.string().max(200).optional(),
       city: Joi.string().max(100).optional(),
@@ -45,7 +39,7 @@ const createUserBody = Joi.object({
     emergencyContact: Joi.object({
       name: Joi.string().max(100).optional(),
       relationship: Joi.string().max(50).optional(),
-      phone: commonSchemas.phone.optional(),
+      phone: Joi.string().optional().allow(""),
     }).optional(),
   }).required(),
 
@@ -82,9 +76,9 @@ const updateUserBody = Joi.object({
   personalInfo: Joi.object({
     firstName: Joi.string().min(2).max(50).optional(),
     lastName: Joi.string().min(2).max(50).optional(),
-    dateOfBirth: Joi.date().max("now").optional(),
+    dateOfBirth: Joi.date().optional(),
     gender: Joi.string().valid("MALE", "FEMALE", "OTHER").optional(),
-    phone: commonSchemas.phone.optional(),
+    phone: Joi.string().optional().allow(""),
     address: Joi.object({
       street: Joi.string().max(200).optional(),
       city: Joi.string().max(100).optional(),
@@ -95,7 +89,7 @@ const updateUserBody = Joi.object({
     emergencyContact: Joi.object({
       name: Joi.string().max(100).optional(),
       relationship: Joi.string().max(50).optional(),
-      phone: commonSchemas.phone.optional(),
+      phone: Joi.string().optional().allow(""),
     }).optional(),
   }).optional(),
   professionalInfo: Joi.object({
@@ -137,7 +131,7 @@ const updateUserProfileBody = Joi.object({
   personalInfo: Joi.object({
     firstName: Joi.string().min(2).max(50).optional(),
     lastName: Joi.string().min(2).max(50).optional(),
-    phone: commonSchemas.phone.optional(),
+    phone: Joi.string().optional().allow(""),
     address: Joi.object({
       street: Joi.string().max(200).optional(),
       city: Joi.string().max(100).optional(),
@@ -148,7 +142,7 @@ const updateUserProfileBody = Joi.object({
     emergencyContact: Joi.object({
       name: Joi.string().max(100).optional(),
       relationship: Joi.string().max(50).optional(),
-      phone: commonSchemas.phone.optional(),
+      phone: Joi.string().optional().allow(""),
     }).optional(),
   }).optional(),
   settings: Joi.object({

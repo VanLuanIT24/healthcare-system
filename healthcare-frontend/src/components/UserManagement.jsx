@@ -278,6 +278,9 @@ const UserManagement = () => {
         { text: "Super Admin", value: "SUPER_ADMIN" },
         { text: "Admin", value: "ADMIN" },
         { text: "Bác sĩ", value: "DOCTOR" },
+        { text: "Y tá/Điều dưỡng", value: "NURSE" },
+        { text: "Dược sĩ", value: "PHARMACIST" },
+        { text: "Kỹ thuật viên xét nghiệm", value: "LAB_TECHNICIAN" },
         { text: "Bệnh nhân", value: "PATIENT" },
       ],
       render: (role) => {
@@ -285,12 +288,18 @@ const UserManagement = () => {
           SUPER_ADMIN: "red",
           ADMIN: "orange",
           DOCTOR: "blue",
+          NURSE: "cyan",
+          PHARMACIST: "purple",
+          LAB_TECHNICIAN: "magenta",
           PATIENT: "green",
         };
         const labels = {
           SUPER_ADMIN: "Super Admin",
           ADMIN: "Admin",
           DOCTOR: "Bác sĩ",
+          NURSE: "Y tá/Điều dưỡng",
+          PHARMACIST: "Dược sĩ",
+          LAB_TECHNICIAN: "Kỹ thuật viên xét nghiệm",
           PATIENT: "Bệnh nhân",
         };
         return <Tag color={colors[role]}>{labels[role] || role}</Tag>;
@@ -442,6 +451,9 @@ const UserManagement = () => {
               <Option value="SUPER_ADMIN">Super Admin</Option>
               <Option value="ADMIN">Admin</Option>
               <Option value="DOCTOR">Bác sĩ</Option>
+              <Option value="NURSE">Y tá/Điều dưỡng</Option>
+              <Option value="PHARMACIST">Dược sĩ</Option>
+              <Option value="LAB_TECHNICIAN">Kỹ thuật viên xét nghiệm</Option>
               <Option value="PATIENT">Bệnh nhân</Option>
             </Select>
             <Select
@@ -510,10 +522,28 @@ const UserManagement = () => {
                     ? "orange"
                     : selectedUser.role === "DOCTOR"
                     ? "blue"
+                    : selectedUser.role === "NURSE"
+                    ? "cyan"
+                    : selectedUser.role === "PHARMACIST"
+                    ? "purple"
+                    : selectedUser.role === "LAB_TECHNICIAN"
+                    ? "magenta"
                     : "green"
                 }
               >
-                {selectedUser.role}
+                {selectedUser.role === "SUPER_ADMIN"
+                  ? "Super Admin"
+                  : selectedUser.role === "ADMIN"
+                  ? "Admin"
+                  : selectedUser.role === "DOCTOR"
+                  ? "Bác sĩ"
+                  : selectedUser.role === "NURSE"
+                  ? "Y tá/Điều dưỡng"
+                  : selectedUser.role === "PHARMACIST"
+                  ? "Dược sĩ"
+                  : selectedUser.role === "LAB_TECHNICIAN"
+                  ? "Kỹ thuật viên xét nghiệm"
+                  : "Bệnh nhân"}
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
@@ -608,6 +638,9 @@ const UserManagement = () => {
             <Select placeholder="Chọn vai trò">
               <Option value="ADMIN">Admin</Option>
               <Option value="DOCTOR">Bác sĩ</Option>
+              <Option value="NURSE">Y tá/Điều dưỡng</Option>
+              <Option value="PHARMACIST">Dược sĩ</Option>
+              <Option value="LAB_TECHNICIAN">Kỹ thuật viên xét nghiệm</Option>
               <Option value="PATIENT">Bệnh nhân</Option>
             </Select>
           </Form.Item>

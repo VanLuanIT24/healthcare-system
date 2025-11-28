@@ -24,7 +24,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem("accessToken");
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    config.headers.Authorization = `Bearer ${token.trim()}`;
   }
   return config;
 });
@@ -90,9 +90,9 @@ export const AuthProvider = ({ children }) => {
         console.log("Plain user data:", plainUserData);
         console.log("Tokens:", tokens);
 
-        // Store tokens and user
-        localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("refreshToken", refreshToken);
+        // Store tokens and user (trim tokens to remove any whitespace)
+        localStorage.setItem("accessToken", accessToken.trim());
+        localStorage.setItem("refreshToken", refreshToken.trim());
         localStorage.setItem("user", JSON.stringify(plainUserData));
 
         setUser(plainUserData);
@@ -155,7 +155,7 @@ export const AuthProvider = ({ children }) => {
 
       if (response.data.success) {
         const { accessToken } = response.data.data;
-        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("accessToken", accessToken.trim());
         return accessToken;
       }
     } catch (err) {

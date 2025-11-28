@@ -1,0 +1,842 @@
+/* ============================================
+   SUPER ADMIN DASHBOARD - PROFESSIONAL STYLING
+   ============================================ */
+
+:root {
+  /* Primary Colors */
+  --admin-primary: #0f5b8c;
+  --admin-primary-light: #1890ff;
+  --admin-primary-lighter: #40a9ff;
+  --admin-secondary: #13c2c2;
+
+  /* Status Colors */
+  --admin-success: #52c41a;
+  --admin-warning: #faad14;
+  --admin-danger: #f5222d;
+  --admin-info: #1890ff;
+
+  /* Text Colors */
+  --admin-text-primary: #1f2937;
+  --admin-text-secondary: #6b7280;
+  --admin-text-light: #d1d5db;
+
+  /* Background Colors */
+  --admin-bg-primary: #ffffff;
+  --admin-bg-secondary: #f9fafb;
+  --admin-bg-tertiary: #f3f4f6;
+  --admin-bg-dark: #1f2937;
+
+  /* Border Colors */
+  --admin-border: #e5e7eb;
+  --admin-border-light: #f3f4f6;
+
+  /* Shadows */
+  --admin-shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --admin-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --admin-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --admin-shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+
+  /* Transitions */
+  --admin-transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ============================================
+   LAYOUT
+   ============================================ */
+
+.superadmin-dashboard {
+  background: linear-gradient(
+    135deg,
+    #f3f4f6 0%,
+    #ffffff 25%,
+    #f0f4ff 75%,
+    #f3f4f6 100%
+  );
+  min-height: 100vh;
+}
+
+.superadmin-dashboard .ant-layout {
+  background: transparent;
+}
+
+.superadmin-dashboard .ant-layout-has-sider > .ant-layout-content,
+.superadmin-dashboard .ant-layout-has-sider > .ant-layout {
+  background: transparent;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+
+.superadmin-dashboard .role-dashboard-sider {
+  background: linear-gradient(
+    180deg,
+    var(--admin-primary) 0%,
+    #0d4a73 50%,
+    #082c4a 100%
+  ) !important;
+  box-shadow: 8px 0 32px rgba(15, 91, 140, 0.25);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.superadmin-dashboard .logo-container {
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.superadmin-dashboard .logo-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.superadmin-dashboard .logo-icon {
+  font-size: 28px;
+  color: #fbbf24;
+  animation: adminPulse 2s ease-in-out infinite;
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
+}
+
+@keyframes adminPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+/* Menu Items */
+.superadmin-dashboard .ant-menu-dark {
+  background: transparent !important;
+}
+
+.superadmin-dashboard .ant-menu-dark .ant-menu-item {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 4px 8px;
+  border-radius: 6px;
+  transition: var(--admin-transition);
+}
+
+.superadmin-dashboard .ant-menu-dark .ant-menu-item:hover {
+  color: white !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.superadmin-dashboard .ant-menu-dark .ant-menu-item-selected {
+  color: white !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-radius: 6px;
+  font-weight: 600;
+  border-left: 3px solid #fbbf24;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.superadmin-dashboard .role-dashboard-header {
+  background: linear-gradient(
+    90deg,
+    var(--admin-bg-primary) 0%,
+    #f9fafb 50%,
+    var(--admin-bg-primary) 100%
+  );
+  border-bottom: 2px solid var(--admin-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  padding: 0 24px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+}
+
+.superadmin-dashboard .role-dashboard-header h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--admin-primary);
+  letter-spacing: -0.5px;
+  background: linear-gradient(
+    90deg,
+    var(--admin-primary) 0%,
+    var(--admin-primary-light) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.superadmin-dashboard .header-content {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* ============================================
+   CONTENT AREA
+   ============================================ */
+
+.superadmin-dashboard .role-dashboard-content {
+  padding: 32px;
+  background: transparent;
+  overflow-y: auto;
+}
+
+.superadmin-dashboard .role-dashboard-content > .ant-spin {
+  height: 100%;
+}
+
+/* ============================================
+   ALERT
+   ============================================ */
+
+.superadmin-dashboard .ant-alert {
+  background: linear-gradient(
+    90deg,
+    rgba(24, 144, 255, 0.1) 0%,
+    rgba(24, 144, 255, 0.05) 100%
+  );
+  border: 1px solid rgba(24, 144, 255, 0.2);
+  border-radius: 8px;
+  margin-bottom: 24px;
+  color: var(--admin-text-primary);
+  font-weight: 500;
+}
+
+.superadmin-dashboard .ant-alert-icon {
+  color: var(--admin-primary-light);
+}
+
+/* ============================================
+   STAT CARDS
+   ============================================ */
+
+.superadmin-dashboard .stat-card {
+  background: linear-gradient(135deg, var(--admin-bg-primary) 0%, #fafafa 100%);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 24px !important;
+  transition: var(--admin-transition);
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.superadmin-dashboard .stat-card::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.2) 0%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  transition: var(--admin-transition);
+}
+
+.superadmin-dashboard .stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--admin-shadow-lg);
+  border-color: var(--admin-primary-light);
+}
+
+.superadmin-dashboard .stat-card:hover::before {
+  transform: translate(20px, 20px);
+}
+
+.superadmin-dashboard .stat-card .ant-statistic-title {
+  color: var(--admin-text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.superadmin-dashboard .stat-card .ant-statistic-content {
+  margin-top: 12px;
+  font-weight: 700;
+}
+
+.superadmin-dashboard .stat-card .ant-statistic-content-value {
+  font-size: 32px;
+  letter-spacing: -1px;
+}
+
+/* Stat Card Colors */
+.superadmin-dashboard .stat-card[style*="border-top: 4px solid #1890ff"] {
+  border-top-color: var(--admin-primary-light) !important;
+}
+
+.superadmin-dashboard
+  .stat-card[style*="border-top: 4px solid #1890ff"]::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    var(--admin-primary-light) 0%,
+    var(--admin-primary-lighter) 100%
+  );
+}
+
+.superadmin-dashboard
+  .stat-card[style*="border-top: 4px solid #52c41a"]::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #52c41a 0%, #95de64 100%);
+}
+
+.superadmin-dashboard
+  .stat-card[style*="border-top: 4px solid #faad14"]::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #faad14 0%, #ffc53d 100%);
+}
+
+.superadmin-dashboard
+  .stat-card[style*="border-top: 4px solid #f5222d"]::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #f5222d 0%, #ff4d4f 100%);
+}
+
+/* ============================================
+   CARDS
+   ============================================ */
+
+.superadmin-dashboard .ant-card {
+  background: var(--admin-bg-primary);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  box-shadow: var(--admin-shadow-sm);
+  transition: var(--admin-transition);
+}
+
+.superadmin-dashboard .ant-card:hover {
+  box-shadow: var(--admin-shadow-md);
+}
+
+.superadmin-dashboard .ant-card-head {
+  background: linear-gradient(
+    90deg,
+    var(--admin-bg-secondary) 0%,
+    var(--admin-bg-tertiary) 100%
+  );
+  border-bottom: 2px solid var(--admin-border);
+  border-radius: 11px 11px 0 0;
+  padding: 20px 24px;
+}
+
+.superadmin-dashboard .ant-card-head .ant-card-head-title {
+  color: var(--admin-text-primary);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.superadmin-dashboard .ant-card-body {
+  padding: 24px;
+}
+
+/* ============================================
+   TABLES
+   ============================================ */
+
+.superadmin-dashboard .ant-table {
+  background: var(--admin-bg-primary);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.superadmin-dashboard .ant-table-thead > tr > th {
+  background: linear-gradient(
+    90deg,
+    var(--admin-primary) 0%,
+    var(--admin-primary-light) 100%
+  );
+  color: white;
+  font-weight: 700;
+  font-size: 14px;
+  border-bottom: 2px solid var(--admin-primary-lighter);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 16px 12px !important;
+}
+
+.superadmin-dashboard .ant-table-tbody > tr {
+  transition: var(--admin-transition);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.superadmin-dashboard .ant-table-tbody > tr:hover > td {
+  background: linear-gradient(
+    90deg,
+    rgba(24, 144, 255, 0.05) 0%,
+    rgba(24, 144, 255, 0.02) 100%
+  );
+}
+
+.superadmin-dashboard .ant-table-tbody > tr > td {
+  padding: 16px 12px;
+  color: var(--admin-text-primary);
+  transition: var(--admin-transition);
+}
+
+.superadmin-dashboard .ant-table-tbody > tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* Alternating row colors for better readability */
+.superadmin-dashboard .ant-table-tbody > tr:nth-child(odd) {
+  background: var(--admin-bg-primary);
+}
+
+.superadmin-dashboard .ant-table-tbody > tr:nth-child(even) {
+  background: var(--admin-bg-secondary);
+}
+
+/* ============================================
+   TABS
+   ============================================ */
+
+.superadmin-dashboard .ant-tabs {
+  background: transparent;
+}
+
+.superadmin-dashboard .ant-tabs-nav {
+  background: linear-gradient(
+    90deg,
+    var(--admin-bg-secondary) 0%,
+    var(--admin-bg-tertiary) 100%
+  );
+  border: 1px solid var(--admin-border);
+  border-radius: 8px 8px 0 0;
+  padding: 12px;
+  margin: 0;
+}
+
+.superadmin-dashboard .ant-tabs-nav-list {
+  gap: 8px;
+}
+
+.superadmin-dashboard .ant-tabs-tab {
+  color: var(--admin-text-secondary);
+  border-radius: 6px;
+  margin-right: 0 !important;
+  transition: var(--admin-transition);
+}
+
+.superadmin-dashboard .ant-tabs-tab:hover {
+  color: var(--admin-primary);
+}
+
+.superadmin-dashboard .ant-tabs-tab-active {
+  color: white;
+  background: linear-gradient(
+    135deg,
+    var(--admin-primary) 0%,
+    var(--admin-primary-light) 100%
+  );
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+.superadmin-dashboard .ant-tabs-ink-bar {
+  background: linear-gradient(
+    90deg,
+    var(--admin-primary) 0%,
+    var(--admin-primary-light) 100%
+  );
+  height: 3px;
+  border-radius: 3px;
+}
+
+.superadmin-dashboard .ant-tabs-content {
+  background: var(--admin-bg-primary);
+  border: 1px solid var(--admin-border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  padding: 24px;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+.superadmin-dashboard .ant-btn-primary {
+  background: linear-gradient(
+    135deg,
+    var(--admin-primary-light) 0%,
+    var(--admin-primary) 100%
+  );
+  border: none;
+  font-weight: 600;
+  font-size: 14px;
+  height: 40px;
+  border-radius: 8px;
+  transition: var(--admin-transition);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.25);
+  letter-spacing: 0.5px;
+}
+
+.superadmin-dashboard .ant-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.35);
+}
+
+.superadmin-dashboard .ant-btn-primary:active {
+  transform: translateY(0);
+}
+
+.superadmin-dashboard .ant-btn-default {
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text-primary);
+  font-weight: 600;
+  height: 40px;
+  border-radius: 8px;
+  transition: var(--admin-transition);
+  background: var(--admin-bg-primary);
+}
+
+.superadmin-dashboard .ant-btn-default:hover {
+  border-color: var(--admin-primary-light);
+  color: var(--admin-primary-light);
+  background: rgba(24, 144, 255, 0.05);
+}
+
+.superadmin-dashboard .ant-btn-danger {
+  background: var(--admin-danger);
+  border: none;
+  color: white;
+  font-weight: 600;
+  height: 40px;
+  border-radius: 8px;
+  transition: var(--admin-transition);
+}
+
+.superadmin-dashboard .ant-btn-danger:hover {
+  background: #ff4d4f;
+  box-shadow: 0 4px 12px rgba(245, 34, 45, 0.25);
+}
+
+/* ============================================
+   INPUTS & SELECTS
+   ============================================ */
+
+.superadmin-dashboard .ant-input,
+.superadmin-dashboard .ant-select-selector {
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  transition: var(--admin-transition);
+  background: var(--admin-bg-primary);
+  color: var(--admin-text-primary);
+}
+
+.superadmin-dashboard .ant-input:focus,
+.superadmin-dashboard .ant-input-focused,
+.superadmin-dashboard .ant-select-focused .ant-select-selector {
+  border-color: var(--admin-primary-light);
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+}
+
+.superadmin-dashboard .ant-input::placeholder {
+  color: var(--admin-text-secondary);
+}
+
+.superadmin-dashboard .ant-select-arrow {
+  color: var(--admin-text-secondary);
+}
+
+/* ============================================
+   BADGES & TAGS
+   ============================================ */
+
+.superadmin-dashboard .ant-badge-status-success {
+  background-color: var(--admin-success);
+}
+
+.superadmin-dashboard .ant-badge-status-error {
+  background-color: var(--admin-danger);
+}
+
+.superadmin-dashboard .ant-badge-status-warning {
+  background-color: var(--admin-warning);
+}
+
+.superadmin-dashboard .ant-badge-status-processing {
+  background-color: var(--admin-primary-light);
+}
+
+.superadmin-dashboard .ant-tag {
+  border-radius: 6px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border: none;
+  font-size: 13px;
+  transition: var(--admin-transition);
+}
+
+.superadmin-dashboard .ant-tag:hover {
+  opacity: 0.8;
+}
+
+/* ============================================
+   DRAWER
+   ============================================ */
+
+.superadmin-dashboard .ant-drawer-content-wrapper {
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+}
+
+.superadmin-dashboard .ant-drawer-header {
+  background: linear-gradient(
+    90deg,
+    var(--admin-primary) 0%,
+    var(--admin-primary-light) 100%
+  );
+  border-bottom: none;
+  padding: 24px;
+}
+
+.superadmin-dashboard .ant-drawer-title {
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.superadmin-dashboard .ant-drawer-close {
+  color: white;
+}
+
+.superadmin-dashboard .ant-drawer-body {
+  padding: 24px;
+  background: var(--admin-bg-primary);
+}
+
+/* ============================================
+   FORM
+   ============================================ */
+
+.superadmin-dashboard .ant-form-item-label > label {
+  color: var(--admin-text-primary);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.superadmin-dashboard .ant-form-item-required::before {
+  color: var(--admin-danger);
+}
+
+/* ============================================
+   MODAL
+   ============================================ */
+
+.superadmin-dashboard .ant-modal-header {
+  background: linear-gradient(
+    90deg,
+    var(--admin-bg-secondary) 0%,
+    var(--admin-bg-tertiary) 100%
+  );
+  border-bottom: 1px solid var(--admin-border);
+  border-radius: 8px 8px 0 0;
+}
+
+.superadmin-dashboard .ant-modal-title {
+  color: var(--admin-text-primary);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.superadmin-dashboard .ant-modal-content {
+  background: var(--admin-bg-primary);
+}
+
+.superadmin-dashboard .ant-modal-body {
+  padding: 24px;
+}
+
+/* ============================================
+   TOOLTIP
+   ============================================ */
+
+.superadmin-dashboard .ant-tooltip-inner {
+  background: var(--admin-primary);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* ============================================
+   SPACE
+   ============================================ */
+
+.superadmin-dashboard .ant-space {
+  gap: 12px;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .superadmin-dashboard .role-dashboard-content {
+    padding: 16px;
+  }
+
+  .superadmin-dashboard .role-dashboard-header {
+    padding: 0 16px;
+    height: 64px;
+  }
+
+  .superadmin-dashboard .role-dashboard-header h1 {
+    font-size: 18px;
+  }
+
+  .superadmin-dashboard .stat-card .ant-statistic-content-value {
+    font-size: 24px;
+  }
+
+  .superadmin-dashboard .ant-table {
+    font-size: 12px;
+  }
+
+  .superadmin-dashboard .ant-table-thead > tr > th {
+    padding: 12px 8px !important;
+    font-size: 12px;
+  }
+
+  .superadmin-dashboard .ant-table-tbody > tr > td {
+    padding: 12px 8px;
+  }
+
+  .superadmin-dashboard .ant-space {
+    gap: 8px !important;
+  }
+
+  .superadmin-dashboard .ant-btn {
+    font-size: 12px !important;
+    padding: 4px 8px !important;
+    height: 32px !important;
+  }
+
+  .superadmin-dashboard .header-content {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .superadmin-dashboard .ant-input {
+    font-size: 12px;
+  }
+
+  .superadmin-dashboard .ant-select {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 576px) {
+  .superadmin-dashboard .role-dashboard-sider {
+    position: fixed;
+    left: -250px;
+    height: 100vh;
+    z-index: 999;
+  }
+
+  .superadmin-dashboard .role-dashboard-header h1 {
+    font-size: 16px;
+  }
+
+  .superadmin-dashboard .stat-card {
+    padding: 16px !important;
+  }
+
+  .superadmin-dashboard .stat-card .ant-statistic-content-value {
+    font-size: 20px;
+  }
+
+  .superadmin-dashboard .ant-card {
+    border-radius: 8px;
+  }
+
+  .superadmin-dashboard .ant-table-wrapper {
+    font-size: 11px;
+  }
+
+  .superadmin-dashboard .ant-table-thead > tr > th {
+    padding: 8px 4px !important;
+    font-size: 11px;
+  }
+
+  .superadmin-dashboard .ant-table-tbody > tr > td {
+    padding: 8px 4px;
+  }
+
+  .superadmin-dashboard .ant-btn {
+    font-size: 11px !important;
+  }
+
+  .superadmin-dashboard .ant-space {
+    gap: 4px !important;
+  }
+}
+
+/* ============================================
+   ANIMATIONS & TRANSITIONS
+   ============================================ */
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.superadmin-dashboard .ant-card {
+  animation: slideInUp 0.3s ease-out;
+}
+
+.superadmin-dashboard .stat-card {
+  animation: slideInUp 0.4s ease-out;
+}

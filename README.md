@@ -1,185 +1,205 @@
-<h1 align="center">🏥 Healthcare Authentication System</h1>
+<h1 align="center">🏥 Healthcare System - Full Stack Application</h1>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Node.js-18%2B-green?logo=node.js" alt="Node.js" />
-  <img src="https://img.shields.io/badge/Express.js-4.x-lightgrey?logo=express" alt="Express.js" />
+  <img src="https://img.shields.io/badge/React-18-blue?logo=react" alt="React" />
   <img src="https://img.shields.io/badge/MongoDB-Atlas-brightgreen?logo=mongodb" alt="MongoDB" />
-  <img src="https://img.shields.io/badge/JWT-Authentication-orange?logo=jsonwebtokens" alt="JWT" />
-  <img src="https://img.shields.io/badge/Status-Active-success?logo=github" alt="Status" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker" alt="Docker" />
+  <img src="https://img.shields.io/badge/Status-Production%20Ready-success" alt="Status" />
 </p>
 
 <p align="center">
-  🚀 Một hệ thống xác thực <b>toàn diện & bảo mật cao</b> cho các ứng dụng Healthcare, được xây dựng với kiến trúc <b>microservices</b> hiện đại, 
-  <b>JWT + 2FA</b>, và <b>MongoDB Atlas</b>.  
+  🚀 <b>Hệ thống quản lý y tế toàn diện</b> với backend bảo mật cao (JWT, 2FA, RBAC) và frontend hiện đại (React, Ant Design)
 </p>
 
 ---
 
-## 👨‍💻 Nhóm Phát Triển — Dynamic Duo
+## 🎯 Giới Thiệu Dự Án
 
-| Thành viên | Vai trò | Công việc chính |
-|-------------|----------|-----------------|
-| **Võ Văn Luận (Leader)** | 🧠 Full-stack Developer | Thiết kế kiến trúc tổng thể, phát triển backend, bảo mật, database |
-| **Nguyễn Phước Đại** | 🎨 Frontend Developer | UI/UX design, phát triển frontend, tích hợp API |
-
----
-
-## ✨ Điểm Nổi Bật
-✅ **Kiến trúc Microservices** dễ mở rộng và bảo trì  
-🔐 **Bảo mật đa tầng:** JWT, 2FA, bcrypt, rate limit, Helmet  
-🧩 **Phân quyền RBAC** linh hoạt cho 6 cấp độ người dùng  
-🩺 **Giám sát hệ thống real-time** qua healthcheck & logging  
-📘 **Codebase chuyên nghiệp**: validation, error handling, audit logs
+✅ **Backend:** Express.js + MongoDB + JWT Authentication  
+✅ **Frontend:** React 18 + Ant Design v5 + Responsive Design  
+✅ **Deployment:** Docker + Docker Compose + Nginx  
+✅ **Security:** Multi-layer authentication, RBAC, Rate limiting  
+✅ **Features:** 4 specialized healthcare role dashboards (Doctor, Nurse, Pharmacist, Lab Technician)
 
 ---
 
 ## 🔑 Tính Năng Chính
 
 ### 🔒 Bảo Mật & Xác Thực
-- JWT Authentication với Access & Refresh Tokens thông minh  
-- Xác thực hai yếu tố (2FA) bằng Google Authenticator  
-- Hash mật khẩu với `bcrypt (12 rounds salt)`  
-- Rate limiting chống brute-force attacks  
-- CORS & Helmet bảo vệ toàn diện header  
-- Token rotation tự động làm mới refresh token  
+
+- JWT Authentication với Access & Refresh Tokens thông minh
+- Xác thực hai yếu tố (2FA) bằng Google Authenticator
+- Hash mật khẩu với `bcrypt (12 rounds salt)`
+- Rate limiting chống brute-force attacks
+- CORS & Helmet bảo vệ toàn diện header
+- Token rotation tự động làm mới refresh token
 
 ### 👥 Quản Lý Người Dùng (RBAC)
-| Role | Quyền hạn |
-|------|------------|
+
+| Role            | Quyền hạn                          |
+| --------------- | ---------------------------------- |
 | **SUPER_ADMIN** | Toàn quyền, không thể xoá hoặc sửa |
-| **ADMIN** | Quản trị viên hệ thống |
-| **MANAGER** | Quản lý phòng ban |
-| **DOCTOR** | Nhân viên y tế |
-| **STAFF** | Nhân viên hỗ trợ |
-| **PATIENT** | Người dùng cuối |
+| **ADMIN**       | Quản trị viên hệ thống             |
+| **MANAGER**     | Quản lý phòng ban                  |
+| **DOCTOR**      | Nhân viên y tế                     |
+| **STAFF**       | Nhân viên hỗ trợ                   |
+| **PATIENT**     | Người dùng cuối                    |
 
 > ⚡ Super Admin được **tự động tạo khi khởi chạy lần đầu**.
 
 ---
 
-## 🏗️ Kiến Trúc Hệ Thống
-```
-healthcare-system/
-├── src/
-│ ├── config/ # App, DB, JWT configuration
-│ ├── controllers/ # Xử lý request
-│ ├── models/ # Mongoose schemas
-│ ├── routes/ # Định nghĩa API endpoints
-│ ├── middlewares/ # Auth, RBAC, rateLimiter
-│ ├── services/ # Business logic
-│ ├── utils/ # JWT, hash, email utilities
-│ ├── validations/ # Joi validation schemas
-│ └── app.js # Application entry point
-└── README.md
-```
+## 👥 7 Roles Trong Hệ Thống
+
+| Role               | Tiếng Việt               | Màu     | Chức Năng                                  |
+| ------------------ | ------------------------ | ------- | ------------------------------------------ |
+| **SUPER_ADMIN**    | Quản trị viên cao cấp    | Blue    | Toàn quyền hệ thống                        |
+| **ADMIN**          | Quản trị viên            | Green   | Quản lý người dùng, duyệt dữ liệu          |
+| **DOCTOR**         | Bác sĩ                   | Red     | Quản lý bệnh nhân, đơn thuốc, tư vấn       |
+| **NURSE**          | Y tá/Điều dưỡng          | Cyan    | Theo dõi dấu hiệu sống, chăm sóc bệnh nhân |
+| **PHARMACIST**     | Dược sĩ                  | Purple  | Quản lý kho thuốc, cấp phát đơn thuốc      |
+| **LAB_TECHNICIAN** | Kỹ thuật viên xét nghiệm | Magenta | Quản lý test, ghi nhận kết quả             |
+| **PATIENT**        | Bệnh nhân                | Default | Xem hồ sơ bệnh án, đặt lịch tái khám       |
+
 ---
 
-## ⚙️ Cấu Hình Môi Trường `.env`
+## 🚀 Bắt Đầu Nhanh
 
-```env
-PORT=5000
-NODE_ENV=development
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/healthcare
-JWT_ACCESS_SECRET=your_access_secret
-JWT_REFRESH_SECRET=your_refresh_secret
-ACCESS_TOKEN_EXPIRES_IN=15m
-REFRESH_TOKEN_EXPIRES_IN=7d
-SALT_ROUNDS=12
+### ⚡ Cài đặt & Chạy Cục Bộ
 
-SUPER_ADMIN_EMAIL=superadmin@healthcare.vn
-SUPER_ADMIN_PASSWORD=SuperSecurePassword2024!
-SUPER_ADMIN_NAME=System Root Administrator
-```
-🚀 Bắt Đầu Nhanh
-⚡ Cài đặt & Chạy thủ công
+```bash
 # Clone project
-```
 git clone https://github.com/VanLuanIT24/healthcare-system.git
 cd healthcare-system
-```
 
-# Cài đặt dependencies
-```
+# Cài đặt backend
+cd healthcare-backend
 npm install
+cp .env.example .env  # Cấu hình biến môi trường
+npm run dev
+
+# Trong terminal khác, cài đặt frontend
+cd healthcare-frontend
+npm install
+npm run dev
 ```
 
-# Cấu hình environment
-```
-cp .env.example .env
-```
+### 🐳 Chạy với Docker (Khuyến nghị)
 
-# Sau đó chỉnh sửa các biến trong .env
-
-# Chạy ứng dụng
-```
-npm run dev      # Development mode
-npm start        # Production mode
-```
-
-🐳 Chạy với Docker
-```
+```bash
 docker-compose up -d
+# Frontend: http://localhost:3000
+# Backend: http://localhost:5000
 ```
 
-🧠 Token Flow & RBAC Matrix
-```
-Luồng xác thực:
+Xem chi tiết tại: [QUICK_START.md](./QUICK_START.md) | [DOCKER_PRODUCTION.md](./DOCKER_PRODUCTION.md)
 
-Login → Access Token (15m) + Refresh Token (7d)
-↓
-Gọi API → gửi Access Token trong header
-↓
-Access Token hết hạn → làm mới bằng Refresh Token
-↓
-Token rotation → tạo Refresh Token mới, vô hiệu hóa token cũ
+---
+
+## 🏗️ Kiến Trúc Hệ Thống
+
+```
+healthcare-system/
+├── healthcare-backend/          # Node.js + Express + MongoDB
+│   ├── src/
+│   │   ├── config/             # JWT, DB, App config
+│   │   ├── controllers/        # Request handlers
+│   │   ├── models/             # Mongoose schemas
+│   │   ├── routes/             # API endpoints
+│   │   ├── middlewares/        # Auth, RBAC, rate limiter
+│   │   ├── services/           # Business logic
+│   │   ├── utils/              # JWT, email, hash utilities
+│   │   └── validations/        # Joi schemas
+│   └── package.json
+│
+├── healthcare-frontend/         # React 18 + Ant Design
+│   ├── src/
+│   │   ├── pages/
+│   │   │   ├── SuperAdmin/     # Admin dashboard
+│   │   │   ├── Doctor/         # Doctor dashboard (mới)
+│   │   │   ├── Nurse/          # Nurse dashboard (mới)
+│   │   │   ├── Pharmacist/     # Pharmacist dashboard (mới)
+│   │   │   ├── LabTechnician/  # Lab dashboard (mới)
+│   │   │   └── Patient/        # Patient portal
+│   │   ├── components/         # Reusable React components
+│   │   ├── contexts/           # Auth context
+│   │   ├── hooks/              # Custom hooks
+│   │   ├── styles/             # CSS (including RoleDashboards.css)
+│   │   ├── utils/              # Utilities
+│   │   ├── App.jsx
+│   │   └── index.jsx
+│   └── package.json
+│
+├── docker-compose.yml          # Multi-container orchestration
+├── nginx.conf                  # Reverse proxy config
+├── docker-manage.ps1           # PowerShell helper script
+├── docker-setup.sh             # Setup script
+└── .env.docker                 # Docker environment variables
 ```
 
-RBAC Matrix
-```
-{
-  SUPER_ADMIN: ['CREATE_ADMIN', 'VIEW_AUDIT_LOGS', 'UPDATE_ANY_USER'],
-  ADMIN: ['CREATE_MANAGER', 'CREATE_DOCTOR', 'READ_ANY_USER'],
-  MANAGER: ['CREATE_STAFF', 'READ_ANY_USER'],
-  DOCTOR: ['READ_ANY_USER'],
-  STAFF: [],
-  PATIENT: []
-}
-```
+---
 
-📊 Health Check & Monitoring
-```
-GET /health
-```
+## 🔐 Bảo Mật
 
-Response mẫu
-```
-{
-  "status": "healthy",
-  "uptime": 3600.25,
-  "environment": "production",
-  "database": "connected"
-}
-```
+**Authentication Flow:**
 
-🧾 Công Nghệ Sử Dụng
-| Công nghệ         | Mục đích         | Trang chủ                                                    |
-| ----------------- | ---------------- | ------------------------------------------------------------ |
-| **Express.js**    | Web framework    | [expressjs.com](https://expressjs.com)                       |
-| **MongoDB Atlas** | Database         | [mongodb.com](https://mongodb.com)                           |
-| **JWT**           | Authentication   | [jwt.io](https://jwt.io)                                     |
-| **Joi**           | Validation       | [joi.dev](https://joi.dev)                                   |
-| **bcryptjs**      | Password hashing | [npmjs.com/bcryptjs](https://www.npmjs.com/package/bcryptjs) |
-| **Helmet**        | Security headers | [helmetjs.github.io](https://helmetjs.github.io)             |
+- JWT-based authentication (Access Token: 15m, Refresh Token: 7d)
+- Token rotation & blacklist mechanism
+- bcryptjs password hashing (12 rounds)
 
-🤝 Liên Hệ & Hỗ Trợ
-| Thành viên           | GitHub                                          |
-| -------------------- | ------------------------------------------------|
-| **Võ Văn Luận**      | [@VanLuanIT24](https://github.com/VanLuanIT24)  |
-| **Nguyễn Phước Đại** | [@phuocdai2004](https://github.com/phuocdai2004)|
+**Authorization:**
 
+- Role-Based Access Control (RBAC) with 7 roles
+- Middleware checks at route level
+- Audit logging for sensitive operations
 
-📚 Tài liệu: GitHub Wiki
+**Additional Security:**
+
+- Rate limiting on auth endpoints
+- Helmet.js security headers
+- CORS configuration
+- Input validation with Joi
+- SQL injection & XSS protection
+
+---
+
+## 📊 Công Nghệ Stack
+
+**Backend:**
+
+- Node.js 18+ | Express.js 4.x | MongoDB Atlas
+- JWT authentication | bcryptjs | Joi validation
+- Helmet.js | CORS | Rate Limiter
+
+**Frontend:**
+
+- React 18 | React Router v6 | Vite
+- Ant Design v5 | Tailwind CSS | Axios
+- Vietnamese localization (antd i18n)
+
+**Deployment:**
+
+- Docker & Docker Compose
+- Nginx reverse proxy
+- MongoDB Atlas cloud database
+- Environment-based configuration
+
+---
+
+## 📞 Hỗ Trợ & Liên Hệ
+
+| Thành viên           | GitHub                                           | Vai trò            |
+| -------------------- | ------------------------------------------------ | ------------------ |
+| **Võ Văn Luận**      | [@VanLuanIT24](https://github.com/VanLuanIT24)   | Full-stack Lead    |
+| **Nguyễn Phước Đại** | [@phuocdai2004](https://github.com/phuocdai2004) | Frontend Developer |
+
+---
+
+## 📄 Giấy Phép
+
+MIT License - Tự do sử dụng, sửa đổi và phân phối
 🐛 Báo lỗi: GitHub Issues
 💡 Đề xuất: GitHub Discussions
 
-<p align="center"> ⭐ <b>Star</b> repository nếu bạn thấy dự án hữu ích nhé! </p> <p align="center"> Developed with ❤️ by <b>Dynamic Duo Team</b> </p> 
+<p align="center"> ⭐ <b>Star</b> repository nếu bạn thấy dự án hữu ích nhé! </p> <p align="center"> Developed with ❤️ by <b>Dynamic Duo Team</b> </p>

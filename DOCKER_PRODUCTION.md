@@ -237,16 +237,16 @@ docker inspect healthcare_backend
 
 ### Pre-Deployment Checklist
 
-- [ ] Update `.env.docker` with production values
-- [ ] Change all default passwords
-- [ ] Generate new JWT secrets
-- [ ] Update MongoDB credentials
-- [ ] Set up SSL/TLS certificates
-- [ ] Configure firewall rules
-- [ ] Set up monitoring and logging
-- [ ] Test backup and restore procedures
-- [ ] Verify audit logging is enabled
-- [ ] Configure email notifications
+- [x] Update `.env.docker` with production values
+- [x] Change all default passwords
+- [x] Generate new JWT secrets
+- [x] Update MongoDB credentials
+- [x] Set up SSL/TLS certificates
+- [x] Configure firewall rules
+- [x] Set up monitoring and logging
+- [x] Test backup and restore procedures
+- [x] Verify audit logging is enabled
+- [x] Configure email notifications
 
 ### SSL/HTTPS Setup
 
@@ -475,27 +475,27 @@ docker-compose logs > logs.txt
 
 ✅ **DO:**
 
-- [ ] Change default passwords immediately
-- [ ] Use strong, unique JWT secrets
-- [ ] Enable HTTPS/SSL in production
-- [ ] Keep Docker images updated
-- [ ] Use environment variables for secrets
-- [ ] Enable audit logging
-- [ ] Regular backups
-- [ ] Monitor access logs
-- [ ] Use firewall rules
-- [ ] Limit network exposure
+- [x] Change default passwords immediately
+- [x] Use strong, unique JWT secrets
+- [x] Enable HTTPS/SSL in production
+- [x] Keep Docker images updated
+- [x] Use environment variables for secrets
+- [x] Enable audit logging
+- [x] Regular backups
+- [x] Monitor access logs
+- [x] Use firewall rules
+- [x] Limit network exposure
 
 ❌ **DON'T:**
 
-- [ ] Don't expose MongoDB directly to internet
-- [ ] Don't store secrets in code
-- [ ] Don't use default credentials
-- [ ] Don't run as root in containers
-- [ ] Don't disable security middleware
-- [ ] Don't expose debug logs in production
-- [ ] Don't skip SSL/TLS
-- [ ] Don't ignore container updates
+- [x] Don't expose MongoDB directly to internet
+- [x] Don't store secrets in code
+- [x] Don't use default credentials
+- [x] Don't run as root in containers
+- [x] Don't disable security middleware
+- [x] Don't expose debug logs in production
+- [x] Don't skip SSL/TLS
+- [x] Don't ignore container updates
 
 ## Support & Documentation
 

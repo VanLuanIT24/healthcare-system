@@ -246,7 +246,11 @@ function validateCombined(schemas = {}) {
     try {
       // Validate params
       if (schemas.params) {
-        const { error: paramsError } = schemas.params.validate(req.params);
+        const { error: paramsError } = schemas.params.validate(req.params, {
+          abortEarly: false,
+          stripUnknown: true,
+          allowUnknown: true,
+        });
         if (paramsError) {
           const errorDetails = paramsError.details.map((detail) => ({
             field: `params.${detail.path.join(".")}`,
@@ -266,7 +270,11 @@ function validateCombined(schemas = {}) {
 
       // Validate body
       if (schemas.body) {
-        const { error: bodyError } = schemas.body.validate(req.body);
+        const { error: bodyError } = schemas.body.validate(req.body, {
+          abortEarly: false,
+          stripUnknown: true,
+          allowUnknown: true,
+        });
         if (bodyError) {
           const errorDetails = bodyError.details.map((detail) => ({
             field: `body.${detail.path.join(".")}`,

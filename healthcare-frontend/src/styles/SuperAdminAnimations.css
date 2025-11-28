@@ -1,0 +1,366 @@
+/* ============================================
+   SUPER ADMIN DASHBOARD - ADVANCED ANIMATIONS
+   ============================================ */
+
+/* Glow Effect cho Stat Cards */
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 0 5px rgba(24, 144, 255, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(24, 144, 255, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(24, 144, 255, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+}
+
+.superadmin-dashboard .stat-card:hover {
+  animation: glowPulse 2s ease-in-out;
+}
+
+/* Floating Animation cho Icons */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.superadmin-dashboard .logo-icon {
+  animation: adminPulse 2s ease-in-out infinite;
+}
+
+/* Slide In Animation cho Cards */
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.superadmin-dashboard .ant-card {
+  animation: slideInUp 0.4s ease-out backwards;
+}
+
+.superadmin-dashboard .stat-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.superadmin-dashboard .stat-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.superadmin-dashboard .stat-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.superadmin-dashboard .stat-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+/* Smooth Hover Effect cho Table Rows */
+@keyframes rowHover {
+  from {
+    background: transparent;
+  }
+  to {
+    background: rgba(24, 144, 255, 0.05);
+  }
+}
+
+.superadmin-dashboard .ant-table-tbody > tr:hover > td {
+  animation: rowHover 0.3s ease-out forwards;
+}
+
+/* Badge Pulse Animation */
+@keyframes badgePulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.superadmin-dashboard .ant-badge-count {
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+/* Button Ripple Effect */
+@keyframes ripple {
+  0% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(24, 144, 255, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(24, 144, 255, 0);
+  }
+}
+
+.superadmin-dashboard .ant-btn-primary:active {
+  animation: ripple 0.6s ease-out;
+}
+
+/* Gradient Text Animation */
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.superadmin-dashboard .role-dashboard-header h1 {
+  background: linear-gradient(
+    90deg,
+    var(--admin-primary) 0%,
+    var(--admin-primary-light) 50%,
+    var(--admin-primary) 100%
+  );
+  background-size: 200% auto;
+  animation: gradientShift 3s ease infinite;
+}
+
+/* Loading Spinner Style */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.superadmin-dashboard .ant-spin-dot {
+  animation: spin 1s linear infinite !important;
+}
+
+/* Fade In Animation */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.superadmin-dashboard .ant-modal-content {
+  animation: fadeInScale 0.3s ease-out;
+}
+
+.superadmin-dashboard .ant-drawer {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Hover Lift Effect */
+.superadmin-dashboard .ant-card:hover {
+  transform: translateY(-4px);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Button Group Hover */
+.superadmin-dashboard .ant-space > .ant-space-item {
+  transition: var(--admin-transition);
+}
+
+.superadmin-dashboard .ant-space > .ant-space-item:hover {
+  transform: translateY(-2px);
+}
+
+/* Input Focus Glow */
+.superadmin-dashboard .ant-input:focus {
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.15),
+    0 0 0 1px var(--admin-primary-light);
+}
+
+/* Select Dropdown Animation */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.superadmin-dashboard .ant-select-dropdown {
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+/* Tab Active Animation */
+@keyframes tabSlide {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.superadmin-dashboard .ant-tabs-tabpane {
+  animation: tabSlide 0.3s ease-out;
+}
+
+/* Status Badge Colors with Glow */
+.superadmin-dashboard .ant-badge-status-success {
+  box-shadow: 0 0 0 6px rgba(82, 196, 26, 0.15);
+}
+
+.superadmin-dashboard .ant-badge-status-error {
+  box-shadow: 0 0 0 6px rgba(245, 34, 45, 0.15);
+}
+
+.superadmin-dashboard .ant-badge-status-warning {
+  box-shadow: 0 0 0 6px rgba(250, 173, 20, 0.15);
+}
+
+.superadmin-dashboard .ant-badge-status-processing {
+  box-shadow: 0 0 0 6px rgba(24, 144, 255, 0.15);
+}
+
+/* Tooltip Custom Style */
+.superadmin-dashboard .ant-tooltip-inner {
+  background: linear-gradient(
+    135deg,
+    var(--admin-primary) 0%,
+    var(--admin-primary-light) 100%
+  );
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* Modal Header Gradient */
+.superadmin-dashboard .ant-modal-header {
+  background: linear-gradient(
+    90deg,
+    var(--admin-primary) 0%,
+    var(--admin-primary-light) 100%
+  );
+  border-bottom: none;
+}
+
+.superadmin-dashboard .ant-modal-title {
+  color: white;
+  font-weight: 700;
+}
+
+.superadmin-dashboard .ant-modal-close-x {
+  color: white;
+}
+
+/* Drawer Header Styling */
+.superadmin-dashboard .ant-drawer-header {
+  background: linear-gradient(
+    90deg,
+    var(--admin-primary) 0%,
+    var(--admin-primary-light) 100%
+  );
+  border-bottom: none;
+}
+
+.superadmin-dashboard .ant-drawer-title {
+  color: white;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.superadmin-dashboard .ant-drawer-close {
+  color: white;
+}
+
+/* Action Button Styles */
+.superadmin-dashboard .ant-btn-primary {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+
+.superadmin-dashboard .ant-btn-default {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+/* Notification Badge Pulse */
+@keyframes notificationPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.superadmin-dashboard .ant-badge-count {
+  animation: notificationPulse 2s ease-in-out infinite;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .superadmin-dashboard .stat-card:nth-child(1),
+  .superadmin-dashboard .stat-card:nth-child(2),
+  .superadmin-dashboard .stat-card:nth-child(3),
+  .superadmin-dashboard .stat-card:nth-child(4) {
+    animation-delay: 0s;
+  }
+
+  .superadmin-dashboard .ant-card {
+    animation: slideInUp 0.3s ease-out;
+  }
+}
+
+/* Smooth Color Transitions */
+.superadmin-dashboard .ant-tag {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.superadmin-dashboard .ant-tag:hover {
+  transform: scale(1.05);
+}
+
+/* Print Styles */
+@media print {
+  .superadmin-dashboard .role-dashboard-sider,
+  .superadmin-dashboard .role-dashboard-header,
+  .superadmin-dashboard .ant-btn,
+  .superadmin-dashboard .ant-space {
+    display: none;
+  }
+
+  .superadmin-dashboard .role-dashboard-content {
+    padding: 0;
+  }
+
+  .superadmin-dashboard .ant-table {
+    font-size: 12px;
+  }
+}
