@@ -1,16 +1,20 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const patientController = require('../controllers/patient.controller');
-const patientValidation = require('../validations/patient.validation');
-const { validateBody, validateParams, validateQuery } = require('../middlewares/validation.middleware');
-const { 
-  requireRole, 
-  requirePermission, 
+const patientController = require("../controllers/patient.controller");
+const patientValidation = require("../validations/patient.validation");
+const {
+  validateBody,
+  validateParams,
+  validateQuery,
+} = require("../middlewares/validation.middleware");
+const {
+  requireRole,
+  requirePermission,
   requirePatientDataAccess,
-  requireModuleAccess 
-} = require('../middlewares/rbac.middleware');
-const { ROLES, PERMISSIONS } = require('../constants/roles');
-const { authenticate } = require('../middlewares/auth.middleware');
+  requireModuleAccess,
+} = require("../middlewares/rbac.middleware");
+const { ROLES, PERMISSIONS } = require("../constants/roles");
+const { authenticate } = require("../middlewares/auth.middleware");
 
 /**
  * 🏥 PATIENT ROUTES
@@ -22,7 +26,7 @@ router.use(authenticate);
 
 // 🎯 ĐĂNG KÝ BỆNH NHÂN
 router.post(
-  '/register',
+  "/register",
   requireRole(ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
   requirePermission(PERMISSIONS.PATIENT_CREATE),
   validateBody(patientValidation.registerPatient),
@@ -31,8 +35,16 @@ router.post(
 
 // 🎯 TÌM KIẾM BỆNH NHÂN
 router.get(
-  '/search',
-  requireRole(ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
+  "/search",
+  requireRole(
+    ROLES.RECEPTIONIST,
+    ROLES.DOCTOR,
+    ROLES.NURSE,
+    ROLES.HOSPITAL_ADMIN,
+    ROLES.DEPARTMENT_HEAD,
+    ROLES.PHARMACIST,
+    ROLES.LAB_TECHNICIAN
+  ),
   requirePermission(PERMISSIONS.PATIENT_VIEW),
   validateQuery(patientValidation.searchPatients),
   patientController.searchPatients
@@ -40,25 +52,36 @@ router.get(
 
 // 🎯 LẤY THÔNG TIN NHÂN KHẨU
 router.get(
-  '/:patientId/demographics',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD, ROLES.PATIENT),
-  requirePatientDataAccess('patientId'),
+  "/:patientId/demographics",
+  requireRole(
+    ROLES.DOCTOR,
+    ROLES.NURSE,
+    ROLES.HOSPITAL_ADMIN,
+    ROLES.DEPARTMENT_HEAD,
+    ROLES.PATIENT
+  ),
+  requirePatientDataAccess("patientId"),
   patientController.getPatientDemographics
 );
 
 // 🎯 CẬP NHẬT THÔNG TIN NHÂN KHẨU
 router.put(
-  '/:patientId/demographics',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
+  "/:patientId/demographics",
+  requireRole(
+    ROLES.DOCTOR,
+    ROLES.NURSE,
+    ROLES.HOSPITAL_ADMIN,
+    ROLES.DEPARTMENT_HEAD
+  ),
   requirePermission(PERMISSIONS.PATIENT_UPDATE),
-  requirePatientDataAccess('patientId'),
+  requirePatientDataAccess("patientId"),
   validateBody(patientValidation.updateDemographics),
   patientController.updatePatientDemographics
 );
 
 // 🎯 NHẬP VIỆN
 router.post(
-  '/:patientId/admit',
+  "/:patientId/admit",
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
   requirePermission(PERMISSIONS.PATIENT_ADMIT),
   validateBody(patientValidation.admitPatient),
@@ -67,7 +90,7 @@ router.post(
 
 // 🎯 XUẤT VIỆN
 router.post(
-  '/:patientId/discharge',
+  "/:patientId/discharge",
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
   requirePermission(PERMISSIONS.PATIENT_DISCHARGE),
   validateBody(patientValidation.dischargePatient),
@@ -76,16 +99,21 @@ router.post(
 
 // 🎯 THÔNG TIN BẢO HIỂM
 router.get(
-  '/:patientId/insurance',
-  requireRole(ROLES.RECEPTIONIST, ROLES.BILLING_STAFF, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
+  "/:patientId/insurance",
+  requireRole(
+    ROLES.RECEPTIONIST,
+    ROLES.BILLING_STAFF,
+    ROLES.HOSPITAL_ADMIN,
+    ROLES.DEPARTMENT_HEAD
+  ),
   requirePermission(PERMISSIONS.PATIENT_VIEW),
-  requirePatientDataAccess('patientId'),
+  requirePatientDataAccess("patientId"),
   patientController.getPatientInsurance
 );
 
 // 🎯 CẬP NHẬT BẢO HIỂM
 router.put(
-  '/:patientId/insurance',
+  "/:patientId/insurance",
   requireRole(ROLES.RECEPTIONIST, ROLES.BILLING_STAFF, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.PATIENT_UPDATE),
   validateBody(patientValidation.updateInsurance),

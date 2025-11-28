@@ -23,6 +23,7 @@ import {
   Empty,
   Tooltip,
   Divider,
+  Tabs,
 } from "antd";
 import {
   CalendarOutlined,
@@ -47,6 +48,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import axios from "axios";
 import "./DoctorDashboard.css";
 
+const API_URL = "http://localhost:5000/api";
+
 const DoctorDashboard = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -57,97 +60,13 @@ const DoctorDashboard = () => {
   const [prescriptionForm] = Form.useForm();
 
   const [dashboardData, setDashboardData] = useState({
-    appointmentsToday: 8,
-    patientsWaiting: 3,
-    consultationsCompleted: 15,
-    pendingPrescriptions: 5,
-    recentAppointments: [
-      {
-        id: 1,
-        patientName: "Nguyễn Văn A",
-        patientPhone: "0123456789",
-        time: "09:00 AM",
-        type: "Khám bệnh",
-        status: "PENDING",
-        reason: "Sốt cao, ho",
-        patientAge: 45,
-      },
-      {
-        id: 2,
-        patientName: "Trần Thị B",
-        patientPhone: "0987654321",
-        time: "10:30 AM",
-        type: "Tư vấn",
-        status: "COMPLETED",
-        reason: "Tư vấn sức khỏe",
-        patientAge: 32,
-      },
-      {
-        id: 3,
-        patientName: "Lê Văn C",
-        patientPhone: "0345678901",
-        time: "02:00 PM",
-        type: "Khám theo dõi",
-        status: "PENDING",
-        reason: "Kiểm tra huyết áp",
-        patientAge: 58,
-      },
-    ],
-    patients: [
-      {
-        id: 1,
-        name: "Nguyễn Văn A",
-        age: 45,
-        phone: "0123456789",
-        email: "nguyenvana@email.com",
-        address: "123 Đường A, Quận 1, TP HCM",
-        lastVisit: "2024-11-25",
-        status: "ACTIVE",
-        medicalHistory: "Tăng huyết áp, Tiểu đường",
-      },
-      {
-        id: 2,
-        name: "Trần Thị B",
-        age: 32,
-        phone: "0987654321",
-        email: "tranthib@email.com",
-        address: "456 Đường B, Quận 2, TP HCM",
-        lastVisit: "2024-11-20",
-        status: "ACTIVE",
-        medicalHistory: "Không có bệnh lý mãn tính",
-      },
-      {
-        id: 3,
-        name: "Lê Văn C",
-        age: 58,
-        phone: "0345678901",
-        email: "levanc@email.com",
-        address: "789 Đường C, Quận 3, TP HCM",
-        lastVisit: "2024-11-15",
-        status: "ACTIVE",
-        medicalHistory: "Suy tim, Tăng huyết áp",
-      },
-    ],
-    medicalRecords: [
-      {
-        id: 1,
-        patientName: "Nguyễn Văn A",
-        visitDate: "2024-11-25",
-        symptoms: "Sốt cao, ho kéo dài",
-        diagnosis: "Viêm phế quản cấp",
-        treatment: "Kháng sinh, thuốc ho",
-        notes: "Tái khám sau 5 ngày",
-      },
-      {
-        id: 2,
-        patientName: "Trần Thị B",
-        visitDate: "2024-11-20",
-        symptoms: "Đau bụng, buồn nôn",
-        diagnosis: "Viêm dạ dày cấp",
-        treatment: "Thuốc kháng axit, chế độ ăn",
-        notes: "Tránh thực phẩm cay nóng",
-      },
-    ],
+    appointmentsToday: 0,
+    patientsWaiting: 0,
+    consultationsCompleted: 0,
+    pendingPrescriptions: 0,
+    recentAppointments: [],
+    patients: [],
+    medicalRecords: [],
   });
 
   const [modals, setModals] = useState({
@@ -162,15 +81,142 @@ const DoctorDashboard = () => {
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [user?._id]);
 
   const loadDashboardData = async () => {
+    if (!user?._id) {
+      console.log("❌ Không có user._id", user);
+      return;
+    }
+
     try {
       setLoading(true);
-      // Mock data
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      const token = localStorage.getItem("accessToken");
+      console.log(
+        "🔐 Token:",
+        token ? `${token.substring(0, 20)}...` : "❌ Không có token"
+      );
+      console.log("👤 User:", user);
+
+      const headers = { Authorization: `Bearer ${token}` };
+
+      // Load danh sách bệnh nhân - Backend không filter theo doctorId
+      console.log("👥 Gọi API: /patients/search?limit=100");
+      const patientsRes = await axios.get(
+        `${API_URL}/patients/search?limit=100`,
+        { headers }
+      );
+      console.log("👥 Patients response:", patientsRes.data);
+
+      const patientsFromAPI = patientsRes.data.data?.patients || [];
+      console.log(
+        "📋 Danh sách bệnh nhân từ API:",
+        patientsFromAPI.length,
+        "bệnh nhân",
+        patientsFromAPI
+      );
+
+      // Transform dữ liệu từ API vào format phù hợp cho columns
+      const patients = patientsFromAPI.map((p) => {
+        const age = p.userId?.dateOfBirth
+          ? new Date().getFullYear() -
+            new Date(p.userId.dateOfBirth).getFullYear()
+          : null;
+
+        return {
+          _id: p._id,
+          patientId: p.patientId,
+          name: p.userId?.name || "Chưa cập nhật",
+          userId: p.userId,
+          firstName: p.userId?.firstName || "",
+          lastName: p.userId?.lastName || "",
+          email: p.userId?.email || "",
+          phone: p.userId?.phone || "Chưa cập nhật",
+          dateOfBirth: p.userId?.dateOfBirth,
+          gender: p.userId?.gender,
+          address: p.userId?.address,
+          age: age,
+          bloodType: p.bloodType || "Không xác định",
+          height: p.height,
+          weight: p.weight,
+          allergies: p.allergies || [],
+          chronicConditions: p.chronicConditions || [],
+          status: "ACTIVE",
+          lastVisit: p.lastVisit || null,
+          personalInfo: {
+            firstName: p.userId?.firstName || "",
+            lastName: p.userId?.lastName || "",
+            dateOfBirth: p.userId?.dateOfBirth,
+            phone: p.userId?.phone || "Chưa cập nhật",
+            address: p.userId?.address,
+            gender: p.userId?.gender,
+          },
+        };
+      });
+
+      console.log("✅ Transformed patients:", patients);
+
+      // Load lịch hẹn - Try but don't fail if not available
+      let appointments = [];
+      try {
+        console.log(`📅 Gọi API: /appointments/doctor/${user._id}`);
+        const appointmentsRes = await axios.get(
+          `${API_URL}/appointments/doctor/${user._id}?date=${
+            new Date().toISOString().split("T")[0]
+          }`,
+          { headers }
+        );
+        appointments = appointmentsRes.data.data || [];
+        console.log("📅 Appointments response:", appointmentsRes.data);
+      } catch (appointmentError) {
+        console.warn(
+          "⚠️ Appointments API error (non-blocking):",
+          appointmentError.message
+        );
+        appointments = [];
+      }
+
+      // Tính toán statistics
+      const appointmentsToday = appointments.length;
+      const patientsWaiting = appointments.filter(
+        (a) => a.status === "PENDING"
+      ).length;
+      const consultationsCompleted = appointments.filter(
+        (a) => a.status === "COMPLETED"
+      ).length;
+      setDashboardData((prev) => ({
+        ...prev,
+        appointmentsToday,
+        patientsWaiting,
+        consultationsCompleted,
+        pendingPrescriptions: 5, // Mock, cần API riêng
+        recentAppointments: appointments.map((apt) => ({
+          id: apt._id,
+          patientId: apt.patientId,
+          patientName: apt.patientName || "Chưa cập nhật",
+          patientPhone: apt.patientPhone || "Chưa cập nhật",
+          time: new Date(apt.appointmentTime).toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          type: apt.appointmentType || "Khám bệnh",
+          status: apt.status,
+          reason: apt.reason || "Không có",
+        })),
+        patients: patients,
+      }));
+
+      message.success("✅ Tải dữ liệu thành công");
     } catch (error) {
-      message.error("Lỗi tải dữ liệu dashboard");
+      console.error("❌ Error loading dashboard data:", error);
+      console.error("📋 Error details:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      message.error(
+        error.response?.data?.message || "❌ Lỗi tải dữ liệu dashboard"
+      );
     } finally {
       setLoading(false);
     }
@@ -200,15 +246,47 @@ const DoctorDashboard = () => {
   };
 
   const handleSaveConsultation = async (values) => {
+    if (!selectedPatient) {
+      message.error("Chưa chọn bệnh nhân");
+      return;
+    }
+
     try {
       setLoading(true);
-      console.log("Consultation data:", values);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      message.success("✅ Lưu bệnh án thành công!");
-      setModals({ ...modals, consultation: false });
-      consultationForm.resetFields();
+      const token = localStorage.getItem("accessToken");
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const consultationData = {
+        patientId: selectedPatient.patientId || selectedPatient.id,
+        doctorId: user._id,
+        symptoms: values.symptoms,
+        diagnosis: values.diagnosis,
+        treatment: values.treatment,
+        prescription: values.prescription,
+        tests: values.tests,
+        followUp: values.followUp,
+        notes: values.notes,
+        temperature: values.temperature,
+        bloodPressure: values.bloodPressure,
+        visitDate: values.visitDate || new Date(),
+      };
+
+      // Gọi API lưu bệnh án
+      const res = await axios.post(
+        `${API_URL}/medical-records`,
+        consultationData,
+        { headers }
+      );
+
+      if (res.status === 201) {
+        message.success("✅ Lưu bệnh án thành công!");
+        setModals({ ...modals, consultation: false });
+        consultationForm.resetFields();
+        loadDashboardData(); // Reload data
+      }
     } catch (error) {
-      message.error("❌ Lỗi lưu bệnh án");
+      console.error("Error saving consultation:", error);
+      message.error(error.response?.data?.message || "❌ Lỗi lưu bệnh án");
     } finally {
       setLoading(false);
     }
@@ -221,15 +299,42 @@ const DoctorDashboard = () => {
   };
 
   const handleSavePrescription = async (values) => {
+    if (!selectedPatient) {
+      message.error("Chưa chọn bệnh nhân");
+      return;
+    }
+
     try {
       setLoading(true);
-      console.log("Prescription data:", values);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      message.success("✅ Kê đơn thuốc thành công!");
-      setModals({ ...modals, prescription: false });
-      prescriptionForm.resetFields();
+      const token = localStorage.getItem("accessToken");
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const prescriptionData = {
+        patientId: selectedPatient.patientId || selectedPatient.id,
+        doctorId: user._id,
+        medications: values.medications,
+        instructions: values.instructions,
+        warnings: values.warnings,
+        duration: values.duration,
+        prescriptionDate: new Date(),
+      };
+
+      // Gọi API lưu đơn thuốc
+      const res = await axios.post(
+        `${API_URL}/prescriptions`,
+        prescriptionData,
+        { headers }
+      );
+
+      if (res.status === 201) {
+        message.success("✅ Kê đơn thuốc thành công!");
+        setModals({ ...modals, prescription: false });
+        prescriptionForm.resetFields();
+        loadDashboardData(); // Reload data
+      }
     } catch (error) {
-      message.error("❌ Lỗi kê đơn thuốc");
+      console.error("Error saving prescription:", error);
+      message.error(error.response?.data?.message || "❌ Lỗi kê đơn thuốc");
     } finally {
       setLoading(false);
     }
@@ -284,8 +389,8 @@ const DoctorDashboard = () => {
           CANCELLED: "❌ Hủy",
         };
         return (
-          <Tag color={colors[status]} style={{ fontWeight: 600 }}>
-            {labels[status]}
+          <Tag color={colors[status] || "blue"} style={{ fontWeight: 600 }}>
+            {labels[status] || status}
           </Tag>
         );
       },
@@ -340,12 +445,15 @@ const DoctorDashboard = () => {
     },
     {
       title: "📱 Điện Thoại",
-      dataIndex: "phone",
+      render: (_, record) => record.personalInfo?.phone || "Chưa cập nhật",
       key: "phone",
     },
     {
       title: "📅 Khám Lần Cuối",
-      dataIndex: "lastVisit",
+      render: (_, record) =>
+        record.lastVisit
+          ? new Date(record.lastVisit).toLocaleDateString("vi-VN")
+          : "Chưa khám",
       key: "lastVisit",
     },
     {
@@ -384,53 +492,6 @@ const DoctorDashboard = () => {
               onClick={() => handleConsultation(record)}
             >
               Khám
-            </Button>
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
-
-  const medicalRecordColumns = [
-    {
-      title: "👤 Bệnh Nhân",
-      dataIndex: "patientName",
-      key: "patientName",
-      render: (text) => <span style={{ fontWeight: 600 }}>{text}</span>,
-    },
-    {
-      title: "📅 Ngày Khám",
-      dataIndex: "visitDate",
-      key: "visitDate",
-    },
-    {
-      title: "🔍 Chẩn Đoán",
-      dataIndex: "diagnosis",
-      key: "diagnosis",
-      ellipsis: true,
-    },
-    {
-      title: "⚙️ Hành Động",
-      key: "action",
-      width: 150,
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="Xem chi tiết">
-            <Button
-              type="primary"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => {
-                setSelectedRecord(record);
-                setModals({ ...modals, medicalRecordDetail: true });
-              }}
-            >
-              Xem
-            </Button>
-          </Tooltip>
-          <Tooltip title="Tải về">
-            <Button size="small" icon={<DownloadOutlined />}>
-              Tải
             </Button>
           </Tooltip>
         </Space>
@@ -576,9 +637,7 @@ const DoctorDashboard = () => {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <HeartOutlined
-              style={{ fontSize: "32px", color: "#3b82f6" }}
-            />
+            <HeartOutlined style={{ fontSize: "32px", color: "#3b82f6" }} />
             <div>
               <h1
                 style={{
@@ -854,19 +913,28 @@ const DoctorDashboard = () => {
                     boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
                   }}
                   extra={
-                    <Button type="primary" size="small" icon={<PlusOutlined />}>
-                      Thêm Lịch
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={() => setSelectedKey("2")}
+                    >
+                      Xem Tất Cả
                     </Button>
                   }
                 >
-                  <Table
-                    columns={appointmentColumns}
-                    dataSource={dashboardData.recentAppointments}
-                    pagination={false}
-                    size="middle"
-                    rowKey="id"
-                    bordered={false}
-                  />
+                  {dashboardData.recentAppointments.length > 0 ? (
+                    <Table
+                      columns={appointmentColumns}
+                      dataSource={dashboardData.recentAppointments}
+                      pagination={false}
+                      size="middle"
+                      rowKey="id"
+                      bordered={false}
+                    />
+                  ) : (
+                    <Empty description="Không có lịch hẹn hôm nay" />
+                  )}
                 </Card>
               </div>
             )}
@@ -880,18 +948,17 @@ const DoctorDashboard = () => {
                   border: "1px solid #e0e7ff",
                   boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
                 }}
-                extra={
-                  <Button type="primary" icon={<PlusOutlined />}>
-                    Thêm Lịch
-                  </Button>
-                }
               >
-                <Table
-                  columns={appointmentColumns}
-                  dataSource={dashboardData.recentAppointments}
-                  pagination={{ pageSize: 15 }}
-                  rowKey="id"
-                />
+                {dashboardData.recentAppointments.length > 0 ? (
+                  <Table
+                    columns={appointmentColumns}
+                    dataSource={dashboardData.recentAppointments}
+                    pagination={{ pageSize: 15 }}
+                    rowKey="id"
+                  />
+                ) : (
+                  <Empty description="Không có lịch hẹn" />
+                )}
               </Card>
             )}
 
@@ -905,18 +972,22 @@ const DoctorDashboard = () => {
                   boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
                 }}
                 extra={
-                  <Button type="primary" icon={<PlusOutlined />}>
-                    Thêm Bệnh Nhân
+                  <Button type="primary" size="small" icon={<SearchOutlined />}>
+                    Tìm Kiếm
                   </Button>
                 }
               >
-                <Table
-                  columns={patientColumns}
-                  dataSource={dashboardData.patients}
-                  pagination={{ pageSize: 15 }}
-                  rowKey="id"
-                  size="middle"
-                />
+                {dashboardData.patients.length > 0 ? (
+                  <Table
+                    columns={patientColumns}
+                    dataSource={dashboardData.patients}
+                    pagination={{ pageSize: 15 }}
+                    rowKey="_id"
+                    size="middle"
+                  />
+                ) : (
+                  <Empty description="Không có bệnh nhân" />
+                )}
               </Card>
             )}
 
@@ -944,12 +1015,37 @@ const DoctorDashboard = () => {
                         ]}
                       >
                         <Select
-                          placeholder="Chọn bệnh nhân từ danh sách"
+                          placeholder={`Chọn bệnh nhân từ danh sách (${dashboardData.patients.length} bệnh nhân)`}
                           optionLabelProp="label"
-                          options={dashboardData.patients.map((p) => ({
-                            label: `${p.name} (${p.age} tuổi)`,
-                            value: p.id,
-                          }))}
+                          options={
+                            dashboardData.patients &&
+                            dashboardData.patients.length > 0
+                              ? dashboardData.patients.map((p) => {
+                                  const displayName =
+                                    p.name ||
+                                    p.firstName ||
+                                    p.userId?.name ||
+                                    "Chưa cập nhật";
+                                  const displayAge =
+                                    p.age ||
+                                    (p.dateOfBirth
+                                      ? new Date().getFullYear() -
+                                        new Date(p.dateOfBirth).getFullYear()
+                                      : "?");
+                                  return {
+                                    label: `${displayName} (${displayAge} tuổi)`,
+                                    value: p._id,
+                                  };
+                                })
+                              : []
+                          }
+                          onChange={(value) => {
+                            const patient = dashboardData.patients.find(
+                              (p) => p._id === value
+                            );
+                            setSelectedPatient(patient);
+                            console.log("Bệnh nhân được chọn:", patient);
+                          }}
                         />
                       </Form.Item>
                     </Col>
@@ -1130,20 +1226,10 @@ const DoctorDashboard = () => {
                   </Button>
                 }
               >
-                {dashboardData.medicalRecords.length > 0 ? (
-                  <Table
-                    columns={medicalRecordColumns}
-                    dataSource={dashboardData.medicalRecords}
-                    pagination={{ pageSize: 15 }}
-                    rowKey="id"
-                    size="middle"
-                  />
-                ) : (
-                  <Empty
-                    description="Chưa có hồ sơ bệnh án"
-                    style={{ marginTop: "48px" }}
-                  />
-                )}
+                <Empty
+                  description="Chức năng đang phát triển"
+                  style={{ marginTop: "48px" }}
+                />
               </Card>
             )}
 
@@ -1175,12 +1261,37 @@ const DoctorDashboard = () => {
                         ]}
                       >
                         <Select
-                          placeholder="Chọn bệnh nhân"
+                          placeholder={`Chọn bệnh nhân (${dashboardData.patients.length} bệnh nhân)`}
                           optionLabelProp="label"
-                          options={dashboardData.patients.map((p) => ({
-                            label: `${p.name} (${p.age} tuổi)`,
-                            value: p.id,
-                          }))}
+                          options={
+                            dashboardData.patients &&
+                            dashboardData.patients.length > 0
+                              ? dashboardData.patients.map((p) => {
+                                  const displayName =
+                                    p.name ||
+                                    p.firstName ||
+                                    p.userId?.name ||
+                                    "Chưa cập nhật";
+                                  const displayAge =
+                                    p.age ||
+                                    (p.dateOfBirth
+                                      ? new Date().getFullYear() -
+                                        new Date(p.dateOfBirth).getFullYear()
+                                      : "?");
+                                  return {
+                                    label: `${displayName} (${displayAge} tuổi)`,
+                                    value: p._id,
+                                  };
+                                })
+                              : []
+                          }
+                          onChange={(value) => {
+                            const patient = dashboardData.patients.find(
+                              (p) => p._id === value
+                            );
+                            setSelectedPatient(patient);
+                            console.log("Bệnh nhân được chọn:", patient);
+                          }}
                         />
                       </Form.Item>
                     </Col>
@@ -1303,9 +1414,6 @@ const DoctorDashboard = () => {
           >
             Đóng
           </Button>,
-          <Button key="edit" type="primary" icon={<EditOutlined />}>
-            Chỉnh Sửa
-          </Button>,
         ]}
         width={700}
       >
@@ -1317,19 +1425,30 @@ const DoctorDashboard = () => {
             size="small"
           >
             <Descriptions.Item label="👤 Tên" span={2}>
-              <strong>{selectedPatient.name}</strong>
+              <strong>
+                {selectedPatient.name ||
+                  `${selectedPatient.personalInfo?.firstName} ${selectedPatient.personalInfo?.lastName}`}
+              </strong>
             </Descriptions.Item>
             <Descriptions.Item label="🎂 Tuổi">
-              {selectedPatient.age}
+              {selectedPatient.personalInfo?.dateOfBirth
+                ? new Date().getFullYear() -
+                  new Date(
+                    selectedPatient.personalInfo.dateOfBirth
+                  ).getFullYear()
+                : "Không xác định"}
             </Descriptions.Item>
             <Descriptions.Item label="👨‍⚕️ Giới Tính">
-              {selectedPatient.age > 0 ? "Nam" : "Nữ"}
+              {selectedPatient.personalInfo?.gender === "MALE" ? "Nam" : "Nữ"}
             </Descriptions.Item>
             <Descriptions.Item label="📱 Điện Thoại">
-              {selectedPatient.phone}
+              {selectedPatient.personalInfo?.phone}
             </Descriptions.Item>
-            <Descriptions.Item label="📧 Email">
-              {selectedPatient.email}
+            <Descriptions.Item label="📧 Email" span={2}>
+              {selectedPatient.personalInfo?.email}
+            </Descriptions.Item>
+            <Descriptions.Item label="📍 Địa Chỉ" span={2}>
+              {selectedPatient.personalInfo?.address}
             </Descriptions.Item>
             <Descriptions.Item label="🏥 Trạng Thái" span={2}>
               <Tag
@@ -1339,57 +1458,6 @@ const DoctorDashboard = () => {
                   ? "✅ Hoạt động"
                   : "❌ Không hoạt động"}
               </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="📍 Địa Chỉ" span={2}>
-              {selectedPatient.address}
-            </Descriptions.Item>
-            <Descriptions.Item label="🏥 Lịch Sử Bệnh" span={2}>
-              <Tag color="blue">{selectedPatient.medicalHistory}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="📅 Khám Lần Cuối" span={2}>
-              {selectedPatient.lastVisit}
-            </Descriptions.Item>
-          </Descriptions>
-        )}
-      </Modal>
-
-      {/* MEDICAL RECORD DETAIL MODAL */}
-      <Modal
-        title="📋 Chi Tiết Bệnh Án"
-        open={modals.medicalRecordDetail}
-        onCancel={() => setModals({ ...modals, medicalRecordDetail: false })}
-        footer={[
-          <Button
-            key="close"
-            onClick={() => setModals({ ...modals, medicalRecordDetail: false })}
-          >
-            Đóng
-          </Button>,
-          <Button key="print" type="primary" icon={<PrinterOutlined />}>
-            In Bệnh Án
-          </Button>,
-        ]}
-        width={800}
-      >
-        {selectedRecord && (
-          <Descriptions column={1} bordered style={{ marginTop: "16px" }}>
-            <Descriptions.Item label="👤 Bệnh Nhân">
-              <strong>{selectedRecord.patientName}</strong>
-            </Descriptions.Item>
-            <Descriptions.Item label="📅 Ngày Khám">
-              {selectedRecord.visitDate}
-            </Descriptions.Item>
-            <Descriptions.Item label="🔍 Triệu Chứng">
-              {selectedRecord.symptoms}
-            </Descriptions.Item>
-            <Descriptions.Item label="🩺 Chẩn Đoán">
-              <Tag color="blue">{selectedRecord.diagnosis}</Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="💉 Hướng Điều Trị">
-              {selectedRecord.treatment}
-            </Descriptions.Item>
-            <Descriptions.Item label="📝 Ghi Chú">
-              {selectedRecord.notes}
             </Descriptions.Item>
           </Descriptions>
         )}
