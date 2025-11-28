@@ -17,6 +17,7 @@ import ForgotPassword from "./pages/SuperAdmin/ForgotPassword";
 import ResetPassword from "./pages/SuperAdmin/ResetPassword";
 import PatientRegister from "./pages/Patient/Register";
 import PatientDashboard from "./pages/Patient/Dashboard";
+import DoctorDashboard from "./pages/Doctor/Dashboard";
 
 // Root redirect component
 const RootRedirect = () => {
@@ -30,6 +31,10 @@ const RootRedirect = () => {
   // ✅ Đã đăng nhập → Redirect theo role
   if (user?.role === "PATIENT") {
     return <Navigate to="/patient/dashboard" replace />;
+  }
+
+  if (user?.role === "DOCTOR") {
+    return <Navigate to="/doctor/dashboard" replace />;
   }
 
   // Default: Super Admin
@@ -74,6 +79,16 @@ function App() {
               element={
                 <ProtectedRoute requiredRole={["PATIENT", "SUPER_ADMIN"]}>
                   <PatientDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Doctor Routes */}
+            <Route
+              path="/doctor/dashboard"
+              element={
+                <ProtectedRoute requiredRole="DOCTOR">
+                  <DoctorDashboard />
                 </ProtectedRoute>
               }
             />

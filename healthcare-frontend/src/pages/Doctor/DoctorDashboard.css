@@ -1,0 +1,258 @@
+/* Doctor Dashboard Styling */
+
+.stat-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateY(0);
+}
+
+.stat-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Smooth transitions for menu */
+.ant-layout-sider {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Form styling */
+.form-label-bold {
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+/* Table responsive */
+@media (max-width: 768px) {
+  .ant-table {
+    font-size: 12px;
+  }
+
+  .ant-table-cell {
+    padding: 8px 4px !important;
+  }
+
+  .ant-button {
+    font-size: 12px;
+  }
+}
+
+/* Card hover effects */
+.ant-card {
+  transition: all 0.3s ease;
+}
+
+.ant-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Button animations */
+.ant-btn {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ant-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Modal styling */
+.ant-modal {
+  border-radius: 12px;
+}
+
+.ant-modal-content {
+  border-radius: 12px;
+}
+
+/* Input styling */
+.ant-input,
+.ant-input-number,
+.ant-select-selector,
+.ant-picker {
+  border-radius: 8px !important;
+  transition: all 0.3s ease;
+}
+
+.ant-input:focus,
+.ant-input-number:focus,
+.ant-select-focused .ant-select-selector,
+.ant-picker:focus {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Tag styling */
+.ant-tag {
+  border-radius: 8px;
+}
+
+/* Divider styling */
+.ant-divider-inner-text {
+  font-weight: 600;
+  color: #1e3a8a;
+  font-size: 13px;
+}
+
+/* Responsive grid */
+@media (max-width: 576px) {
+  .ant-row-gutter-16 {
+    margin: 0 -8px;
+  }
+
+  .ant-col {
+    padding: 8px;
+  }
+}
+
+/* Sidebar menu items */
+.ant-menu-item {
+  border-radius: 8px;
+  margin: 4px 12px;
+  transition: all 0.3s ease;
+}
+
+.ant-menu-item-selected {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 8px;
+}
+
+/* Statistic styling */
+.ant-statistic-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ant-statistic-content {
+  font-weight: 700;
+}
+
+/* Descriptions styling */
+.ant-descriptions-item-label {
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+/* Loading spinner */
+.ant-spin {
+  transition: all 0.3s ease;
+}
+
+/* Badge styling */
+.ant-badge {
+  transition: all 0.3s ease;
+}
+
+/* Empty state styling */
+.ant-empty {
+  opacity: 0.8;
+}
+
+.ant-empty-description {
+  color: #999;
+  font-size: 14px;
+}
+
+/* Tooltip styling */
+.ant-tooltip-inner {
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.85);
+  font-size: 12px;
+}
+
+/* Space styling */
+.ant-space {
+  transition: all 0.3s ease;
+}
+
+/* Avatar styling */
+.ant-avatar {
+  transition: all 0.3s ease;
+}
+
+.ant-avatar:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Content area scrolling */
+.ant-layout-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Header sticky positioning */
+.ant-layout-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .ant-layout {
+    background: #141414;
+  }
+
+  .ant-card {
+    background: #1f1f1f;
+  }
+
+  .ant-input,
+  .ant-select-selector {
+    background: #262626 !important;
+    border-color: #434343 !important;
+    color: #e8e8e8;
+  }
+}
+
+/* Print styles */
+@media print {
+  .ant-layout-sider,
+  .ant-layout-header,
+  .ant-button[type="button"]:not(.ant-btn-primary),
+  .ant-button-danger {
+    display: none !important;
+  }
+
+  .ant-layout-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .ant-card {
+    page-break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #d9d9d9;
+  }
+}
