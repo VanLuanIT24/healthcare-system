@@ -141,6 +141,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem("user");
       setUser(null);
       setError(null);
+
+      // Redirect to login page
+      window.location.href = "/superadmin/login";
     }
   }, []);
 
