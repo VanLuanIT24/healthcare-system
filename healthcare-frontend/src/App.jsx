@@ -17,13 +17,6 @@ import ForgotPassword from "./pages/SuperAdmin/ForgotPassword";
 import ResetPassword from "./pages/SuperAdmin/ResetPassword";
 import PatientRegister from "./pages/Patient/Register";
 import PatientDashboard from "./pages/Patient/Dashboard";
-import DoctorDashboard from "./pages/Doctor/Dashboard";
-import NurseDashboard from "./pages/Nurse/Dashboard";
-import PharmacistDashboard from "./pages/Pharmacist/Dashboard";
-import LabTechnicianDashboard from "./pages/LabTechnician/Dashboard";
-import ReceptionistDashboard from "./pages/Receptionist/Dashboard";
-import BillingStaffDashboard from "./pages/BillingStaff/Dashboard";
-import HospitalAdminDashboard from "./pages/HospitalAdmin/Dashboard";
 
 // Root redirect component
 const RootRedirect = () => {
@@ -39,35 +32,7 @@ const RootRedirect = () => {
     return <Navigate to="/patient/dashboard" replace />;
   }
 
-  if (user?.role === "DOCTOR") {
-    return <Navigate to="/doctor/dashboard" replace />;
-  }
-
-  if (user?.role === "NURSE") {
-    return <Navigate to="/nurse/dashboard" replace />;
-  }
-
-  if (user?.role === "PHARMACIST") {
-    return <Navigate to="/pharmacist/dashboard" replace />;
-  }
-
-  if (user?.role === "LAB_TECHNICIAN") {
-    return <Navigate to="/lab-technician/dashboard" replace />;
-  }
-
-  if (user?.role === "RECEPTIONIST") {
-    return <Navigate to="/receptionist/dashboard" replace />;
-  }
-
-  if (user?.role === "BILLING_STAFF") {
-    return <Navigate to="/billing-staff/dashboard" replace />;
-  }
-
-  if (user?.role === "HOSPITAL_ADMIN") {
-    return <Navigate to="/hospital-admin/dashboard" replace />;
-  }
-
-  // 👨‍💼 Admin / SuperAdmin / Other roles
+  // Default: Super Admin
   return <Navigate to="/superadmin/dashboard" replace />;
 };
 
@@ -107,78 +72,8 @@ function App() {
             <Route
               path="/patient/dashboard"
               element={
-                <ProtectedRoute requiredRole={["PATIENT", "DOCTOR"]}>
+                <ProtectedRoute requiredRole={["PATIENT", "SUPER_ADMIN"]}>
                   <PatientDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Doctor Routes */}
-            <Route
-              path="/doctor/dashboard"
-              element={
-                <ProtectedRoute requiredRole="DOCTOR">
-                  <DoctorDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Nurse Routes */}
-            <Route
-              path="/nurse/dashboard"
-              element={
-                <ProtectedRoute requiredRole="NURSE">
-                  <NurseDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Pharmacist Routes */}
-            <Route
-              path="/pharmacist/dashboard"
-              element={
-                <ProtectedRoute requiredRole="PHARMACIST">
-                  <PharmacistDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Lab Technician Routes */}
-            <Route
-              path="/lab-technician/dashboard"
-              element={
-                <ProtectedRoute requiredRole="LAB_TECHNICIAN">
-                  <LabTechnicianDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Receptionist Routes */}
-            <Route
-              path="/receptionist/dashboard"
-              element={
-                <ProtectedRoute requiredRole="RECEPTIONIST">
-                  <ReceptionistDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Billing Staff Routes */}
-            <Route
-              path="/billing-staff/dashboard"
-              element={
-                <ProtectedRoute requiredRole="BILLING_STAFF">
-                  <BillingStaffDashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Hospital Admin Routes */}
-            <Route
-              path="/hospital-admin/dashboard"
-              element={
-                <ProtectedRoute requiredRole="HOSPITAL_ADMIN">
-                  <HospitalAdminDashboard />
                 </ProtectedRoute>
               }
             />
