@@ -24,6 +24,12 @@ import {
   Tooltip,
   Divider,
   Alert,
+  Progress,
+  List,
+  Segmented,
+  Timeline,
+  Select,
+  Collapse,
 } from "antd";
 import {
   LogoutOutlined,
@@ -36,6 +42,22 @@ import {
   DashboardOutlined,
   PlusOutlined,
   EyeOutlined,
+  TeamOutlined,
+  MedicineBoxOutlined,
+  AlertOutlined,
+  BgColorsOutlined,
+  PhoneOutlined,
+  MailOutlined,
+  EnvironmentOutlined,
+  RiseOutlined,
+  DownloadOutlined,
+  PrinterOutlined,
+  EditOutlined,
+  SaveOutlined,
+  CloseOutlined,
+  SearchOutlined,
+  FilterOutlined,
+  SyncOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../contexts/AuthContext";
 import apiClient from "../../utils/api";
@@ -49,13 +71,17 @@ const NurseDashboard = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState("1");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
 
-  // Dashboard Stats
+  // Dashboard Stats with animation
   const [stats, setStats] = useState({
     assignedPatients: 12,
     todayAppointments: 5,
     pendingCare: 3,
     vitalAnomalies: 1,
+    completedTasks: 7,
+    totalTasks: 12,
   });
 
   // Patient List
@@ -406,227 +432,419 @@ const NurseDashboard = () => {
   ];
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
+    <Layout style={{ minHeight: "100vh", background: "#0f172a" }}>
+      {/* MODERN SIDEBAR */}
       <Sider
         collapsible
         collapsed={collapsed}
         onCollapse={setCollapsed}
+        width={280}
+        theme="dark"
         style={{
-          background: "linear-gradient(180deg, #001529 0%, #0a2540 100%)",
-          boxShadow: "2px 0 8px rgba(0,0,0,0.1)",
+          background:
+            "linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)",
+          boxShadow: "4px 0 20px rgba(0,0,0,0.3)",
+          borderRight: "1px solid rgba(255,255,255,0.05)",
+          position: "relative",
         }}
       >
-        <div
-          style={{
-            padding: "20px",
-            textAlign: "center",
-            background: "rgba(255,255,255,0.05)",
-            borderBottom: "1px solid rgba(255,255,255,0.1)",
-          }}
-        >
-          <HeartOutlined style={{ fontSize: "32px", color: "#52c41a" }} />
+        {/* Logo Section */}
+        <div className="nurse-sidebar-logo">
+          <div className="logo-icon-wrapper">
+            <HeartOutlined className="pulse-icon" />
+          </div>
           {!collapsed && (
-            <>
-              <div
-                style={{
-                  color: "#fff",
-                  marginTop: "10px",
-                  fontWeight: "bold",
-                  fontSize: "14px",
-                }}
-              >
-                Điều Dưỡng
-              </div>
-              <div
-                style={{ fontSize: "11px", color: "#bbb", marginTop: "4px" }}
-              >
-                v1.0 Pro
-              </div>
-            </>
+            <div style={{ textAlign: "center" }}>
+              <div className="logo-title">NURSE CARE</div>
+              <div className="logo-subtitle">v2.0 Professional</div>
+            </div>
           )}
         </div>
+
+        {/* Menu Items */}
         <Menu
           theme="dark"
           mode="inline"
-          defaultSelectedKeys={["1"]}
           selectedKeys={[selectedKey]}
           onClick={(e) => setSelectedKey(e.key)}
-          items={menuItems}
-          style={{ background: "transparent" }}
+          items={[
+            {
+              key: "1",
+              icon: <DashboardOutlined style={{ fontSize: "16px" }} />,
+              label: "Dashboard",
+              className: "menu-item-custom",
+            },
+            {
+              key: "2",
+              icon: <TeamOutlined style={{ fontSize: "16px" }} />,
+              label: "Bệnh Nhân",
+              className: "menu-item-custom",
+            },
+            {
+              key: "3",
+              icon: <FileTextOutlined style={{ fontSize: "16px" }} />,
+              label: "Hồ Sơ Bệnh Án",
+              className: "menu-item-custom",
+            },
+            {
+              key: "4",
+              icon: <HeartOutlined style={{ fontSize: "16px" }} />,
+              label: "Sinh Hiệu & Ghi Chú",
+              className: "menu-item-custom",
+            },
+            {
+              key: "5",
+              icon: <MedicineBoxOutlined style={{ fontSize: "16px" }} />,
+              label: "Quản Lý Thuốc",
+              className: "menu-item-custom",
+            },
+          ]}
+          style={{
+            background: "transparent",
+            border: "none",
+            paddingTop: "20px",
+          }}
         />
+
+        {/* Footer Section */}
+        <div className="sidebar-footer">
+          <div className="sidebar-user-info">
+            <Avatar
+              size={40}
+              style={{
+                background: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
+              }}
+              icon={<UserOutlined />}
+            />
+            {!collapsed && (
+              <div>
+                <div className="sidebar-user-name">
+                  {user?.personalInfo?.firstName || "Nguyễn"}
+                </div>
+                <div className="sidebar-user-role">Điều Dưỡng</div>
+              </div>
+            )}
+          </div>
+        </div>
       </Sider>
 
-      <Layout>
-        <Header
+      {/* MAIN LAYOUT */}
+      <Layout style={{ background: "#f0f4f8" }}>
+        {/* PROFESSIONAL HEADER */}
+        <Layout.Header
+          className="nurse-header-modern"
           style={{
-            background: "#fff",
-            padding: "0 24px",
-            boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+            background:
+              "linear-gradient(90deg, #ffffff 0%, #f8fafc 50%, #ffffff 100%)",
+            padding: "0 32px",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            borderBottom: "1px solid #f0f0f0",
+            borderBottom: "1px solid #e2e8f0",
+            height: 80,
           }}
         >
-          <div>
-            <div
-              style={{ fontSize: "18px", fontWeight: "700", color: "#001529" }}
-            >
-              Hệ Thống Quản Lý Y Tế - Điều Dưỡng
-            </div>
-            <div style={{ fontSize: "12px", color: "#999", marginTop: "2px" }}>
-              Quản lý chăm sóc bệnh nhân và theo dõi sinh hiệu
+          <div className="header-left">
+            <div className="header-title-group">
+              <h1 className="header-main-title">Hệ Thống Chăm Sóc Bệnh Nhân</h1>
+              <p className="header-subtitle">
+                Quản lý hiệu quả và theo dõi sức khỏe bệnh nhân 24/7
+              </p>
             </div>
           </div>
-          <Space size="large">
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Avatar
-                size={40}
-                style={{ background: "#52c41a" }}
-                icon={<UserOutlined />}
-              />
-              <div>
-                <div style={{ fontWeight: 600, fontSize: "14px" }}>
-                  {user?.personalInfo?.firstName || "Y Tá"}
-                </div>
-                <div style={{ fontSize: "12px", color: "#999" }}>
-                  Điều Dưỡng
+
+          <div className="header-right">
+            <Space size={20} align="center">
+              <Tooltip title="Làm mới dữ liệu">
+                <Button
+                  type="text"
+                  shape="circle"
+                  icon={<SyncOutlined style={{ fontSize: "18px" }} />}
+                  className="header-icon-btn"
+                />
+              </Tooltip>
+
+              <Divider type="vertical" style={{ height: 24 }} />
+
+              <div className="header-user-section">
+                <Avatar
+                  size={48}
+                  style={{
+                    background:
+                      "linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)",
+                    boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+                  }}
+                  icon={<UserOutlined />}
+                />
+                <div className="header-user-info">
+                  <div className="header-user-name">
+                    {user?.personalInfo?.firstName || "Y Tá"}
+                  </div>
+                  <div className="header-user-status">Trực tuyến</div>
                 </div>
               </div>
-            </div>
-            <Button
-              type="primary"
-              danger
-              icon={<LogoutOutlined />}
-              onClick={handleLogout}
-            >
-              Đăng Xuất
-            </Button>
-          </Space>
-        </Header>
 
-        <Content style={{ padding: "24px", background: "#f8f9fa" }}>
-          <Spin spinning={loading}>
-            {/* DASHBOARD TAB */}
+              <Button
+                type="primary"
+                danger
+                size="large"
+                icon={<LogoutOutlined />}
+                onClick={handleLogout}
+                className="logout-btn"
+              >
+                Đăng Xuất
+              </Button>
+            </Space>
+          </div>
+        </Layout.Header>
+
+        {/* CONTENT AREA */}
+        <Layout.Content style={{ padding: "24px 32px", overflow: "auto" }}>
+          <Spin spinning={loading} size="large">
+            {/* ========== TAB 1: DASHBOARD ========== */}
             {selectedKey === "1" && (
-              <>
+              <div className="dashboard-container">
+                {/* ALERT BANNER */}
                 <Alert
-                  message="Bạn có 1 bệnh nhân cần chú ý - Huyết áp cao"
+                  message="⚠️ Cảnh báo: 1 bệnh nhân có dấu hiệu bất thường"
+                  description="Bệnh nhân Trần Thị B (P.302) có huyết áp cao - Cần theo dõi gần gũi"
                   type="warning"
                   showIcon
                   closable
-                  style={{ marginBottom: "24px" }}
+                  className="alert-banner-custom"
+                  style={{ marginBottom: 24 }}
                 />
 
-                <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
-                  <Col xs={24} sm={12} lg={6}>
+                {/* STAT CARDS - Row 1 */}
+                <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
+                  {[
+                    {
+                      title: "Bệnh Nhân Được Giao",
+                      value: 12,
+                      prefix: <TeamOutlined />,
+                      color: "#3b82f6",
+                      bgColor: "#eff6ff",
+                    },
+                    {
+                      title: "Lịch Hẹn Hôm Nay",
+                      value: 5,
+                      prefix: <CalendarOutlined />,
+                      color: "#22c55e",
+                      bgColor: "#f0fdf4",
+                    },
+                    {
+                      title: "Cần Chăm Sóc",
+                      value: 3,
+                      prefix: <AlertOutlined />,
+                      color: "#f59e0b",
+                      bgColor: "#fffbeb",
+                    },
+                    {
+                      title: "Bất Thường Sinh Hiệu",
+                      value: 1,
+                      prefix: <HeartOutlined />,
+                      color: "#ef4444",
+                      bgColor: "#fef2f2",
+                    },
+                  ].map((stat, index) => (
+                    <Col xs={24} sm={12} lg={6} key={index}>
+                      <div className="stat-card-wrapper">
+                        <Card
+                          className="stat-card-modern"
+                          style={{
+                            borderTop: `4px solid ${stat.color}`,
+                            borderRadius: "12px",
+                          }}
+                          hoverable
+                        >
+                          <div className="stat-card-content">
+                            <div
+                              className="stat-icon"
+                              style={{ color: stat.color }}
+                            >
+                              {stat.prefix}
+                            </div>
+                            <div className="stat-info">
+                              <div className="stat-value">{stat.value}</div>
+                              <div className="stat-title">{stat.title}</div>
+                            </div>
+                          </div>
+                          <div className="stat-trend">
+                            <RiseOutlined style={{ color: "#22c55e" }} />
+                            <span>+2.5%</span>
+                          </div>
+                        </Card>
+                      </div>
+                    </Col>
+                  ))}
+                </Row>
+
+                {/* STAT CARDS - Row 2 (Task Progress) */}
+                <Row gutter={[24, 24]} style={{ marginBottom: 32 }}>
+                  <Col xs={24} lg={12}>
                     <Card
-                      style={{
-                        borderTop: "4px solid #1890ff",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                      }}
+                      className="card-modern"
+                      title="Tiến Độ Công Việc Hôm Nay"
                     >
-                      <Statistic
-                        title="Bệnh Nhân Được Giao"
-                        value={stats.assignedPatients}
-                        prefix={<UserOutlined />}
-                        valueStyle={{ color: "#1890ff", fontSize: "28px" }}
-                      />
+                      <div style={{ padding: "20px 0" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            marginBottom: "16px",
+                          }}
+                        >
+                          <span>
+                            Hoàn thành: {stats.completedTasks}/
+                            {stats.totalTasks} công việc
+                          </span>
+                          <strong>
+                            {Math.round(
+                              (stats.completedTasks / stats.totalTasks) * 100
+                            )}
+                            %
+                          </strong>
+                        </div>
+                        <Progress
+                          percent={Math.round(
+                            (stats.completedTasks / stats.totalTasks) * 100
+                          )}
+                          strokeColor={{
+                            "0%": "#f59e0b",
+                            "100%": "#22c55e",
+                          }}
+                          status="active"
+                          strokeWidth={8}
+                        />
+                      </div>
                     </Card>
                   </Col>
-                  <Col xs={24} sm={12} lg={6}>
-                    <Card
-                      style={{
-                        borderTop: "4px solid #52c41a",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                      }}
-                    >
-                      <Statistic
-                        title="Lịch Hẹn Hôm Nay"
-                        value={stats.todayAppointments}
-                        prefix={<CalendarOutlined />}
-                        valueStyle={{ color: "#52c41a", fontSize: "28px" }}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={12} lg={6}>
-                    <Card
-                      style={{
-                        borderTop: "4px solid #faad14",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                      }}
-                    >
-                      <Statistic
-                        title="Cần Chăm Sóc"
-                        value={stats.pendingCare}
-                        prefix={<ClockCircleOutlined />}
-                        valueStyle={{ color: "#faad14", fontSize: "28px" }}
-                      />
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={12} lg={6}>
-                    <Card
-                      style={{
-                        borderTop: "4px solid #f5222d",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                      }}
-                    >
-                      <Statistic
-                        title="Dị Thường Sinh Hiệu"
-                        value={stats.vitalAnomalies}
-                        prefix={<HeartOutlined />}
-                        valueStyle={{ color: "#f5222d", fontSize: "28px" }}
+
+                  <Col xs={24} lg={12}>
+                    <Card className="card-modern" title="Thống Kê Ngày Hôm Nay">
+                      <List
+                        size="small"
+                        dataSource={[
+                          {
+                            label: "Bệnh nhân kiểm tra",
+                            value: 8,
+                            icon: "✓",
+                            color: "#22c55e",
+                          },
+                          {
+                            label: "Lần cấp thuốc",
+                            value: 12,
+                            icon: "💊",
+                            color: "#3b82f6",
+                          },
+                          {
+                            label: "Ghi chú lâm sàng",
+                            value: 15,
+                            icon: "📝",
+                            color: "#8b5cf6",
+                          },
+                          {
+                            label: "Báo cáo với bác sĩ",
+                            value: 5,
+                            icon: "👨‍⚕️",
+                            color: "#ec4899",
+                          },
+                        ]}
+                        renderItem={(item) => (
+                          <List.Item style={{ padding: "12px 0" }}>
+                            <div
+                              style={{
+                                flex: 1,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 12,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  width: 40,
+                                  height: 40,
+                                  borderRadius: "8px",
+                                  background: `${item.color}15`,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontSize: "18px",
+                                }}
+                              >
+                                {item.icon}
+                              </div>
+                              <div>
+                                <div
+                                  style={{ fontSize: "13px", color: "#666" }}
+                                >
+                                  {item.label}
+                                </div>
+                              </div>
+                            </div>
+                            <strong
+                              style={{ color: item.color, fontSize: "18px" }}
+                            >
+                              {item.value}
+                            </strong>
+                          </List.Item>
+                        )}
                       />
                     </Card>
                   </Col>
                 </Row>
 
-                <Row gutter={[16, 16]}>
+                {/* PATIENT ATTENTION & TASKS */}
+                <Row gutter={[24, 24]}>
                   <Col xs={24} lg={12}>
-                    <Card title="Bệnh Nhân Cần Chú Ý" size="large">
-                      {patientsList
-                        .filter((p) => p.status !== "stable")
-                        .map((patient) => (
-                          <Card
-                            key={patient.id}
-                            size="small"
-                            style={{ marginBottom: "12px" }}
-                            hoverable
-                          >
-                            <Row justify="space-between" align="middle">
-                              <Col>
-                                <div style={{ fontWeight: 600 }}>
-                                  {patient.name}
-                                </div>
-                                <div
-                                  style={{ fontSize: "12px", color: "#999" }}
-                                >
-                                  P. {patient.room} • {patient.diagnosis}
-                                </div>
-                              </Col>
-                              <Col>
-                                <Badge
-                                  color={getPriorityColor(patient.priority)}
-                                  text={
-                                    patient.priority === "high"
-                                      ? "🔴 Cao"
-                                      : "🟠 Trung"
-                                  }
-                                />
-                              </Col>
-                            </Row>
-                          </Card>
-                        ))}
-                    </Card>
-                  </Col>
-
-                  <Col xs={24} lg={12}>
-                    <Card title="Tác Vụ Hôm Nay" size="large">
+                    <Card
+                      className="card-modern"
+                      title="🚨 Bệnh Nhân Cần Chú Ý"
+                    >
                       <div
                         style={{
                           display: "flex",
                           flexDirection: "column",
-                          gap: "12px",
+                          gap: 12,
+                        }}
+                      >
+                        {patientsList
+                          .filter((p) => p.status !== "stable")
+                          .map((patient) => (
+                            <div
+                              key={patient.id}
+                              className="patient-attention-card"
+                            >
+                              <div>
+                                <div className="attention-patient-name">
+                                  {patient.name}
+                                </div>
+                                <div className="attention-patient-info">
+                                  Phòng {patient.room} • {patient.diagnosis}
+                                </div>
+                              </div>
+                              <Badge
+                                color={getPriorityColor(patient.priority)}
+                                text={
+                                  patient.priority === "high"
+                                    ? "🔴 CAO"
+                                    : "🟠 TRUNG"
+                                }
+                              />
+                            </div>
+                          ))}
+                      </div>
+                    </Card>
+                  </Col>
+
+                  <Col xs={24} lg={12}>
+                    <Card className="card-modern" title="✅ Công Việc Hôm Nay">
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 12,
                         }}
                       >
                         {[
@@ -635,78 +853,125 @@ const NurseDashboard = () => {
                           "Thay băng cho bệnh nhân phòng 301",
                           "Báo cáo với bác sĩ",
                         ].map((task, i) => (
-                          <div
-                            key={i}
-                            style={{
-                              padding: "12px",
-                              background: "#f5f5f5",
-                              borderRadius: "6px",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "8px",
-                            }}
-                          >
+                          <div key={i} className="task-item-modern">
                             <CheckCircleOutlined
-                              style={{ color: "#52c41a", fontSize: "16px" }}
+                              style={{
+                                color: i < 3 ? "#22c55e" : "#94a3b8",
+                                fontSize: "16px",
+                              }}
                             />
-                            <span>{task}</span>
+                            <span
+                              style={{
+                                textDecoration: i < 3 ? "line-through" : "none",
+                                color: i < 3 ? "#94a3b8" : "#1e293b",
+                              }}
+                            >
+                              {task}
+                            </span>
                           </div>
                         ))}
                       </div>
                     </Card>
                   </Col>
                 </Row>
-              </>
+              </div>
             )}
 
-            {/* PATIENT LIST TAB */}
+            {/* ========== TAB 2: PATIENT LIST ========== */}
             {selectedKey === "2" && (
-              <Card
-                title="Danh Sách Bệnh Nhân Được Giao"
-                size="large"
-                style={{
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                }}
-              >
-                <Table
-                  columns={patientColumns}
-                  dataSource={patientsList}
-                  rowKey="id"
-                  pagination={{ pageSize: 10 }}
-                  scroll={{ x: 1000 }}
-                />
-              </Card>
+              <div>
+                <Card
+                  className="card-modern"
+                  title="Danh Sách Bệnh Nhân Được Giao"
+                >
+                  <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+                    <Col xs={24} sm={12} lg={8}>
+                      <Input
+                        placeholder="🔍 Tìm kiếm bệnh nhân..."
+                        prefix={<SearchOutlined />}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="search-input-modern"
+                      />
+                    </Col>
+                    <Col xs={24} sm={12} lg={8}>
+                      <Select
+                        value={filterStatus}
+                        onChange={setFilterStatus}
+                        options={[
+                          { label: "Tất cả", value: "all" },
+                          { label: "Đang chăm sóc", value: "care_in_progress" },
+                          { label: "Cần chăm sóc", value: "needs_care" },
+                          { label: "Ổn định", value: "stable" },
+                        ]}
+                        style={{ width: "100%" }}
+                      />
+                    </Col>
+                    <Col xs={24} sm={12} lg={8}>
+                      <Button
+                        type="primary"
+                        icon={<SyncOutlined />}
+                        block
+                        className="btn-modern"
+                      >
+                        Làm Mới
+                      </Button>
+                    </Col>
+                  </Row>
+
+                  <Table
+                    columns={patientColumns}
+                    dataSource={patientsList}
+                    rowKey="id"
+                    pagination={{ pageSize: 10 }}
+                    scroll={{ x: 1000 }}
+                    className="table-modern"
+                  />
+                </Card>
+              </div>
             )}
 
-            {/* MEDICAL RECORDS TAB */}
+            {/* ========== TAB 3: MEDICAL RECORDS ========== */}
             {selectedKey === "3" && (
-              <Card
-                title="Danh Sách Hồ Sơ Bệnh Án"
-                size="large"
-                style={{
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-                }}
-              >
+              <Card className="card-modern" title="Danh Sách Hồ Sơ Bệnh Án">
                 <Table
                   columns={[
-                    { title: "Bệnh Nhân", dataIndex: "name", key: "name" },
+                    {
+                      title: "Bệnh Nhân",
+                      dataIndex: "name",
+                      key: "name",
+                      render: (text) => <strong>{text}</strong>,
+                    },
+                    {
+                      title: "Tuổi",
+                      dataIndex: "age",
+                      key: "age",
+                      width: 60,
+                    },
                     {
                       title: "Phòng",
                       dataIndex: "room",
                       key: "room",
-                      width: 80,
+                      width: 70,
+                    },
+                    {
+                      title: "Chẩn Đoán",
+                      dataIndex: "diagnosis",
+                      key: "diagnosis",
                     },
                     {
                       title: "Hành Động",
                       key: "action",
+                      width: 120,
                       render: (_, record) => (
                         <Button
                           type="primary"
                           size="small"
                           icon={<EyeOutlined />}
                           onClick={() => showMedicalRecord(record)}
+                          className="btn-modern"
                         >
-                          Xem Chi Tiết
+                          Chi Tiết
                         </Button>
                       ),
                     },
@@ -714,63 +979,104 @@ const NurseDashboard = () => {
                   dataSource={patientsList}
                   rowKey="id"
                   pagination={false}
+                  className="table-modern"
                 />
               </Card>
             )}
 
-            {/* VITAL SIGNS & NOTES TAB */}
+            {/* ========== TAB 4: VITAL SIGNS ========== */}
             {selectedKey === "4" && (
-              <Row gutter={[16, 16]}>
+              <Row gutter={[24, 24]}>
                 <Col xs={24} lg={12}>
                   <Card
-                    title="Theo Dõi Sinh Hiệu"
-                    size="large"
+                    className="card-modern"
+                    title="📊 Theo Dõi Sinh Hiệu"
                     extra={
                       <Button
                         type="primary"
                         size="small"
                         icon={<PlusOutlined />}
+                        className="btn-modern"
                       >
                         Thêm
                       </Button>
                     }
                   >
                     {patientsList.map((patient) => (
-                      <div key={patient.id} style={{ marginBottom: "16px" }}>
-                        <div style={{ fontWeight: 600, marginBottom: "8px" }}>
+                      <div key={patient.id} style={{ marginBottom: 20 }}>
+                        <div className="vital-patient-header">
                           {patient.name}
                         </div>
                         {vitalRecords[patient.id]
                           ?.slice(0, 2)
                           .map((vital, i) => (
-                            <div
-                              key={i}
-                              style={{
-                                padding: "12px",
-                                background: "#f5f5f5",
-                                marginBottom: "8px",
-                                borderRadius: "6px",
-                                fontSize: "12px",
-                              }}
-                            >
-                              <div
-                                style={{ fontWeight: 600, marginBottom: "6px" }}
-                              >
+                            <div key={i} className="vital-record-item">
+                              <div style={{ fontWeight: 600, marginBottom: 8 }}>
                                 {vital.time}
                               </div>
-                              <div
-                                style={{
-                                  display: "grid",
-                                  gridTemplateColumns: "1fr 1fr",
-                                  gap: "6px",
-                                }}
-                              >
-                                <div>🌡️ T: {vital.temperature}°C</div>
-                                <div>❤️ HR: {vital.heartRate} bpm</div>
-                                <div>💨 BP: {vital.bloodPressure}</div>
-                                <div>🫁 RR: {vital.respiratoryRate}/min</div>
-                                <div>O₂: {vital.oxygenSaturation}%</div>
-                              </div>
+                              <Row gutter={[12, 12]}>
+                                <Col xs={12} sm={8}>
+                                  <div className="vital-value">
+                                    <div className="vital-icon">🌡️</div>
+                                    <div>
+                                      <div className="vital-label">
+                                        Nhiệt độ
+                                      </div>
+                                      <div className="vital-data">
+                                        {vital.temperature}°C
+                                      </div>
+                                    </div>
+                                  </div>
+                                </Col>
+                                <Col xs={12} sm={8}>
+                                  <div className="vital-value">
+                                    <div className="vital-icon">❤️</div>
+                                    <div>
+                                      <div className="vital-label">
+                                        Nhịp tim
+                                      </div>
+                                      <div className="vital-data">
+                                        {vital.heartRate} bpm
+                                      </div>
+                                    </div>
+                                  </div>
+                                </Col>
+                                <Col xs={12} sm={8}>
+                                  <div className="vital-value">
+                                    <div className="vital-icon">🫁</div>
+                                    <div>
+                                      <div className="vital-label">Hô hấp</div>
+                                      <div className="vital-data">
+                                        {vital.respiratoryRate}/min
+                                      </div>
+                                    </div>
+                                  </div>
+                                </Col>
+                                <Col xs={12} sm={8}>
+                                  <div className="vital-value">
+                                    <div className="vital-icon">💨</div>
+                                    <div>
+                                      <div className="vital-label">
+                                        Huyết áp
+                                      </div>
+                                      <div className="vital-data">
+                                        {vital.bloodPressure}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </Col>
+                                <Col xs={12} sm={8}>
+                                  <div className="vital-value">
+                                    <div className="vital-icon">O₂</div>
+                                    <div>
+                                      <div className="vital-label">SpO₂</div>
+                                      <div className="vital-data">
+                                        {vital.oxygenSaturation}%
+                                      </div>
+                                    </div>
+                                  </div>
+                                </Col>
+                              </Row>
                             </div>
                           ))}
                         <Button
@@ -778,6 +1084,8 @@ const NurseDashboard = () => {
                           block
                           size="small"
                           onClick={() => showVitalInput(patient)}
+                          style={{ marginTop: 12 }}
+                          className="btn-dashed-modern"
                         >
                           Nhập Sinh Hiệu Mới
                         </Button>
@@ -788,40 +1096,33 @@ const NurseDashboard = () => {
                 </Col>
 
                 <Col xs={24} lg={12}>
-                  <Card title="Ghi Chú Điều Dưỡng" size="large">
+                  <Card className="card-modern" title="📝 Ghi Chú Điều Dưỡng">
                     {patientsList.map((patient) => (
-                      <div key={patient.id} style={{ marginBottom: "16px" }}>
-                        <div style={{ fontWeight: 600, marginBottom: "8px" }}>
+                      <div key={patient.id} style={{ marginBottom: 20 }}>
+                        <div className="vital-patient-header">
                           {patient.name}
                         </div>
                         {nursingNotes[patient.id]?.map((note, i) => (
                           <div
                             key={i}
-                            style={{
-                              padding: "12px",
-                              background:
-                                note.category === "assessment"
-                                  ? "#e6f7ff"
-                                  : "#f6ffed",
-                              marginBottom: "8px",
-                              borderRadius: "6px",
-                              borderLeft: `3px solid ${
-                                note.category === "assessment"
-                                  ? "#1890ff"
-                                  : "#52c41a"
-                              }`,
-                              fontSize: "12px",
-                            }}
+                            className={`nursing-note ${note.category}`}
                           >
-                            <div
-                              style={{ fontWeight: 600, marginBottom: "4px" }}
-                            >
-                              {note.time} • {note.nurse}
+                            <div className="note-header">
+                              <span className="note-time">{note.time}</span>
+                              <span className="note-nurse">
+                                Bác sĩ: {note.nurse}
+                              </span>
                             </div>
-                            <div>{note.note}</div>
+                            <div className="note-content">{note.note}</div>
                           </div>
                         ))}
-                        <Button type="dashed" block size="small">
+                        <Button
+                          type="dashed"
+                          block
+                          size="small"
+                          style={{ marginTop: 12 }}
+                          className="btn-dashed-modern"
+                        >
                           Thêm Ghi Chú
                         </Button>
                         <Divider style={{ margin: "12px 0" }} />
@@ -831,198 +1132,269 @@ const NurseDashboard = () => {
                 </Col>
               </Row>
             )}
+
+            {/* ========== TAB 5: MEDICINE MANAGEMENT ========== */}
+            {selectedKey === "5" && (
+              <Card className="card-modern" title="Quản Lý Thuốc">
+                <Alert
+                  message="ℹ️ Công năng quản lý thuốc sẽ được phát triển thêm"
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 20 }}
+                />
+                <Empty description="Chức năng sẽ sớm có sẵn" />
+              </Card>
+            )}
           </Spin>
-        </Content>
+        </Layout.Content>
       </Layout>
 
-      {/* MEDICAL RECORD DRAWER */}
+      {/* ========== DRAWERS & MODALS ========== */}
+      {/* Medical Record Drawer */}
       <Drawer
-        title={`Hồ Sơ Bệnh Án - ${selectedPatient?.name}`}
+        title={`📋 Hồ Sơ Bệnh Án - ${selectedPatient?.name}`}
         placement="right"
         onClose={() => setRecordDrawerVisible(false)}
         open={recordDrawerVisible}
         width={500}
-        bodyStyle={{ padding: "24px" }}
+        bodyStyle={{ padding: 0 }}
+        headerStyle={{
+          background: "linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)",
+          color: "white",
+        }}
       >
         {selectedPatient && medicalRecords[selectedPatient.id] && (
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
-          >
-            <div>
-              <div style={{ fontWeight: 600, marginBottom: "8px" }}>
-                Thông Tin Bản Thân
-              </div>
-              <div style={{ display: "grid", gap: "6px", fontSize: "14px" }}>
-                <div>
-                  <span style={{ color: "#999" }}>Nhóm máu:</span>{" "}
-                  {medicalRecords[selectedPatient.id].bloodType}
-                </div>
-                <div>
-                  <span style={{ color: "#999" }}>Tuổi:</span>{" "}
-                  {selectedPatient.age}
-                </div>
-                <div>
-                  <span style={{ color: "#999" }}>Phòng:</span>{" "}
-                  {selectedPatient.room}
-                </div>
-              </div>
-            </div>
-
-            <Divider />
-
-            <div>
-              <div style={{ fontWeight: 600, marginBottom: "8px" }}>Dị Ứng</div>
-              <div>
-                {medicalRecords[selectedPatient.id].allergies.length > 0 ? (
-                  medicalRecords[selectedPatient.id].allergies.map(
-                    (allergen, i) => (
-                      <Tag key={i} color="red">
-                        {allergen}
-                      </Tag>
-                    )
-                  )
-                ) : (
-                  <span style={{ color: "#999" }}>Không có dị ứng</span>
-                )}
-              </div>
-            </div>
-
-            <Divider />
-
-            <div>
-              <div style={{ fontWeight: 600, marginBottom: "8px" }}>
-                Bệnh Lý Mãn Tính
-              </div>
-              {medicalRecords[selectedPatient.id].chronicConditions.map(
-                (cond, i) => (
-                  <Tag key={i} color="blue">
-                    {cond}
-                  </Tag>
-                )
-              )}
-            </div>
-
-            <Divider />
-
-            <div>
-              <div style={{ fontWeight: 600, marginBottom: "8px" }}>
-                Thuốc Hiện Dùng
-              </div>
-              {medicalRecords[selectedPatient.id].currentMedications.map(
-                (med, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      padding: "8px",
-                      background: "#f5f5f5",
-                      marginBottom: "6px",
-                      borderRadius: "4px",
-                      fontSize: "13px",
-                    }}
-                  >
-                    <div style={{ fontWeight: 600 }}>{med.name}</div>
-                    <div style={{ color: "#666", fontSize: "12px" }}>
-                      {med.dosage} • {med.frequency}
+          <div className="medical-record-drawer">
+            <Collapse
+              items={[
+                {
+                  key: "1",
+                  label: "👤 Thông Tin Cá Nhân",
+                  children: (
+                    <div className="record-section">
+                      <Row gutter={[16, 16]}>
+                        <Col span={12}>
+                          <div className="info-item">
+                            <div className="info-label">Nhóm máu</div>
+                            <div className="info-value">
+                              {medicalRecords[selectedPatient.id].bloodType}
+                            </div>
+                          </div>
+                        </Col>
+                        <Col span={12}>
+                          <div className="info-item">
+                            <div className="info-label">Tuổi</div>
+                            <div className="info-value">
+                              {selectedPatient.age}
+                            </div>
+                          </div>
+                        </Col>
+                        <Col span={12}>
+                          <div className="info-item">
+                            <div className="info-label">Phòng</div>
+                            <div className="info-value">
+                              {selectedPatient.room}
+                            </div>
+                          </div>
+                        </Col>
+                        <Col span={12}>
+                          <div className="info-item">
+                            <div className="info-label">Điện thoại</div>
+                            <div className="info-value">
+                              {selectedPatient.phone}
+                            </div>
+                          </div>
+                        </Col>
+                      </Row>
                     </div>
-                  </div>
-                )
-              )}
-            </div>
-
-            <Divider />
-
-            <div>
-              <div style={{ fontWeight: 600, marginBottom: "8px" }}>
-                Chẩn Đoán & Điều Trị
-              </div>
-              <div
-                style={{
-                  fontSize: "13px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "6px",
-                }}
-              >
-                <div>
-                  <span style={{ color: "#999" }}>Bác sĩ:</span>{" "}
-                  {medicalRecords[selectedPatient.id].doctor}
-                </div>
-                <div>
-                  <span style={{ color: "#999" }}>Chẩn đoán:</span>{" "}
-                  {medicalRecords[selectedPatient.id].diagnosis}
-                </div>
-                <div>
-                  <span style={{ color: "#999" }}>Điều trị:</span>{" "}
-                  {medicalRecords[selectedPatient.id].treatment}
-                </div>
-                <div>
-                  <span style={{ color: "#999" }}>Ghi chú:</span>{" "}
-                  {medicalRecords[selectedPatient.id].notes}
-                </div>
-              </div>
-            </div>
+                  ),
+                },
+                {
+                  key: "2",
+                  label: "⚠️ Dị Ứng",
+                  children: (
+                    <div className="record-section">
+                      {medicalRecords[selectedPatient.id].allergies.length >
+                      0 ? (
+                        medicalRecords[selectedPatient.id].allergies.map(
+                          (allergen, i) => (
+                            <Tag
+                              key={i}
+                              color="red"
+                              style={{ marginBottom: 8 }}
+                            >
+                              {allergen}
+                            </Tag>
+                          )
+                        )
+                      ) : (
+                        <span style={{ color: "#999" }}>Không có dị ứng</span>
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  key: "3",
+                  label: "🏥 Bệnh Lý Mãn Tính",
+                  children: (
+                    <div className="record-section">
+                      {medicalRecords[selectedPatient.id].chronicConditions.map(
+                        (cond, i) => (
+                          <Tag key={i} color="blue" style={{ marginBottom: 8 }}>
+                            {cond}
+                          </Tag>
+                        )
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  key: "4",
+                  label: "💊 Thuốc Hiện Dùng",
+                  children: (
+                    <div className="record-section">
+                      {medicalRecords[
+                        selectedPatient.id
+                      ].currentMedications.map((med, i) => (
+                        <div key={i} className="medicine-item">
+                          <div className="medicine-name">{med.name}</div>
+                          <div className="medicine-details">
+                            {med.dosage} • {med.frequency}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ),
+                },
+                {
+                  key: "5",
+                  label: "📋 Chẩn Đoán & Điều Trị",
+                  children: (
+                    <div className="record-section">
+                      <div className="info-item">
+                        <div className="info-label">Bác sĩ</div>
+                        <div className="info-value">
+                          {medicalRecords[selectedPatient.id].doctor}
+                        </div>
+                      </div>
+                      <div className="info-item">
+                        <div className="info-label">Chẩn đoán</div>
+                        <div className="info-value">
+                          {medicalRecords[selectedPatient.id].diagnosis}
+                        </div>
+                      </div>
+                      <div className="info-item">
+                        <div className="info-label">Điều trị</div>
+                        <div className="info-value">
+                          {medicalRecords[selectedPatient.id].treatment}
+                        </div>
+                      </div>
+                      <div className="info-item">
+                        <div className="info-label">Ghi chú</div>
+                        <div className="info-value">
+                          {medicalRecords[selectedPatient.id].notes}
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                },
+              ]}
+            />
           </div>
         )}
       </Drawer>
 
-      {/* VITAL SIGNS INPUT MODAL */}
+      {/* Vital Signs Input Modal */}
       <Modal
-        title={`Nhập Sinh Hiệu - ${selectedPatient?.name}`}
+        title={`💉 Nhập Sinh Hiệu - ${selectedPatient?.name}`}
         open={vitalDrawerVisible}
         onCancel={() => setVitalDrawerVisible(false)}
         onOk={() => vitalForm.submit()}
-        width={500}
+        width={600}
         okText="Lưu"
         cancelText="Hủy"
+        className="modal-modern"
       >
         <Form form={vitalForm} layout="vertical" onFinish={handleAddVitalSigns}>
-          <Form.Item
-            label="Nhiệt Độ (°C)"
-            name="temperature"
-            rules={[{ required: true }]}
-          >
-            <InputNumber min={35} max={43} step={0.1} placeholder="36.5" />
-          </Form.Item>
-
-          <Form.Item
-            label="Huyết Áp (mmHg)"
-            name="bloodPressure"
-            rules={[{ required: true }]}
-            tooltip="Ví dụ: 120/80"
-          >
-            <Input placeholder="120/80" />
-          </Form.Item>
-
-          <Form.Item
-            label="Nhịp Tim (bpm)"
-            name="heartRate"
-            rules={[{ required: true }]}
-          >
-            <InputNumber min={30} max={200} placeholder="72" />
-          </Form.Item>
-
-          <Form.Item
-            label="Tần Số Hô Hấp (/min)"
-            name="respiratoryRate"
-            rules={[{ required: true }]}
-          >
-            <InputNumber min={5} max={50} placeholder="16" />
-          </Form.Item>
-
-          <Form.Item
-            label="SpO₂ (%)"
-            name="oxygenSaturation"
-            rules={[{ required: true }]}
-          >
-            <InputNumber min={50} max={100} placeholder="98" />
-          </Form.Item>
-
-          <Form.Item label="Ghi Chú" name="note">
-            <Input.TextArea
-              rows={3}
-              placeholder="Ghi chú tình trạng bệnh nhân"
-            />
-          </Form.Item>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="🌡️ Nhiệt Độ (°C)"
+                name="temperature"
+                rules={[{ required: true, message: "Vui lòng nhập nhiệt độ" }]}
+              >
+                <InputNumber
+                  min={35}
+                  max={43}
+                  step={0.1}
+                  placeholder="36.5"
+                  className="input-modern"
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="❤️ Nhịp Tim (bpm)"
+                name="heartRate"
+                rules={[{ required: true, message: "Vui lòng nhập nhịp tim" }]}
+              >
+                <InputNumber
+                  min={30}
+                  max={200}
+                  placeholder="72"
+                  className="input-modern"
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="💨 Huyết Áp (mmHg)"
+                name="bloodPressure"
+                rules={[{ required: true, message: "Vui lòng nhập huyết áp" }]}
+              >
+                <Input placeholder="120/80" className="input-modern" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item
+                label="🫁 Tần Số Hô Hấp (/min)"
+                name="respiratoryRate"
+                rules={[
+                  { required: true, message: "Vui lòng nhập tần số hô hấp" },
+                ]}
+              >
+                <InputNumber
+                  min={5}
+                  max={50}
+                  placeholder="16"
+                  className="input-modern"
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24}>
+              <Form.Item
+                label="O₂ SpO₂ (%)"
+                name="oxygenSaturation"
+                rules={[{ required: true, message: "Vui lòng nhập SpO₂" }]}
+              >
+                <InputNumber
+                  min={50}
+                  max={100}
+                  placeholder="98"
+                  className="input-modern"
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24}>
+              <Form.Item label="📝 Ghi Chú" name="note">
+                <Input.TextArea
+                  rows={4}
+                  placeholder="Ghi chú tình trạng bệnh nhân..."
+                  className="input-modern"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
         </Form>
       </Modal>
     </Layout>
