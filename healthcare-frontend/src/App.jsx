@@ -18,10 +18,22 @@ import ResetPassword from "./pages/SuperAdmin/ResetPassword";
 import PatientRegister from "./pages/Patient/Register";
 import PatientDashboard from "./pages/Patient/Dashboard";
 import DoctorDashboard from "./pages/Doctor/Dashboard";
+import NurseDashboard from "./pages/Nurse/Dashboard";
+import PharmacistDashboard from "./pages/Pharmacist/Dashboard";
+import LabTechnicianDashboard from "./pages/LabTechnician/Dashboard";
+import { Card, Result, Button } from "antd";
 
 // Root redirect component
 const RootRedirect = () => {
   const { user, isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   // 🎯 Chưa đăng nhập → Unified Login (/superadmin/login)
   if (!isAuthenticated) {
@@ -29,16 +41,25 @@ const RootRedirect = () => {
   }
 
   // ✅ Đã đăng nhập → Redirect theo role
-  if (user?.role === "PATIENT") {
-    return <Navigate to="/patient/dashboard" replace />;
+  const roleRedirects = {
+    PATIENT: "/patient/dashboard",
+    DOCTOR: "/doctor/dashboard",
+    NURSE: "/nurse/dashboard",
+    PHARMACIST: "/pharmacist/dashboard",
+    LAB_TECHNICIAN: "/lab-technician/dashboard",
+    SUPER_ADMIN: "/superadmin/dashboard",
+    HOSPITAL_ADMIN: "/superadmin/dashboard",
+    ADMIN: "/superadmin/dashboard",
+  };
+
+  const redirectPath = roleRedirects[user?.role];
+
+  if (redirectPath) {
+    return <Navigate to={redirectPath} replace />;
   }
 
-  if (user?.role === "DOCTOR") {
-    return <Navigate to="/doctor/dashboard" replace />;
-  }
-
-  // Default: Super Admin
-  return <Navigate to="/superadmin/dashboard" replace />;
+  // Default fallback
+  return <Navigate to="/superadmin/login" replace />;
 };
 
 function App() {
@@ -89,6 +110,36 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="DOCTOR">
                   <DoctorDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Nurse Routes */}
+            <Route
+              path="/nurse/dashboard"
+              element={
+                <ProtectedRoute requiredRole="NURSE">
+                  <NurseDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Pharmacist Routes */}
+            <Route
+              path="/pharmacist/dashboard"
+              element={
+                <ProtectedRoute requiredRole="PHARMACIST">
+                  <PharmacistDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Lab Technician Routes */}
+            <Route
+              path="/lab-technician/dashboard"
+              element={
+                <ProtectedRoute requiredRole="LAB_TECHNICIAN">
+                  <LabTechnicianDashboard />
                 </ProtectedRoute>
               }
             />

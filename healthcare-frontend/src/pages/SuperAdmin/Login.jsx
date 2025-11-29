@@ -43,19 +43,19 @@ const SuperAdminLogin = () => {
         console.log("👩‍⚕️ Redirecting to Nurse Dashboard");
         message.success("Đăng nhập thành công! Chào mừng Y tá.");
         setTimeout(() => {
-          navigate("/patient/dashboard", { replace: true });
+          navigate("/nurse/dashboard", { replace: true });
         }, 100);
       } else if (userRole === "PHARMACIST") {
         console.log("💊 Redirecting to Pharmacist Dashboard");
         message.success("Đăng nhập thành công! Chào mừng Dược sĩ.");
         setTimeout(() => {
-          navigate("/patient/dashboard", { replace: true });
+          navigate("/pharmacist/dashboard", { replace: true });
         }, 100);
       } else if (userRole === "LAB_TECHNICIAN") {
         console.log("🧪 Redirecting to Lab Technician Dashboard");
         message.success("Đăng nhập thành công! Chào mừng Kỹ thuật viên.");
         setTimeout(() => {
-          navigate("/patient/dashboard", { replace: true });
+          navigate("/lab-technician/dashboard", { replace: true });
         }, 100);
       } else {
         // Admin / SuperAdmin / Other roles
