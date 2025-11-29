@@ -1,0 +1,270 @@
+/* NURSE DASHBOARD STYLING */
+
+/* Smooth transitions */
+.ant-menu-item {
+  transition: all 0.3s ease;
+}
+
+.ant-card {
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.ant-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+  transform: translateY(-2px);
+}
+
+/* Statistic Cards Enhancement */
+.ant-statistic {
+  text-align: center;
+}
+
+/* Custom Badge styling */
+.ant-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Table Enhancements */
+.ant-table-container {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ant-table-row:hover {
+  background-color: #f5f5f5 !important;
+}
+
+/* Drawer Styling */
+.ant-drawer-header {
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.ant-drawer-close {
+  font-size: 18px;
+}
+
+/* Modal Styling */
+.ant-modal-header {
+  border-bottom: 2px solid #f0f0f0;
+}
+
+/* Alert Styling */
+.ant-alert {
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.ant-alert-warning {
+  background-color: #fffbe6;
+  border-color: #ffe58f;
+}
+
+/* Custom responsive */
+@media (max-width: 576px) {
+  .ant-layout-header {
+    padding: 0 16px;
+  }
+  
+  .ant-statistic-title {
+    font-size: 12px;
+  }
+  
+  .ant-statistic-content {
+    font-size: 20px !important;
+  }
+}
+
+/* Vital Signs Grid */
+.vital-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.vital-item {
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Patient Card Hover Effect */
+.patient-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.patient-card:hover {
+  border-color: #1890ff !important;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+}
+
+/* Loading Spinner */
+.ant-spin {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
+/* Badge Priority Colors */
+.badge-high {
+  color: #f5222d;
+  font-weight: 600;
+}
+
+.badge-medium {
+  color: #faad14;
+  font-weight: 600;
+}
+
+.badge-low {
+  color: #52c41a;
+  font-weight: 600;
+}
+
+/* Header Enhancement */
+.ant-layout-header {
+  background: linear-gradient(90deg, #fff 0%, #fafafa 100%);
+}
+
+/* Sidebar Logo */
+.sidebar-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Smooth Color Transitions */
+.status-badge {
+  transition: all 0.3s ease;
+}
+
+.status-processing {
+  background-color: #e6f7ff;
+  border-color: #91d5ff;
+}
+
+.status-warning {
+  background-color: #fff7e6;
+  border-color: #ffd591;
+}
+
+.status-success {
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.status-error {
+  background-color: #fff1f0;
+  border-color: #ffccc7;
+}
+
+/* Responsive Grid */
+@media (max-width: 1200px) {
+  .ant-col-lg-6,
+  .ant-col-lg-12 {
+    width: 100% !important;
+    max-width: 100%;
+  }
+}
+
+/* Nursing Notes Styling */
+.nursing-note {
+  padding: 12px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border-left: 3px solid;
+  line-height: 1.6;
+}
+
+.nursing-note.assessment {
+  background-color: #e6f7ff;
+  border-left-color: #1890ff;
+}
+
+.nursing-note.intervention {
+  background-color: #f6ffed;
+  border-left-color: #52c41a;
+}
+
+/* Medication Log */
+.medication-item {
+  padding: 12px;
+  background: #fafafa;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 3px solid #1890ff;
+}
+
+/* Task List */
+.task-item {
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.task-item:hover {
+  background: #e6f7ff;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);
+}
+
+/* Form Input Enhancement */
+.ant-input,
+.ant-input-number,
+.ant-select-selector {
+  border-radius: 6px;
+  border: 1px solid #d9d9d9;
+  transition: all 0.3s ease;
+}
+
+.ant-input:focus,
+.ant-input-number-focused .ant-input-number-input,
+.ant-select-focused .ant-select-selector {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Button Hover Enhancement */
+.ant-btn {
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.ant-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+}
+
+/* Divider Styling */
+.ant-divider {
+  margin: 12px 0;
+  border-color: #f0f0f0;
+}
+
+/* Content Background */
+.ant-layout-content {
+  background-color: #f8f9fa;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
