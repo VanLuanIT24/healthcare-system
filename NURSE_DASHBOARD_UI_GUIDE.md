@@ -253,6 +253,7 @@
 ## 🎨 Color Coding Reference
 
 ### Status Badges
+
 ```
 ┌─ CARE_IN_PROGRESS ─┐  ┌─ NEEDS_CARE ─────┐
 │ ⚙️  Đang chăm sóc   │  │ ⚠️  Cần chăm sóc   │
@@ -268,6 +269,7 @@
 ```
 
 ### Priority Indicators
+
 ```
 🔴 CAO (High)      - Cần can thiệp ngay
 🟠 TRUNG BÌNH      - Theo dõi định kỳ
@@ -277,16 +279,19 @@
 ## 📱 Responsive Breakpoints
 
 ### Desktop (≥1200px)
+
 - 2-column layout (Vitals + Notes side by side)
 - Full-width tables
 - All features visible
 
 ### Tablet (768-1199px)
+
 - 2-column layout stacks to 1 when needed
 - Responsive grid adjusts
 - Tables may scroll horizontally
 
 ### Mobile (<768px)
+
 - Single column layout
 - Vitals & Notes stack vertically
 - Tables in horizontal scroll mode
@@ -305,7 +310,7 @@
 ## 🚀 Animation Details
 
 ```css
-Card Hover: 
+Card Hover:
   - Subtle shadow increase
   - Light lift effect (translateY -2px)
   - Smooth 0.3s transition
