@@ -57,7 +57,7 @@ import {
   LockOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../contexts/AuthContext";
-import axios from "axios";
+import apiClient from "../../utils/api";
 import "../../styles/SuperAdminDashboard.css";
 import "../../styles/SuperAdminAnimations.css";
 
@@ -89,21 +89,15 @@ const SuperAdminDashboard = () => {
       setLoading(true);
 
       // Lấy danh sách người dùng từ API backend
-      const usersResponse = await axios.get(
-        `${import.meta.env.VITE_API_URL}/users`,
-        {
-          params: {
-            page: pagination.current,
-            limit: pagination.pageSize,
-            role: filterRole || undefined,
-            status: filterStatus || undefined,
-            search: searchText || undefined,
-          },
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
+      const usersResponse = await apiClient.get("/users", {
+        params: {
+          page: pagination.current,
+          limit: pagination.pageSize,
+          role: filterRole || undefined,
+          status: filterStatus || undefined,
+          search: searchText || undefined,
+        },
+      });
 
       if (usersResponse.data.success) {
         setUsers(usersResponse.data.data || []);
@@ -138,15 +132,9 @@ const SuperAdminDashboard = () => {
 
       // Lấy audit logs
       try {
-        const auditResponse = await axios.get(
-          `${import.meta.env.VITE_API_URL}/audit-logs`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-            params: { limit: 20 },
-          }
-        );
+        const auditResponse = await apiClient.get("/audit-logs", {
+          params: { limit: 20 },
+        });
 
         if (auditResponse.data.success) {
           setAuditLogs(auditResponse.data.data || []);
@@ -156,12 +144,17 @@ const SuperAdminDashboard = () => {
       }
     } catch (error) {
       console.error("Lỗi tải dữ liệu:", error);
+      console.error("Error response:", error.response?.data);
       if (error.response?.status === 401) {
         message.error("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại");
         logout();
         navigate("/login");
       } else {
-        message.error("Không thể tải dữ liệu người dùng");
+        message.error(
+          `Không thể tải dữ liệu người dùng: ${
+            error.response?.data?.message || error.message
+          }`
+        );
       }
     } finally {
       setLoading(false);
@@ -227,15 +220,7 @@ const SuperAdminDashboard = () => {
 
       if (selectedUser) {
         // Cập nhật user - không bao gồm password
-        await axios.put(
-          `${import.meta.env.VITE_API_URL}/users/${selectedUser._id}`,
-          payload,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-            },
-          }
-        );
+        await apiClient.put(`/users/${selectedUser._id}`, payload);
         message.success("Cập nhật người dùng thành công");
       } else {
         // Tạo user mới - bắt buộc có password
@@ -245,11 +230,7 @@ const SuperAdminDashboard = () => {
         }
         payload.password = formData.password;
 
-        await axios.post(`${import.meta.env.VITE_API_URL}/users`, payload, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        });
+        await apiClient.post("/users", payload);
         message.success("Tạo người dùng thành công");
       }
 
@@ -267,10 +248,7 @@ const SuperAdminDashboard = () => {
 
   const handleDeleteUser = async (userId) => {
     try {
-      await axios.delete(`${import.meta.env.VITE_API_URL}/users/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-        },
+      await apiClient.delete(`/users/${userId}`, {
         data: { reason: "Xóa từ dashboard" },
       });
       message.success("Xóa người dùng thành công");
@@ -283,15 +261,9 @@ const SuperAdminDashboard = () => {
 
   const handleDisableUser = async (userId) => {
     try {
-      await axios.patch(
-        `${import.meta.env.VITE_API_URL}/users/${userId}/disable`,
-        { reason: "Vô hiệu hóa từ dashboard" },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
+      await apiClient.patch(`/users/${userId}/disable`, {
+        reason: "Vô hiệu hóa từ dashboard",
+      });
       message.success("Vô hiệu hóa người dùng thành công");
       loadDashboardData();
     } catch (error) {
@@ -302,15 +274,7 @@ const SuperAdminDashboard = () => {
 
   const handleEnableUser = async (userId) => {
     try {
-      await axios.patch(
-        `${import.meta.env.VITE_API_URL}/users/${userId}/enable`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-          },
-        }
-      );
+      await apiClient.patch(`/users/${userId}/enable`, {});
       message.success("Kích hoạt người dùng thành công");
       loadDashboardData();
     } catch (error) {

@@ -33,12 +33,10 @@ import {
   PhoneOutlined,
   IdcardOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
+import apiClient from "../utils/api";
 
 const { Search } = Input;
 const { Option } = Select;
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -88,17 +86,14 @@ const UserManagement = () => {
 
       console.log("Fetching users with token:", token.substring(0, 20) + "...");
 
-      const response = await axios.get(`${API_BASE_URL}/users`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params,
-      });
+      const response = await apiClient.get("/users", { params });
 
       if (response.data.success) {
-        const usersData = response.data.data.users || response.data.data || [];
+        const usersData = response.data.data || [];
         setUsers(usersData);
         setPagination({
           ...pagination,
-          total: response.data.data.total || usersData.length,
+          total: response.data.pagination?.total || usersData.length,
         });
       }
     } catch (err) {
@@ -147,10 +142,7 @@ const UserManagement = () => {
 
   const handleDeleteUser = async (userId) => {
     try {
-      const token = localStorage.getItem("accessToken");
-      await axios.delete(`${API_BASE_URL}/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await apiClient.delete(`/users/${userId}`);
       message.success("Đã xóa người dùng");
       fetchUsers();
     } catch (err) {
@@ -160,14 +152,12 @@ const UserManagement = () => {
 
   const handleToggleStatus = async (user) => {
     try {
-      const token = localStorage.getItem("accessToken");
       const newStatus = user.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
 
-      await axios.patch(
-        `${API_BASE_URL}/users/${user._id}/disable`,
-        { reason: "Admin action", status: newStatus },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await apiClient.patch(`/users/${user._id}/disable`, {
+        reason: "Admin action",
+        status: newStatus,
+      });
 
       message.success(
         `Đã ${newStatus === "ACTIVE" ? "kích hoạt" : "vô hiệu hóa"} người dùng`
@@ -180,8 +170,6 @@ const UserManagement = () => {
 
   const handleSubmit = async (values) => {
     try {
-      const token = localStorage.getItem("accessToken");
-
       if (editMode && selectedUser) {
         // Update user - only send fields that are being edited
         const userData = {
@@ -193,9 +181,7 @@ const UserManagement = () => {
           role: values.role,
         };
 
-        await axios.put(`${API_BASE_URL}/users/${selectedUser._id}`, userData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await apiClient.put(`/users/${selectedUser._id}`, userData);
         message.success("Cập nhật người dùng thành công");
       } else {
         // Create user - send all required fields
@@ -213,9 +199,7 @@ const UserManagement = () => {
           role: values.role,
         };
 
-        await axios.post(`${API_BASE_URL}/users`, userData, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await apiClient.post("/users", userData);
         message.success("Tạo người dùng thành công");
       }
 

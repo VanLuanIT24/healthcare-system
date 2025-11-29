@@ -62,15 +62,16 @@ app.use(
       "http://localhost:3000",
       "http://localhost:5173",
     ],
-    credentials: true,
+    credentials: true, // ✅ ALLOW CREDENTIALS
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: [
       "Content-Type",
       "Authorization",
       "X-Requested-With",
       "X-Requested-By",
-      "X-Emergency-Access", // 🆕 THÊM HEADER CHO EMERGENCY ACCESS
+      "X-Emergency-Access",
     ],
+    optionsSuccessStatus: 200, // ✅ FIX PREFLIGHT SUCCESS
   })
 );
 

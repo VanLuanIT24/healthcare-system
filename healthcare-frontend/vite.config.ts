@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -9,24 +9,25 @@ export default defineConfig({
     strictPort: true,
     open: false,
     proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
+      "/api": {
+        target: "http://localhost:5000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
-      }
-    }
+        // ✅ FIX: Don't rewrite - keep /api path intact
+        // backend expects: /api/auth/login, not /auth/login
+      },
+    },
   },
   esbuild: {
-    loader: 'jsx',
+    loader: "jsx",
     include: /src\/.*\.jsx?$/,
-    exclude: []
+    exclude: [],
   },
   optimizeDeps: {
     esbuildOptions: {
       loader: {
-        '.js': 'jsx',
-        '.jsx': 'jsx'
-      }
-    }
-  }
-})
+        ".js": "jsx",
+        ".jsx": "jsx",
+      },
+    },
+  },
+});

@@ -9,8 +9,10 @@ import axios from "axios";
 
 const AuthContext = createContext();
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+// ✅ FIX: Use relative API path to go through Vite proxy
+// In dev: /api → vite proxy → http://localhost:5000/api
+// In prod: /api → same origin
+const API_BASE_URL = "/api";
 
 // Create axios instance with config
 const apiClient = axios.create({
@@ -18,6 +20,7 @@ const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true, // ✅ Allow cookies/credentials
 });
 
 // Add interceptor to include token
