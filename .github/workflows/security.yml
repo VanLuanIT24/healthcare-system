@@ -1,0 +1,162 @@
+name: Security Checks
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  schedule:
+    - cron: "0 0 * * 0" # Weekly on Sunday
+
+jobs:
+  # ============================================
+  # Dependency Scanning
+  # ============================================
+  dependencies:
+    name: Scan Dependencies
+    runs-on: ubuntu-latest
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Snyk security scan
+        uses: snyk/actions/node@master
+        with:
+          args: --severity-threshold=high
+        if: ${{ env.SNYK_TOKEN != '' }}
+        continue-on-error: true
+
+      - name: Upload Snyk results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: snyk.sarif
+        if: always()
+        continue-on-error: true
+
+  # ============================================
+  # SAST - CodeQL
+  # ============================================
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["javascript"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+  # ============================================
+  # Secret Scanning
+  # ============================================
+  secrets:
+    name: Scan for Secrets
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+        continue-on-error: true
+
+  # ============================================
+  # Docker Security Scan
+  # ============================================
+  trivy:
+    name: Trivy Container Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -t healthcare-backend:test ./healthcare-backend
+
+      - name: Run Trivy scan on backend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: healthcare-backend:test
+          format: "sarif"
+          output: "trivy-backend.sarif"
+          severity: "HIGH,CRITICAL"
+
+      - name: Build frontend image
+        run: docker build -t healthcare-frontend:test ./healthcare-frontend
+
+      - name: Run Trivy scan on frontend
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: healthcare-frontend:test
+          format: "sarif"
+          output: "trivy-frontend.sarif"
+          severity: "HIGH,CRITICAL"
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: |
+            trivy-backend.sarif
+            trivy-frontend.sarif
+        if: always()
+        continue-on-error: true
+
+  # ============================================
+  # Lint & Format Check
+  # ============================================
+  lint:
+    name: Lint Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: |
+            healthcare-backend/package-lock.json
+            healthcare-frontend/package-lock.json
+
+      - name: Backend lint
+        working-directory: healthcare-backend
+        run: npm run lint --if-present || true
+        continue-on-error: true
+
+      - name: Frontend lint
+        working-directory: healthcare-frontend
+        run: npm run lint --if-present || true
+        continue-on-error: true

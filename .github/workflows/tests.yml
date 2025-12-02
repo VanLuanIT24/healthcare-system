@@ -1,0 +1,201 @@
+name: Automated Tests
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - feature-*
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  # ============================================
+  # Backend Unit Tests
+  # ============================================
+  backend-unit-tests:
+    name: Backend Unit Tests
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:6.0-alpine
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: mongo
+          MONGO_INITDB_ROOT_PASSWORD: password
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: healthcare-backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: healthcare-backend
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: healthcare-backend
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://mongo:password@localhost:27017/healthcare-test
+          JWT_ACCESS_SECRET: test_secret_key_123456
+          JWT_REFRESH_SECRET: test_refresh_key_123456
+        run: npm test -- --coverage --passWithNoTests
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./healthcare-backend/coverage/coverage-final.json
+          flags: backend
+          name: backend-coverage
+        continue-on-error: true
+
+  # ============================================
+  # Frontend Build & Lint
+  # ============================================
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: healthcare-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: healthcare-frontend
+        run: npm ci
+
+      - name: Run linting
+        working-directory: healthcare-frontend
+        run: npm run lint --if-present || true
+
+      - name: Build project
+        working-directory: healthcare-frontend
+        run: npm run build
+        continue-on-error: true
+
+  # ============================================
+  # Integration Tests (Optional)
+  # ============================================
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    if: always()
+
+    services:
+      mongodb:
+        image: mongo:6.0-alpine
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: mongo
+          MONGO_INITDB_ROOT_PASSWORD: password
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: healthcare-backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: healthcare-backend
+        run: npm ci
+
+      - name: Run integration tests
+        working-directory: healthcare-backend
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://mongo:password@localhost:27017/healthcare-test
+          JWT_ACCESS_SECRET: test_secret_key_123456
+          JWT_REFRESH_SECRET: test_refresh_key_123456
+        run: npm run test:integration --if-present || true
+        continue-on-error: true
+
+  # ============================================
+  # E2E Tests (Optional)
+  # ============================================
+  e2e-tests:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    if: always()
+
+    services:
+      mongodb:
+        image: mongo:6.0-alpine
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: mongo
+          MONGO_INITDB_ROOT_PASSWORD: password
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install backend dependencies
+        working-directory: healthcare-backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: healthcare-frontend
+        run: npm ci
+
+      - name: Build backend
+        working-directory: healthcare-backend
+        run: npm run build --if-present || true
+
+      - name: Build frontend
+        working-directory: healthcare-frontend
+        run: npm run build
+
+      - name: Run E2E tests
+        working-directory: healthcare-backend
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://mongo:password@localhost:27017/healthcare-test
+          JWT_ACCESS_SECRET: test_secret_key_123456
+          JWT_REFRESH_SECRET: test_refresh_key_123456
+        run: npm run test:e2e --if-present || true
