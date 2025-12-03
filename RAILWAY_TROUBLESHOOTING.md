@@ -9,6 +9,7 @@
 ### 1. ❌ Frontend Won't Load (Blank Page / 404)
 
 **Symptoms:**
+
 - Frontend URL shows blank page
 - Browser console shows 404 errors
 - CSS and JS files not loading
@@ -16,6 +17,7 @@
 **Solutions:**
 
 #### A) Check Build Command
+
 ```
 1. Railway Dashboard → Frontend Service → Settings
 2. Verify Build Command: npm install && npm run build
@@ -24,6 +26,7 @@
 ```
 
 #### B) Check Start Command
+
 ```
 1. Railway Dashboard → Frontend Service → Settings
 2. Verify Start Command: npm run preview
@@ -31,6 +34,7 @@
 ```
 
 #### C) Check VITE_API_URL
+
 ```
 1. Go to Frontend Service → Variables
 2. Check VITE_API_URL format:
@@ -44,6 +48,7 @@
 ### 2. ❌ Login Fails (401 / 403 Errors)
 
 **Symptoms:**
+
 - Can access login page
 - Error message when trying to login
 - Browser console shows 401/403 errors
@@ -51,6 +56,7 @@
 **Solutions:**
 
 #### A) Verify Backend is Running
+
 ```bash
 # Test backend health
 curl https://your-backend-url.railway.app/health
@@ -59,6 +65,7 @@ curl https://your-backend-url.railway.app/health
 ```
 
 #### B) Check MongoDB Connection
+
 ```
 1. Railway Dashboard → Backend Service → Logs
 2. Search for "Database" or "MongoDB"
@@ -69,6 +76,7 @@ curl https://your-backend-url.railway.app/health
 ```
 
 #### C) Verify JWT Secrets
+
 ```
 1. Backend Service → Variables
 2. Check JWT_ACCESS_SECRET is set
@@ -79,6 +87,7 @@ curl https://your-backend-url.railway.app/health
 ```
 
 #### D) Check Admin Credentials
+
 ```
 1. Backend Service → Variables
 2. Verify SUPER_ADMIN_EMAIL = admin@healthcare.com
@@ -92,6 +101,7 @@ curl https://your-backend-url.railway.app/health
 ### 3. ❌ CORS Errors (Cross-Origin Errors)
 
 **Symptoms:**
+
 - Browser console shows "Access-Control-Allow-Origin" error
 - API requests are blocked
 - Error: "No 'Access-Control-Allow-Origin' header"
@@ -99,6 +109,7 @@ curl https://your-backend-url.railway.app/health
 **Solutions:**
 
 #### A) Update CORS_ORIGIN
+
 ```
 1. Backend Service → Variables
 2. Find CORS_ORIGIN variable
@@ -111,6 +122,7 @@ curl https://your-backend-url.railway.app/health
 ```
 
 #### B) Verify Frontend URL
+
 ```
 1. Frontend Service → Deployments
 2. Copy the exact URL from deployment
@@ -122,6 +134,7 @@ curl https://your-backend-url.railway.app/health
 ```
 
 #### C) Clear Browser Cache
+
 ```
 1. Open DevTools (F12)
 2. Right-click refresh button
@@ -134,6 +147,7 @@ curl https://your-backend-url.railway.app/health
 ### 4. ❌ Database Connection Error
 
 **Symptoms:**
+
 - Backend logs show "Cannot connect to MongoDB"
 - Appointments won't load
 - Error: "ECONNREFUSED" or "ENOTFOUND"
@@ -141,6 +155,7 @@ curl https://your-backend-url.railway.app/health
 **Solutions:**
 
 #### A) Verify MongoDB is Deployed
+
 ```
 1. Railway Dashboard → Check Services
 2. Should see MongoDB service with green status
@@ -149,6 +164,7 @@ curl https://your-backend-url.railway.app/health
 ```
 
 #### B) Check MONGO_URI
+
 ```
 Backend Service → Variables → MONGO_URI
 
@@ -161,6 +177,7 @@ NOT empty or undefined!
 ```
 
 #### C) Verify Network Access
+
 ```
 If using MongoDB Atlas:
 1. Go to https://cloud.mongodb.com
@@ -170,6 +187,7 @@ If using MongoDB Atlas:
 ```
 
 #### D) Test Connection
+
 ```bash
 # In Railway backend logs, should see:
 "✅ Connected to MongoDB"
@@ -183,6 +201,7 @@ If not, restart backend service or redeploy
 ### 5. ❌ Appointment Booking Fails
 
 **Symptoms:**
+
 - Can log in and see dashboard
 - Click "Đặt Lịch Hẹn" (Book Appointment)
 - Form submits but shows error
@@ -191,6 +210,7 @@ If not, restart backend service or redeploy
 **Solutions:**
 
 #### A) Check Backend Logs
+
 ```
 1. Backend Service → Logs tab
 2. Look for error messages
@@ -199,6 +219,7 @@ If not, restart backend service or redeploy
 ```
 
 #### B) Verify Doctors Exist
+
 ```bash
 # Test doctors endpoint
 curl https://your-backend-url.railway.app/api/users/doctors \
@@ -208,6 +229,7 @@ curl https://your-backend-url.railway.app/api/users/doctors \
 ```
 
 #### C) Check Form Validation
+
 ```
 Frontend validation checklist:
 ✓ Doctor selected
@@ -220,6 +242,7 @@ If form shows validation error, fix before submitting
 ```
 
 #### D) Check Database Permissions
+
 ```
 1. Backend Service → Logs
 2. Look for "write" or "insert" errors
@@ -232,6 +255,7 @@ If form shows validation error, fix before submitting
 ### 6. ❌ Build Fails on Railway
 
 **Symptoms:**
+
 - Deployment shows "Build Failed" (red status)
 - Error in build logs
 - Can't see the deployed service
@@ -239,6 +263,7 @@ If form shows validation error, fix before submitting
 **Solutions:**
 
 #### A) Check Build Command Logs
+
 ```
 1. Service → Deployments tab
 2. Click failed deployment
@@ -250,6 +275,7 @@ If form shows validation error, fix before submitting
 ```
 
 #### B) Verify Root Directory
+
 ```
 Backend: healthcare-backend ✓
 Frontend: healthcare-frontend ✓
@@ -260,6 +286,7 @@ NOT:
 ```
 
 #### C) Verify Build Command
+
 ```
 Backend: npm install ✓
 Frontend: npm install && npm run build ✓
@@ -270,17 +297,19 @@ NOT:
 ```
 
 #### D) Check for Syntax Errors
+
 ```
 1. Run locally first:
    npm install
    npm run build  (for frontend)
-   
+
 2. Fix any errors before committing
 3. Push to GitHub
 4. Redeploy from Railway
 ```
 
 #### E) Clear Railway Cache
+
 ```
 1. Service → Settings → Redeploy
 2. Click "Clear Cache and Redeploy"
@@ -292,6 +321,7 @@ NOT:
 ### 7. ❌ High Memory Usage / Crashes
 
 **Symptoms:**
+
 - Service keeps restarting
 - Memory usage shows 100%+
 - "Out of memory" errors
@@ -300,6 +330,7 @@ NOT:
 **Solutions:**
 
 #### A) Check Memory Limits
+
 ```
 1. Service → Settings → Resources
 2. Current plan might need upgrade
@@ -308,6 +339,7 @@ NOT:
 ```
 
 #### B) Optimize Code
+
 ```
 Backend optimizations:
 - Close database connections properly
@@ -323,6 +355,7 @@ Frontend optimizations:
 ```
 
 #### C) Monitor Metrics
+
 ```
 1. Service → Metrics tab
 2. Watch CPU and Memory graphs
@@ -336,6 +369,7 @@ Frontend optimizations:
 ### 8. ❌ Deployment Takes Too Long
 
 **Symptoms:**
+
 - Build step takes 10+ minutes
 - Stuck on "Building..."
 - Deployment never completes
@@ -343,6 +377,7 @@ Frontend optimizations:
 **Solutions:**
 
 #### A) Check for Large Dependencies
+
 ```
 Frontend (package.json):
 - Avoid large UI libraries if not using all features
@@ -354,6 +389,7 @@ Backend (package.json):
 ```
 
 #### B) Optimize Build
+
 ```
 Frontend:
 - Remove source maps in production
@@ -366,6 +402,7 @@ Backend:
 ```
 
 #### C) Check Network
+
 ```
 If installation is slow:
 1. It might be Railway's temporary network issue
@@ -379,6 +416,7 @@ If installation is slow:
 ### 9. ❌ Can't Access Backend Health Check
 
 **Symptoms:**
+
 - Can't curl backend health endpoint
 - Returns 404 or connection refused
 - Backend service shows green but won't respond
@@ -386,6 +424,7 @@ If installation is slow:
 **Solutions:**
 
 #### A) Verify Backend URL
+
 ```
 1. Backend Service → Deployments
 2. Copy the deployment URL
@@ -396,6 +435,7 @@ Should return: { "status": "ok" }
 ```
 
 #### B) Check App is Running
+
 ```
 1. Backend Service → Logs
 2. Search for "listening" or "✅"
@@ -404,6 +444,7 @@ Should return: { "status": "ok" }
 ```
 
 #### C) Verify Health Endpoint Exists
+
 ```
 healthcare-backend/src/app.js or server.js
 
@@ -418,6 +459,7 @@ app.get('/health', (req, res) => {
 ### 10. ❌ Frontend Shows "Cannot GET /"
 
 **Symptoms:**
+
 - Frontend URL returns plain text error
 - Error: "Cannot GET /"
 - No HTML page loads
@@ -425,6 +467,7 @@ app.get('/health', (req, res) => {
 **Solutions:**
 
 #### A) Verify Start Command
+
 ```
 Frontend Service → Settings:
 
@@ -435,6 +478,7 @@ NOT: npm run dev (dev server, won't work on Railway)
 ```
 
 #### B) Add Fallback Index.html
+
 ```
 Vite config should serve index.html for all routes:
 
@@ -446,6 +490,7 @@ In vite.config.ts:
 ```
 
 #### C) Check public/index.html
+
 ```
 healthcare-frontend/index.html should exist
 Content should start with:
@@ -467,6 +512,7 @@ Content should start with:
 ## 📋 Debugging Steps (General)
 
 ### Step 1: Check Service Status
+
 ```
 1. Railway Dashboard
 2. All services should be green
@@ -474,6 +520,7 @@ Content should start with:
 ```
 
 ### Step 2: View Recent Logs
+
 ```
 1. Service → Logs tab
 2. Look for ERROR or WARN level messages
@@ -482,6 +529,7 @@ Content should start with:
 ```
 
 ### Step 3: Check Environment Variables
+
 ```
 1. Service → Variables tab
 2. Verify all required variables are set
@@ -490,6 +538,7 @@ Content should start with:
 ```
 
 ### Step 4: Test Connectivity
+
 ```bash
 # From your terminal (not Railway):
 
@@ -506,6 +555,7 @@ curl https://your-backend-url.railway.app/api/auth/login \
 ```
 
 ### Step 5: Redeploy Services
+
 ```
 1. Service → Deployments tab
 2. Click "Deploy" button for latest commit
@@ -528,6 +578,7 @@ curl https://your-backend-url.railway.app/api/auth/login \
 ### Create Support Ticket
 
 Include:
+
 - Error messages from logs
 - Environment variables (without secrets)
 - Steps to reproduce
@@ -538,15 +589,15 @@ Include:
 
 ## 📞 Quick Reference
 
-| Problem | Quick Fix |
-|---------|-----------|
-| Frontend won't load | Check VITE_API_URL, redeploy |
-| Login fails | Check MongoDB, verify JWT secrets |
-| CORS error | Update CORS_ORIGIN to frontend URL |
-| Appointment booking fails | Check backend logs, verify data format |
-| High memory | Upgrade plan or optimize code |
-| Build fails | Check build command, verify Root Directory |
-| Can't access backend | Check health endpoint, verify URL |
+| Problem                   | Quick Fix                                  |
+| ------------------------- | ------------------------------------------ |
+| Frontend won't load       | Check VITE_API_URL, redeploy               |
+| Login fails               | Check MongoDB, verify JWT secrets          |
+| CORS error                | Update CORS_ORIGIN to frontend URL         |
+| Appointment booking fails | Check backend logs, verify data format     |
+| High memory               | Upgrade plan or optimize code              |
+| Build fails               | Check build command, verify Root Directory |
+| Can't access backend      | Check health endpoint, verify URL          |
 
 ---
 

@@ -10,7 +10,7 @@
 # - Build Command: npm install
 # - Start Command: npm start
 
-# Frontend service  
+# Frontend service
 # Configured via Railway Dashboard:
 # - Root Directory: healthcare-frontend
 # - Build Command: npm install && npm run build

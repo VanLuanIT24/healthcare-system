@@ -1,7 +1,15 @@
 {
   "name": "Healthcare System",
   "description": "Full-stack healthcare management system with appointment booking, patient portal, and multi-role dashboards",
-  "keywords": ["healthcare", "medical", "appointment", "patient-portal", "nodejs", "react", "mongodb"],
+  "keywords": [
+    "healthcare",
+    "medical",
+    "appointment",
+    "patient-portal",
+    "nodejs",
+    "react",
+    "mongodb"
+  ],
   "services": [
     {
       "id": "mongodb",

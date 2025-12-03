@@ -14,6 +14,7 @@
 - [ ] Branch is clean and ready to deploy
 
 **Action:**
+
 ```powershell
 cd d:\training-code\healthcare-system
 git status  # Should show clean working directory
@@ -28,6 +29,7 @@ git log --oneline -5  # Check recent commits
 - [ ] Prepared SMTP credentials (if needed)
 
 **Action:**
+
 ```powershell
 # Generate secure secrets
 node -e "console.log('JWT_ACCESS:', require('crypto').randomBytes(32).toString('hex'))"
@@ -39,12 +41,14 @@ node -e "console.log('JWT_REFRESH:', require('crypto').randomBytes(32).toString(
 ### 3. Verify package.json Scripts
 
 Backend:
+
 ```bash
 cd healthcare-backend
 npm run start  # Should work without errors
 ```
 
 Frontend:
+
 ```bash
 cd healthcare-frontend
 npm run build  # Should complete successfully
@@ -74,6 +78,7 @@ npm run preview  # Should start server
 **Expected Time:** 2 minutes
 
 **Action in Railway:**
+
 ```
 1. Dashboard → Create Service
 2. Select Database → MongoDB
@@ -133,6 +138,7 @@ npm run preview  # Should start server
 - [ ] Updated Backend CORS_ORIGIN with frontend URL
 
 **Action in Railway:**
+
 ```
 1. Go to Backend Service
 2. Variables tab
@@ -151,6 +157,7 @@ npm run preview  # Should start server
 - [ ] No error logs
 
 **Action:**
+
 ```bash
 # Replace with your actual backend URL
 curl https://your-backend-url.railway.app/health
@@ -167,6 +174,7 @@ curl https://your-backend-url.railway.app/health
 - [ ] No 404 or CORS errors in console
 
 **Action:**
+
 ```
 1. Open https://your-frontend-url.railway.app in browser
 2. Open DevTools (F12)
@@ -184,6 +192,7 @@ curl https://your-backend-url.railway.app/health
 - [ ] Success/error messages display
 
 **Action:**
+
 ```
 1. Email: admin@healthcare.com
 2. Password: (your new password)
@@ -203,6 +212,7 @@ curl https://your-backend-url.railway.app/health
 - [ ] Appointment created successfully
 
 **Action:**
+
 ```
 1. Navigate to Lịch hẹn (Appointments) tab
 2. Click "Đặt Lịch Hẹn"
@@ -223,6 +233,7 @@ curl https://your-backend-url.railway.app/health
 - [ ] Dashboard data loads correctly
 
 **Action:**
+
 ```
 1. After booking appointment
 2. Refresh page (F5)
@@ -242,6 +253,7 @@ curl https://your-backend-url.railway.app/health
 - [ ] No JWT token errors
 
 **Action in Railway:**
+
 ```
 1. Go to Backend Service → Logs tab
 2. Go to Frontend Service → Logs tab
@@ -259,6 +271,7 @@ curl https://your-backend-url.railway.app/health
 - [ ] No failed deployments
 
 **Action in Railway:**
+
 ```
 1. Go to Service → Metrics tab
 2. Review CPU, Memory, Network graphs
@@ -279,6 +292,7 @@ curl https://your-backend-url.railway.app/health
 - [ ] Database backups enabled
 
 **Action:**
+
 ```
 1. Change admin password immediately after first login
 2. Set up email notifications for alerts
@@ -298,6 +312,7 @@ curl https://your-backend-url.railway.app/health
 - [ ] Created deployment runbook
 
 **Action:**
+
 ```
 Keep this information safe:
 - Backend URL: https://...
@@ -317,6 +332,7 @@ Keep this information safe:
 - [ ] Shared access guidelines
 
 **Message Template:**
+
 ```
 🎉 Healthcare System is now live on Railway!
 
@@ -342,6 +358,7 @@ Report any issues in #healthcare-deployment
 - [ ] Have communication plan for outage
 
 **Rollback Action:**
+
 ```
 1. Railway Dashboard → Deployments tab
 2. Find previous successful deployment
@@ -367,13 +384,13 @@ Report any issues in #healthcare-deployment
 
 ## 📞 Quick Support
 
-| Issue | Action |
-|-------|--------|
-| **Frontend won't load** | Check VITE_API_URL in frontend variables |
-| **Login fails** | Check backend logs, verify MONGO_URI |
-| **CORS errors** | Update CORS_ORIGIN in backend variables |
+| Issue                         | Action                                    |
+| ----------------------------- | ----------------------------------------- |
+| **Frontend won't load**       | Check VITE_API_URL in frontend variables  |
+| **Login fails**               | Check backend logs, verify MONGO_URI      |
+| **CORS errors**               | Update CORS_ORIGIN in backend variables   |
 | **Appointment booking fails** | Check database connection, verify MongoDB |
-| **Deployment failed** | Check Root Directory and build commands |
+| **Deployment failed**         | Check Root Directory and build commands   |
 
 ---
 

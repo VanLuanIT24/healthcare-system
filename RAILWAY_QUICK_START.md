@@ -3,6 +3,7 @@
 ## Before You Start
 
 Make sure you have:
+
 - [ ] GitHub account with your healthcare-system repository
 - [ ] Railroad account (sign up at railway.app)
 - [ ] This checklist open
@@ -85,6 +86,7 @@ LOG_LEVEL=info
 ```
 
 **Replace with:**
+
 - `JWT_ACCESS_SECRET` - Generate: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 - `JWT_REFRESH_SECRET` - Generate: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 - `FRONTEND_URL` - You'll get this after frontend deploy
@@ -184,16 +186,19 @@ Your healthcare system is now deployed on Railway!
 ### What's Next?
 
 1. **Change Admin Password**
+
    - Log in to dashboard
    - Go to Settings
    - Change password
 
 2. **Setup Custom Domain** (Optional)
+
    - Frontend Service → Settings → Domains
    - Add your domain
    - Update DNS records
 
 3. **Monitor Performance**
+
    - Check Logs tab regularly
    - Monitor Metrics for CPU/Memory
    - Watch for errors
@@ -206,12 +211,12 @@ Your healthcare system is now deployed on Railway!
 
 ## 🆘 Quick Help
 
-| Issue | Solution |
-|-------|----------|
-| Frontend blank | Check VITE_API_URL matches backend |
-| Login fails | Check backend logs, verify MONGO_URI |
-| CORS error | Update CORS_ORIGIN to frontend URL |
-| Build fails | Check Root Directory and build command |
+| Issue          | Solution                               |
+| -------------- | -------------------------------------- |
+| Frontend blank | Check VITE_API_URL matches backend     |
+| Login fails    | Check backend logs, verify MONGO_URI   |
+| CORS error     | Update CORS_ORIGIN to frontend URL     |
+| Build fails    | Check Root Directory and build command |
 
 See `RAILWAY_TROUBLESHOOTING.md` for detailed help
 

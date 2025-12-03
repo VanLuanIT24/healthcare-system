@@ -10,9 +10,11 @@
 ## 📖 Documentation Guide
 
 ### For First-Time Deployers
+
 **Start here if deploying for the first time**
 
 1. **[RAILWAY_QUICK_START.md](./RAILWAY_QUICK_START.md)** ⚡
+
    - 5-minute setup guide
    - Step-by-step with minimal explanations
    - Perfect for experienced developers
@@ -25,6 +27,7 @@
    - **Time:** ~20 minutes
 
 ### For Troubleshooting
+
 **Having issues? Start here**
 
 3. **[RAILWAY_TROUBLESHOOTING.md](./RAILWAY_TROUBLESHOOTING.md)** 🔧
@@ -34,6 +37,7 @@
    - **Coverage:** 95% of common problems
 
 ### For Complete Understanding
+
 **Want to understand everything?**
 
 4. **[RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md)** 📊
@@ -50,6 +54,7 @@
 ### Backend Configuration
 
 **File:** `.env.railway`
+
 ```
 Contains production environment variables for Railway:
 - Database connection
@@ -59,12 +64,14 @@ Contains production environment variables for Railway:
 ```
 
 **File:** `Procfile`
+
 ```
 Tells Railway how to start your services
 (informational - Railway detects Node.js automatically)
 ```
 
 **File:** `railway.json`
+
 ```
 Service definitions and configuration metadata
 Used for quick reference of deployment structure
@@ -77,18 +84,23 @@ Used for quick reference of deployment structure
 ### By Use Case
 
 #### "I want to deploy now"
+
 → Read [RAILWAY_QUICK_START.md](./RAILWAY_QUICK_START.md) (5 min)
 
 #### "I want to verify everything before deploying"
+
 → Read [DEPLOYMENT_CHECKLIST.md](./DEPLOYMENT_CHECKLIST.md) (20 min)
 
 #### "Something is broken"
+
 → Read [RAILWAY_TROUBLESHOOTING.md](./RAILWAY_TROUBLESHOOTING.md)
 
 #### "I want to understand the whole system"
+
 → Read [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md) (30 min)
 
 #### "I need environment variable reference"
+
 → See [RAILWAY_DEPLOYMENT.md#environment-variables](./RAILWAY_DEPLOYMENT.md)
 
 ---
@@ -119,15 +131,15 @@ Healthcare System on Railway
 
 ## 🚀 Deployment Timeline
 
-| Step | Time | Action |
-|------|------|--------|
-| 1 | 2 min | Create Railway project + GitHub connection |
-| 2 | 2 min | Deploy MongoDB database |
-| 3 | 3 min | Deploy backend service |
-| 4 | 3 min | Deploy frontend service |
-| 5 | 2 min | Update CORS configuration |
-| 6 | 3 min | Test all functionality |
-| **Total** | **~15 min** | **System Live!** |
+| Step      | Time        | Action                                     |
+| --------- | ----------- | ------------------------------------------ |
+| 1         | 2 min       | Create Railway project + GitHub connection |
+| 2         | 2 min       | Deploy MongoDB database                    |
+| 3         | 3 min       | Deploy backend service                     |
+| 4         | 3 min       | Deploy frontend service                    |
+| 5         | 2 min       | Update CORS configuration                  |
+| 6         | 3 min       | Test all functionality                     |
+| **Total** | **~15 min** | **System Live!**                           |
 
 ---
 
@@ -142,6 +154,7 @@ Before deploying, ensure you have:
 - [ ] Email configuration (optional)
 
 **Generate JWT Secrets:**
+
 ```powershell
 # Run in terminal:
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
@@ -154,12 +167,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### Secrets Management
 
 1. **JWT Secrets**
+
    - Generated cryptographically
    - Not checked into repository
    - Changed after deployment
    - Different for access and refresh tokens
 
 2. **Admin Credentials**
+
    - Default: admin@healthcare.com / @Admin123
    - **MUST change after first login**
    - Store securely (password manager recommended)
@@ -180,16 +195,19 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ## 🔗 External Resources
 
 ### Railway
+
 - **Main Site:** https://railway.app
 - **Documentation:** https://docs.railway.app
 - **Discord Community:** https://railway.app/discord
 - **Status Page:** https://status.railway.app
 
 ### MongoDB
+
 - **Atlas:** https://www.mongodb.com/cloud/atlas
 - **Documentation:** https://docs.mongodb.com
 
 ### Healthcare System
+
 - **GitHub:** https://github.com/VanLuanIT24/healthcare-system
 - **Original README:** [README.md](./README.md)
 
@@ -227,22 +245,26 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### Working Features
 
 ✅ **User Authentication**
+
 - Login/logout
 - JWT token management
 - Password reset
 
 ✅ **Appointment Booking**
+
 - Doctor selection
 - Date/time selection
 - Appointment creation
 - Dashboard display
 
 ✅ **Multi-Role Access**
+
 - Patient portal
 - Admin dashboard
 - Role-based functionality
 
 ✅ **Data Persistence**
+
 - Appointments saved to MongoDB
 - User profiles stored
 - Audit logs recorded
@@ -250,12 +272,14 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### Monitoring Capabilities
 
 ✅ **Rails Dashboard**
+
 - Service status
 - Logs viewing
 - Metrics monitoring
 - Deployment history
 
 ✅ **Auto-Scaling**
+
 - Railway auto-restarts failed services
 - Handles traffic spikes
 - Graceful shutdown support
@@ -267,16 +291,19 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### If Deployment Fails
 
 1. **Check Logs First**
+
    ```
    Railway Dashboard → Service → Logs tab
    Look for ERROR or WARN messages
    ```
 
 2. **Common Issues**
+
    - See [RAILWAY_TROUBLESHOOTING.md](./RAILWAY_TROUBLESHOOTING.md)
    - 95% of problems have solutions there
 
 3. **Get Community Help**
+
    - Railway Discord: https://railway.app/discord
    - GitHub Issues: https://github.com/VanLuanIT24/healthcare-system/issues
 
@@ -307,11 +334,13 @@ Healthcare System
 ### Understanding the Components
 
 1. **Frontend (React + Vite)**
+
    - See: `healthcare-frontend/README.md` (if exists)
    - Tech: Modern React 18, component-based
    - Styling: Tailwind CSS + Ant Design
 
 2. **Backend (Node + Express)**
+
    - See: `healthcare-backend/README.md` (if exists)
    - Tech: RESTful API, JWT auth
    - Database: MongoDB with Mongoose
@@ -326,18 +355,21 @@ Healthcare System
 ## ✨ What Makes This Deployment Production-Ready
 
 1. **Security**
+
    - JWT authentication
    - Environment variable protection
    - CORS configuration
    - HTTPS by default
 
 2. **Reliability**
+
    - Auto-restart on failure
    - Graceful shutdown
    - Proper logging
    - Error handling
 
 3. **Scalability**
+
    - Stateless backend
    - Database connections pooling
    - Horizontal scaling ready
@@ -354,17 +386,20 @@ Healthcare System
 ## 🎉 Next Steps After Deployment
 
 ### Phase 1: Verification (Day 1)
+
 - [ ] Test all core features
 - [ ] Check logs for errors
 - [ ] Monitor performance metrics
 
 ### Phase 2: Optimization (Week 1)
+
 - [ ] Change admin password
 - [ ] Set up custom domain
 - [ ] Configure email notifications
 - [ ] Add team members
 
 ### Phase 3: Enhancement (Ongoing)
+
 - [ ] Monitor usage patterns
 - [ ] Collect user feedback
 - [ ] Plan feature updates

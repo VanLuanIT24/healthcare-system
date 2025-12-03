@@ -7,6 +7,7 @@
 ## 🎯 Three Paths to Deployment
 
 ### Path 1️⃣: I'm Experienced (5 min)
+
 ```
 1. Go to railway.app
 2. Create project → GitHub repo
@@ -24,9 +25,11 @@
 ```
 
 ### Path 2️⃣: I Want to Verify (20 min)
+
 → Read `DEPLOYMENT_CHECKLIST.md`
 
 ### Path 3️⃣: I Want to Understand (30 min)
+
 → Read `RAILWAY_DEPLOYMENT.md`
 
 ---
@@ -58,6 +61,7 @@ LOG_LEVEL = info
 ```
 
 **Generate Secrets:**
+
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
@@ -73,18 +77,21 @@ VITE_API_URL = https://your-backend.railway.app/api
 ## 📋 Deployment Steps
 
 ### Step 1: Create Project
+
 ```
 railway.app → Dashboard → Create Project
 → Deploy from GitHub → Select healthcare-system → Deploy
 ```
 
 ### Step 2: Add MongoDB
+
 ```
 Create Service → Database → MongoDB → Deploy
 (Wait 2-3 minutes for green checkmark)
 ```
 
 ### Step 3: Deploy Backend
+
 ```
 Create Service → GitHub Repo → healthcare-system
 → Add Service
@@ -99,6 +106,7 @@ Variables: (copy from above)
 ```
 
 ### Step 4: Deploy Frontend
+
 ```
 Create Service → GitHub Repo → healthcare-system
 → Add Service
@@ -113,6 +121,7 @@ Variables:
 ```
 
 ### Step 5: Update Backend CORS
+
 ```
 Backend Service → Variables
 → Update CORS_ORIGIN = https://[FRONTEND_URL].railway.app
@@ -140,14 +149,14 @@ Backend Service → Variables
 
 ## 🆘 Quick Troubleshooting
 
-| Problem | Solution |
-|---------|----------|
-| **Frontend blank** | Check VITE_API_URL in variables |
-| **Login fails** | Check backend logs, verify MONGO_URI |
-| **CORS error** | Update CORS_ORIGIN to exact frontend URL |
-| **Appointment fails** | Check backend logs for errors |
-| **Build fails** | Verify Root Directory path and build command |
-| **Can't access backend** | Check health endpoint: https://url/health |
+| Problem                  | Solution                                     |
+| ------------------------ | -------------------------------------------- |
+| **Frontend blank**       | Check VITE_API_URL in variables              |
+| **Login fails**          | Check backend logs, verify MONGO_URI         |
+| **CORS error**           | Update CORS_ORIGIN to exact frontend URL     |
+| **Appointment fails**    | Check backend logs for errors                |
+| **Build fails**          | Verify Root Directory path and build command |
+| **Can't access backend** | Check health endpoint: https://url/health    |
 
 **Detailed troubleshooting:** See `RAILWAY_TROUBLESHOOTING.md`
 
@@ -165,13 +174,13 @@ Login: admin@healthcare.com / @Admin123
 
 ## 📞 Documentation Files
 
-| Situation | File | Time |
-|-----------|------|------|
-| **Quick deploy** | RAILWAY_QUICK_START.md | 5 min |
-| **Verify all steps** | DEPLOYMENT_CHECKLIST.md | 20 min |
-| **Something broken** | RAILWAY_TROUBLESHOOTING.md | As needed |
-| **Learn everything** | RAILWAY_DEPLOYMENT.md | 30 min |
-| **Navigate docs** | RAILWAY_DEPLOYMENT_INDEX.md | 5 min |
+| Situation            | File                        | Time      |
+| -------------------- | --------------------------- | --------- |
+| **Quick deploy**     | RAILWAY_QUICK_START.md      | 5 min     |
+| **Verify all steps** | DEPLOYMENT_CHECKLIST.md     | 20 min    |
+| **Something broken** | RAILWAY_TROUBLESHOOTING.md  | As needed |
+| **Learn everything** | RAILWAY_DEPLOYMENT.md       | 30 min    |
+| **Navigate docs**    | RAILWAY_DEPLOYMENT_INDEX.md | 5 min     |
 
 ---
 
@@ -198,6 +207,7 @@ Login: admin@healthcare.com / @Admin123
 ## 🎊 Done!
 
 After testing passes:
+
 1. Share frontend URL with team
 2. Change admin password
 3. Monitor logs for 24 hours

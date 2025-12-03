@@ -76,6 +76,7 @@
 ```
 
 **Expected Result:**
+
 - New Railway project created
 - Git repository connected
 
@@ -173,9 +174,10 @@ SMTP_FROM=noreply@healthcare.com
 LOG_LEVEL=info
 ```
 
-**Important:** 
+**Important:**
+
 - Replace `your_super_secret_*` with random strong strings
-- Generate secrets: 
+- Generate secrets:
   ```javascript
   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
   ```
@@ -263,6 +265,7 @@ curl https://healthcare-backend-prod-xyz.railway.app/health
 ```
 
 Expected response:
+
 ```json
 { "status": "ok" }
 ```
@@ -292,28 +295,28 @@ Expected response:
 
 ### Backend Variables
 
-| Variable                 | Example                                           | Required | Notes                            |
-| ------------------------ | ------------------------------------------------- | -------- | -------------------------------- |
-| `NODE_ENV`               | `production`                                      | Yes      | Must be "production" for Railway |
-| `PORT`                   | `5000`                                            | Yes      | Railway manages this             |
-| `MONGO_URI`              | `mongodb+srv://user:pass@cluster.mongodb.net/db` | Yes      | Use Railway's MongoDB or Atlas   |
-| `JWT_ACCESS_SECRET`      | `random_32_char_string`                           | Yes      | Generate: `node -e "..."` above  |
-| `JWT_REFRESH_SECRET`     | `random_32_char_string`                           | Yes      | Generate: `node -e "..."` above  |
-| `ACCESS_TOKEN_EXPIRES_IN` | `15m`                                             | No       | Default: 15 minutes             |
-| `CORS_ORIGIN`            | `https://your-frontend.railway.app`               | Yes      | Exact frontend URL              |
-| `SUPER_ADMIN_EMAIL`      | `admin@healthcare.com`                            | Yes      | Default admin email             |
-| `SUPER_ADMIN_PASSWORD`   | `@Admin123`                                       | Yes      | Change after first login!       |
-| `SMTP_HOST`              | `smtp.gmail.com`                                  | No       | For email notifications         |
-| `SMTP_PORT`              | `587`                                             | No       | SMTP port                       |
-| `SMTP_USER`              | `your_email@gmail.com`                            | No       | Your SMTP user                  |
-| `SMTP_PASSWORD`          | `app_password`                                    | No       | Gmail app password (not pwd)    |
-| `LOG_LEVEL`              | `info`                                            | No       | Logging level                   |
+| Variable                  | Example                                          | Required | Notes                            |
+| ------------------------- | ------------------------------------------------ | -------- | -------------------------------- |
+| `NODE_ENV`                | `production`                                     | Yes      | Must be "production" for Railway |
+| `PORT`                    | `5000`                                           | Yes      | Railway manages this             |
+| `MONGO_URI`               | `mongodb+srv://user:pass@cluster.mongodb.net/db` | Yes      | Use Railway's MongoDB or Atlas   |
+| `JWT_ACCESS_SECRET`       | `random_32_char_string`                          | Yes      | Generate: `node -e "..."` above  |
+| `JWT_REFRESH_SECRET`      | `random_32_char_string`                          | Yes      | Generate: `node -e "..."` above  |
+| `ACCESS_TOKEN_EXPIRES_IN` | `15m`                                            | No       | Default: 15 minutes              |
+| `CORS_ORIGIN`             | `https://your-frontend.railway.app`              | Yes      | Exact frontend URL               |
+| `SUPER_ADMIN_EMAIL`       | `admin@healthcare.com`                           | Yes      | Default admin email              |
+| `SUPER_ADMIN_PASSWORD`    | `@Admin123`                                      | Yes      | Change after first login!        |
+| `SMTP_HOST`               | `smtp.gmail.com`                                 | No       | For email notifications          |
+| `SMTP_PORT`               | `587`                                            | No       | SMTP port                        |
+| `SMTP_USER`               | `your_email@gmail.com`                           | No       | Your SMTP user                   |
+| `SMTP_PASSWORD`           | `app_password`                                   | No       | Gmail app password (not pwd)     |
+| `LOG_LEVEL`               | `info`                                           | No       | Logging level                    |
 
 ### Frontend Variables
 
-| Variable         | Example                                              | Required | Notes                    |
-| ---------------- | ---------------------------------------------------- | -------- | ------------------------ |
-| `VITE_API_URL`   | `https://healthcare-backend-prod-xyz.railway.app/api` | Yes      | Backend API endpoint URL |
+| Variable       | Example                                               | Required | Notes                    |
+| -------------- | ----------------------------------------------------- | -------- | ------------------------ |
+| `VITE_API_URL` | `https://healthcare-backend-prod-xyz.railway.app/api` | Yes      | Backend API endpoint URL |
 
 ---
 
@@ -350,6 +353,7 @@ Expected response:
 ### Issue: Frontend shows 404 errors
 
 **Solution:**
+
 ```
 1. Check VITE_API_URL environment variable
 2. Ensure it matches backend URL
@@ -359,6 +363,7 @@ Expected response:
 ### Issue: Login fails
 
 **Solution:**
+
 ```
 1. Check MongoDB is running
 2. View backend logs for errors
@@ -368,6 +373,7 @@ Expected response:
 ### Issue: Database connection error
 
 **Solution:**
+
 ```
 1. Check MONGO_URI is correct
 2. Verify MongoDB is deployed and running
@@ -377,6 +383,7 @@ Expected response:
 ### Issue: CORS error in browser console
 
 **Solution:**
+
 ```
 1. Go to Backend service → Variables
 2. Update CORS_ORIGIN to exact frontend URL
@@ -387,6 +394,7 @@ Expected response:
 ### Issue: Build fails on Railway
 
 **Solution:**
+
 ```
 1. Check build logs for specific error
 2. Ensure Root Directory is set correctly:
@@ -444,15 +452,18 @@ Before deploying to production:
 ### After Deployment
 
 1. **Monitor Logs**
+
    - Check for errors in first few minutes
    - Monitor database connections
 
 2. **Test Features**
+
    - Login with admin account
    - Create test appointment
    - Verify data persistence
 
 3. **Set Up CI/CD** (Optional)
+
    - Railway auto-deploys on git push
    - Ensure CI/CD workflows are enabled
    - Monitor GitHub Actions tab
@@ -476,9 +487,10 @@ Before deploying to production:
 
 ## 🎉 Congratulations!
 
-Your healthcare system is now deployed on Railway! 
+Your healthcare system is now deployed on Railway!
 
 **Next Steps:**
+
 1. Bookmark your frontend URL
 2. Share with team members
 3. Set up backup strategy for MongoDB
