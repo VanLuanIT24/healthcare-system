@@ -105,4 +105,23 @@ router.get(
   laboratoryController.getCompletedTests
 );
 
+// Admin dashboard routes (simplified) - Allow SUPER_ADMIN, ADMIN, DOCTOR access
+router.get(
+  '/orders',
+  requireRole('SUPER_ADMIN', 'ADMIN', 'DOCTOR', 'NURSE'),
+  laboratoryController.getOrders
+);
+
+router.get(
+  '/stats',
+  requireRole('SUPER_ADMIN', 'ADMIN', 'DOCTOR', 'NURSE'),
+  laboratoryController.getStats
+);
+
+router.put(
+  '/orders/:orderId/result',
+  requireRole('SUPER_ADMIN', 'ADMIN', 'DOCTOR', 'NURSE'),
+  laboratoryController.updateResult
+);
+
 module.exports = router;

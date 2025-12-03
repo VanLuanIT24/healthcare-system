@@ -129,6 +129,12 @@ function requirePatientDataAccess(patientIdParam = 'patientId') {
       return next(new AppError('Yêu cầu xác thực', 401, ERROR_CODES.AUTH_INVALID_TOKEN));
     }
 
+    // 🎯 SUPER_ADMIN BYPASS - CHO PHÉP SUPER_ADMIN TRUY CẬP MỌI DỮ LIỆU BỆNH NHÂN
+    if (req.user.role === ROLES.SUPER_ADMIN) {
+      console.log('👑 [SUPER_ADMIN BYPASS] Patient data access check bypassed for SUPER_ADMIN');
+      return next();
+    }
+
     const patientId = req.params[patientIdParam] || req.body.patientId || req.query.patientId;
     
     if (!patientId) {

@@ -6,60 +6,247 @@ const { AppError } = require('../middlewares/error.middleware');
 
 class PrescriptionService {
   
-  // Tạo đơn thuốc cho bệnh nhân
+  /**
+   * 💊 TẠO ĐƠN THUỐC CHO BỆNH NHÂN - CẢI TIẾN VỚI VALIDATION ĐẦY ĐỦ
+   */
   async createPrescription(patientId, prescriptionData, doctorId) {
     try {
-      // Kiểm tra bệnh nhân tồn tại
-      const patient = await Patient.findOne({ userId: patientId });
+      console.log('💊 [PHARMACY] Creating prescription for patient:', patientId);
+
+      // 🎯 KIỂM TRA BỆNH NHÂN TỒN TẠI VÀ LẤY THÔNG TIN
+      const patient = await Patient.findOne({ userId: patientId })
+        .populate('userId', 'personalInfo dateOfBirth');
+      
       if (!patient) {
         throw new AppError('Bệnh nhân không tồn tại', 404);
       }
 
-      // Tạo prescription ID
+      // 🎯 TÍNH TUỔI VÀ LẤY CÂN NẶNG
+      const patientAge = patient.userId?.dateOfBirth 
+        ? Math.floor((new Date() - new Date(patient.userId.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000))
+        : null;
+      
+      const patientWeight = patient.vitalSigns?.weight || null;
+
+      console.log('👤 [PHARMACY] Patient info - Age:', patientAge, 'Weight:', patientWeight, 'kg');
+
+      // 🎯 TẠO PRESCRIPTION ID
       const prescriptionId = await generateMedicalCode('PR');
 
-      // Kiểm tra tồn kho và thông tin thuốc
+      // 🎯 KIỂM TRA TỒN KHO VÀ THÔNG TIN THUỐC
       for (let med of prescriptionData.medications) {
         const medication = await Medication.findById(med.medicationId);
         if (!medication) {
           throw new AppError(`Thuốc ${med.medicationId} không tồn tại`, 404);
         }
         
-        // Kiểm tra tồn kho
+        // ✅ KIỂM TRA TỒN KHO
         const stockCheck = medication.checkAvailability(med.totalQuantity);
         if (!stockCheck.available) {
-          throw new AppError(`Thuốc ${medication.name} không đủ tồn kho. Còn ${stockCheck.currentStock}`, 400);
+          throw new AppError(
+            `Thuốc ${medication.name} không đủ tồn kho. Còn ${stockCheck.currentStock}, cần ${med.totalQuantity}`, 
+            400
+          );
         }
 
-        // Thêm thông tin thuốc vào prescription
+        // ✅ VALIDATE LIỀU LƯỢNG DỰA TRÊN TUỔI
+        if (patientAge !== null) {
+          const ageValidation = this.validateDosageByAge(
+            medication.name, 
+            med.dosage, 
+            patientAge
+          );
+          
+          if (!ageValidation.valid) {
+            console.warn('⚠️ [PHARMACY] Age-based dosage warning:', ageValidation.message);
+            if (!med.warnings) med.warnings = [];
+            med.warnings.push(ageValidation.message);
+          }
+        }
+
+        // ✅ VALIDATE LIỀU LƯỢNG DỰA TRÊN CÂN NẶNG
+        if (patientWeight !== null) {
+          const weightValidation = this.validateDosageByWeight(
+            medication.name,
+            med.dosage,
+            patientWeight
+          );
+          
+          if (!weightValidation.valid) {
+            console.warn('⚠️ [PHARMACY] Weight-based dosage warning:', weightValidation.message);
+            if (!med.warnings) med.warnings = [];
+            med.warnings.push(weightValidation.message);
+          }
+        }
+
+        // 🎯 THÊM THÔNG TIN THUỐC VÀO PRESCRIPTION
         med.name = medication.name;
         med.genericName = medication.genericName;
+        med.validatedForAge = patientAge;
+        med.validatedForWeight = patientWeight;
       }
 
-      // Kiểm tra tương tác thuốc
-      const interactions = await this.checkDrugInteractions(prescriptionData.medications);
+      // 🔴 KIỂM TRA TƯƠNG TÁC THUỐC
+      const interactionCheck = await this.checkDrugInteractions(prescriptionData.medications);
 
+      // 🚨 NẾU CÓ TƯƠNG TÁC NGUY HIỂM → BLOCK ĐƠN THUỐC
+      if (interactionCheck.criticalCount > 0) {
+        const criticalInteractions = interactionCheck.interactions
+          .filter(i => i.severity === 'MAJOR' && i.action === 'BLOCK_PRESCRIPTION')
+          .map(i => `${i.medication1} + ${i.medication2}: ${i.description}`)
+          .join('; ');
+
+        throw new AppError(
+          `KHÔNG THỂ kê đơn do tương tác thuốc nguy hiểm: ${criticalInteractions}`,
+          400,
+          'CRITICAL_DRUG_INTERACTION'
+        );
+      }
+
+      // ⚠️ CÓ TƯƠNG TÁC MAJOR NHƯNG CHO PHÉP (VỚI CẢNH BÁO)
+      if (interactionCheck.hasInteractions) {
+        console.warn('⚠️ [PHARMACY] Drug interactions detected:', interactionCheck.totalInteractions);
+      }
+
+      // 🎯 TẠO PRESCRIPTION
       const prescription = new Prescription({
         prescriptionId,
         patientId,
         doctorId,
         ...prescriptionData,
         drugInteractionsChecked: true,
-        interactionsFound: interactions,
+        interactionsFound: interactionCheck.interactions || [],
+        patientAgeAtPrescription: patientAge,
+        patientWeightAtPrescription: patientWeight,
         createdBy: doctorId,
-        status: 'ACTIVE'
+        status: interactionCheck.moderateCount > 0 ? 'PENDING_REVIEW' : 'ACTIVE'
       });
 
       await prescription.save();
       
-      // Populate thông tin trước khi trả về
+      // 🎯 POPULATE THÔNG TIN TRƯỚC KHI TRẢ VỀ
       await prescription.populate('medications.medicationId');
       await prescription.populate('patientId', 'personalInfo');
       
-      return prescription;
+      console.log('✅ [PHARMACY] Prescription created:', prescriptionId, 'Status:', prescription.status);
+
+      return {
+        prescription,
+        interactionWarning: interactionCheck.hasInteractions ? interactionCheck : null
+      };
+
     } catch (error) {
+      console.error('❌ [PHARMACY] Create prescription failed:', error.message);
       throw error;
     }
+  }
+
+  /**
+   * 👶 VALIDATE LIỀU LƯỢNG DỰA TRÊN TUỔI
+   */
+  validateDosageByAge(medicationName, dosage, age) {
+    // Quy tắc liều lượng theo tuổi (ví dụ cơ bản)
+    
+    // Trẻ em dưới 12 tuổi
+    if (age < 12) {
+      // Paracetamol: 10-15 mg/kg/dose, max 60mg/kg/day
+      if (medicationName.toLowerCase().includes('paracetamol')) {
+        const doseMatch = dosage.match(/(\d+)\s*mg/);
+        if (doseMatch) {
+          const doseAmount = parseInt(doseMatch[1]);
+          if (doseAmount > 500) {
+            return {
+              valid: false,
+              message: `Liều paracetamol ${doseAmount}mg có thể quá cao cho trẻ ${age} tuổi (khuyến cáo <500mg/lần)`
+            };
+          }
+        }
+      }
+
+      // Aspirin: KHÔNG dùng cho trẻ <12 tuổi (nguy cơ Reye syndrome)
+      if (medicationName.toLowerCase().includes('aspirin')) {
+        return {
+          valid: false,
+          message: `KHÔNG NÊN dùng aspirin cho trẻ dưới 12 tuổi (nguy cơ Reye syndrome)`
+        };
+      }
+    }
+
+    // Người cao tuổi (>65 tuổi)
+    if (age > 65) {
+      // Benzodiazepines: Giảm liều cho người cao tuổi
+      if (medicationName.toLowerCase().includes('diazepam') || 
+          medicationName.toLowerCase().includes('alprazolam')) {
+        return {
+          valid: true,
+          message: `Cân nhắc giảm liều cho người cao tuổi ${age} tuổi (nguy cơ ngã, lú lẫn)`
+        };
+      }
+
+      // Digoxin: Giảm liều cho người cao tuổi
+      if (medicationName.toLowerCase().includes('digoxin')) {
+        return {
+          valid: true,
+          message: `Người cao tuổi cần liều thấp hơn digoxin (0.125mg/ngày)`
+        };
+      }
+    }
+
+    return { valid: true };
+  }
+
+  /**
+   * ⚖️ VALIDATE LIỀU LƯỢNG DỰA TRÊN CÂN NẶNG
+   */
+  validateDosageByWeight(medicationName, dosage, weight) {
+    // Quy tắc liều lượng theo cân nặng (mg/kg)
+
+    // Gentamicin: 5-7 mg/kg/day
+    if (medicationName.toLowerCase().includes('gentamicin')) {
+      const doseMatch = dosage.match(/(\d+)\s*mg/);
+      if (doseMatch) {
+        const doseAmount = parseInt(doseMatch[1]);
+        const maxDose = weight * 7;
+        if (doseAmount > maxDose) {
+          return {
+            valid: false,
+            message: `Liều gentamicin ${doseAmount}mg vượt quá khuyến cáo cho cân nặng ${weight}kg (max: ${maxDose}mg/ngày)`
+          };
+        }
+      }
+    }
+
+    // Vancomycin: 15-20 mg/kg/dose
+    if (medicationName.toLowerCase().includes('vancomycin')) {
+      const doseMatch = dosage.match(/(\d+)\s*mg/);
+      if (doseMatch) {
+        const doseAmount = parseInt(doseMatch[1]);
+        const maxDose = weight * 20;
+        if (doseAmount > maxDose) {
+          return {
+            valid: false,
+            message: `Liều vancomycin ${doseAmount}mg vượt quá khuyến cáo cho cân nặng ${weight}kg (max: ${maxDose}mg/lần)`
+          };
+        }
+      }
+    }
+
+    // Cảnh báo nếu bệnh nhân gầy hoặc béo phì
+    if (weight < 40) {
+      return {
+        valid: true,
+        message: `Bệnh nhân gầy (${weight}kg) - Cân nhắc giảm liều thuốc`
+      };
+    }
+
+    if (weight > 100) {
+      return {
+        valid: true,
+        message: `Bệnh nhân béo phì (${weight}kg) - Cân nhắc điều chỉnh liều dựa trên ideal body weight`
+      };
+    }
+
+    return { valid: true };
   }
 
   // Lấy thông tin đơn thuốc
@@ -204,48 +391,188 @@ class PrescriptionService {
     };
   }
 
-  // Kiểm tra tương tác thuốc
+  /**
+   * 💊 KIỂM TRA TƯƠNG TÁC THUỐC - CẢI TIẾN VỚI DATABASE TƯƠNG TÁC MỞ RỘNG
+   */
   async checkDrugInteraction(drugs) {
-    // Trong thực tế, sẽ tích hợp với API kiểm tra tương tác thuốc
-    // Ở đây mô phỏng logic cơ bản
-    
-    const interactions = [];
-    const drugNames = drugs.map(d => d.name.toLowerCase());
+    try {
+      console.log('💊 [PHARMACY] Checking drug interactions for', drugs.length, 'medications');
 
-    // Danh sách tương tác thuốc phổ biến (mô phỏng)
-    const commonInteractions = [
-      {
-        drugs: ['warfarin', 'aspirin'],
-        severity: 'MAJOR',
-        description: 'Tăng nguy cơ chảy máu',
-        recommendation: 'Theo dõi chặt chẽ chỉ số đông máu'
-      },
-      {
-        drugs: ['simvastatin', 'clarithromycin'],
-        severity: 'MAJOR', 
-        description: 'Tăng nguy cơ tiêu cơ vân',
-        recommendation: 'Tránh dùng đồng thời'
-      }
-    ];
+      const interactions = [];
+      const drugNames = drugs.map(d => d.name ? d.name.toLowerCase() : '');
 
-    // Kiểm tra tương tác
-    for (let interaction of commonInteractions) {
-      const hasAllDrugs = interaction.drugs.every(drug => 
-        drugNames.some(name => name.includes(drug))
-      );
-      
-      if (hasAllDrugs) {
-        interactions.push({
-          medication1: interaction.drugs[0],
-          medication2: interaction.drugs[1],
-          severity: interaction.severity,
-          description: interaction.description,
-          recommendation: interaction.recommendation
+      // 🔴 DANH SÁCH TƯƠNG TÁC THUỐC NGHIÊM TRỌNG (MAJOR)
+      const majorInteractions = [
+        {
+          drugs: ['warfarin', 'aspirin'],
+          severity: 'MAJOR',
+          category: 'BLEEDING_RISK',
+          description: 'Tăng nguy cơ chảy máu nghiêm trọng do tác dụng kháng đông máu cộng hưởng',
+          recommendation: 'KHÔNG NÊN dùng đồng thời. Nếu bắt buộc phải theo dõi chặt chẽ INR và dấu hiệu chảy máu',
+          action: 'ALERT_DOCTOR'
+        },
+        {
+          drugs: ['simvastatin', 'clarithromycin'],
+          severity: 'MAJOR',
+          category: 'MUSCLE_DAMAGE',
+          description: 'Tăng nguy cơ tiêu cơ vân (rhabdomyolysis) nghiêm trọng',
+          recommendation: 'TRÁNH dùng đồng thời. Tạm ngừng simvastatin khi dùng clarithromycin',
+          action: 'ALERT_DOCTOR'
+        },
+        {
+          drugs: ['metformin', 'contrast'],
+          severity: 'MAJOR',
+          category: 'KIDNEY_TOXICITY',
+          description: 'Tăng nguy cơ toan chuyển hóa do lactate (lactic acidosis)',
+          recommendation: 'Ngừng metformin trước khi chụp CT có thuốc cản quang ít nhất 48h',
+          action: 'ALERT_DOCTOR'
+        },
+        {
+          drugs: ['digoxin', 'amiodarone'],
+          severity: 'MAJOR',
+          category: 'CARDIAC_TOXICITY',
+          description: 'Tăng nguy cơ độc tính tim do tăng nồng độ digoxin',
+          recommendation: 'Giảm liều digoxin xuống 50% khi bắt đầu dùng amiodarone',
+          action: 'ALERT_DOCTOR'
+        },
+        {
+          drugs: ['ssri', 'maoi'],
+          severity: 'MAJOR',
+          category: 'SEROTONIN_SYNDROME',
+          description: 'Nguy cơ hội chứng serotonin (serotonin syndrome) đe dọa tính mạng',
+          recommendation: 'TRÁNH tuyệt đối. Cách nhau ít nhất 14 ngày khi chuyển đổi',
+          action: 'BLOCK_PRESCRIPTION'
+        }
+      ];
+
+      // 🟠 DANH SÁCH TƯƠNG TÁC VỪA PHẢI (MODERATE)
+      const moderateInteractions = [
+        {
+          drugs: ['ibuprofen', 'aspirin'],
+          severity: 'MODERATE',
+          category: 'BLEEDING_RISK',
+          description: 'Tăng nguy cơ xuất huyết tiêu hóa',
+          recommendation: 'Theo dõi triệu chứng đau bụng, đại tiện phân đen',
+          action: 'WARNING'
+        },
+        {
+          drugs: ['amlodipine', 'simvastatin'],
+          severity: 'MODERATE',
+          category: 'MUSCLE_PAIN',
+          description: 'Tăng nồng độ simvastatin trong máu, tăng nguy cơ đau cơ',
+          recommendation: 'Không dùng simvastatin >20mg/ngày khi kết hợp với amlodipine',
+          action: 'WARNING'
+        },
+        {
+          drugs: ['ciprofloxacin', 'theophylline'],
+          severity: 'MODERATE',
+          category: 'DRUG_LEVEL_INCREASE',
+          description: 'Tăng nồng độ theophylline, nguy cơ co giật',
+          recommendation: 'Theo dõi nồng độ theophylline trong máu, điều chỉnh liều nếu cần',
+          action: 'WARNING'
+        },
+        {
+          drugs: ['omeprazole', 'clopidogrel'],
+          severity: 'MODERATE',
+          category: 'REDUCED_EFFICACY',
+          description: 'Giảm hiệu quả kháng kết tập tiểu cầu của clopidogrel',
+          recommendation: 'Cân nhắc dùng pantoprazole thay cho omeprazole',
+          action: 'WARNING'
+        }
+      ];
+
+      // 🟢 DANH SÁCH TƯƠNG TÁC NHẸ (MINOR)
+      const minorInteractions = [
+        {
+          drugs: ['calcium', 'iron'],
+          severity: 'MINOR',
+          category: 'ABSORPTION',
+          description: 'Giảm hấp thu sắt khi dùng đồng thời với calcium',
+          recommendation: 'Cách nhau ít nhất 2 giờ khi uống',
+          action: 'INFO'
+        },
+        {
+          drugs: ['tetracycline', 'dairy'],
+          severity: 'MINOR',
+          category: 'ABSORPTION',
+          description: 'Sữa làm giảm hấp thu tetracycline',
+          recommendation: 'Uống thuốc trước hoặc sau 2 giờ khi ăn sản phẩm từ sữa',
+          action: 'INFO'
+        }
+      ];
+
+      // 🎯 KIỂM TRA TƯƠNG TÁC
+      const allInteractions = [...majorInteractions, ...moderateInteractions, ...minorInteractions];
+
+      for (let interaction of allInteractions) {
+        const matchedDrugs = [];
+        
+        // Kiểm tra xem có ít nhất 2 thuốc trong danh sách tương tác không
+        interaction.drugs.forEach(drugPattern => {
+          const matched = drugNames.find(name => 
+            name && (name.includes(drugPattern) || drugPattern.includes(name))
+          );
+          if (matched) matchedDrugs.push(matched);
         });
-      }
-    }
 
-    return interactions;
+        if (matchedDrugs.length >= 2) {
+          interactions.push({
+            medication1: matchedDrugs[0],
+            medication2: matchedDrugs[1],
+            severity: interaction.severity,
+            category: interaction.category,
+            description: interaction.description,
+            recommendation: interaction.recommendation,
+            action: interaction.action,
+            detected: true,
+            checkedAt: new Date()
+          });
+
+          console.log(`⚠️ [PHARMACY] ${interaction.severity} interaction detected:`, matchedDrugs.join(' + '));
+        }
+      }
+
+      // 🔴 NẾU CÓ TƯƠNG TÁC MAJOR/BLOCK → BẮT BUỘC CẢNH BÁO
+      const criticalInteractions = interactions.filter(i => 
+        i.severity === 'MAJOR' && i.action === 'BLOCK_PRESCRIPTION'
+      );
+
+      if (criticalInteractions.length > 0) {
+        console.error('🚨 [PHARMACY] CRITICAL DRUG INTERACTIONS DETECTED - PRESCRIPTION SHOULD BE BLOCKED');
+      }
+
+      console.log('✅ [PHARMACY] Drug interaction check completed:', interactions.length, 'interactions found');
+
+      return {
+        hasInteractions: interactions.length > 0,
+        totalInteractions: interactions.length,
+        criticalCount: interactions.filter(i => i.severity === 'MAJOR').length,
+        moderateCount: interactions.filter(i => i.severity === 'MODERATE').length,
+        minorCount: interactions.filter(i => i.severity === 'MINOR').length,
+        interactions: interactions,
+        recommendation: criticalInteractions.length > 0 
+          ? 'KHÔNG NÊN kê đơn - Tương tác thuốc nguy hiểm' 
+          : interactions.length > 0 
+            ? 'CẨN TRỌNG - Có tương tác thuốc cần theo dõi' 
+            : 'KHÔNG CÓ tương tác thuốc đáng kể'
+      };
+
+    } catch (error) {
+      console.error('❌ [PHARMACY] Check drug interaction failed:', error.message);
+      return {
+        hasInteractions: false,
+        totalInteractions: 0,
+        interactions: [],
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * 💊 WRAPPER METHOD - MAINTAIN COMPATIBILITY
+   */
+  async checkDrugInteractions(medications) {
+    return await this.checkDrugInteraction(medications);
   }
 
   // Ghi nhận bệnh nhân đã dùng thuốc

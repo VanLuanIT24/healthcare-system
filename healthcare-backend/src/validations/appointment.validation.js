@@ -2,11 +2,97 @@ const Joi = require('joi');
 const { commonSchemas } = require('../middlewares/validation.middleware');
 
 /**
- * 🏥 MEDICAL RECORD VALIDATION SCHEMAS
- * Đảm bảo dữ liệu hồ sơ bệnh án hợp lệ
+ * 🏥 APPOINTMENT VALIDATION SCHEMAS
+ * Đảm bảo dữ liệu lịch hẹn hợp lệ
  */
 
-const medicalRecordValidation = {
+const appointmentValidation = {
+  // 🎯 TẠO LỊCH HẸN
+  createAppointment: Joi.object({
+    patientId: commonSchemas.objectId.required(),
+    doctorId: commonSchemas.objectId.required(),
+    appointmentDate: Joi.date().iso().required(),
+    timeSlot: Joi.string().required(),
+    reason: Joi.string().max(500).optional(),
+    notes: Joi.string().max(1000).optional()
+  }),
+
+  // 🎯 CẬP NHẬT LỊCH HẸN
+  updateAppointment: Joi.object({
+    appointmentDate: Joi.date().iso().optional(),
+    timeSlot: Joi.string().optional(),
+    status: Joi.string().valid('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW').optional(),
+    reason: Joi.string().max(500).optional(),
+    notes: Joi.string().max(1000).optional()
+  }),
+
+  // 🎯 HỦY LỊCH HẸN
+  cancelAppointment: Joi.object({
+    reason: Joi.string().max(500).required()
+  }),
+
+  // 🎯 ĐẶT LẠI LỊCH HẸN
+  rescheduleAppointment: Joi.object({
+    appointmentDate: Joi.date().iso().required(),
+    timeSlot: Joi.string().required(),
+    reason: Joi.string().max(500).optional()
+  }),
+
+  // 🎯 LẤY LỊCH HẸN CỦA BỆNH NHÂN
+  getPatientAppointments: Joi.object({
+    status: Joi.string().valid('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW').optional(),
+    startDate: Joi.date().iso().optional(),
+    endDate: Joi.date().iso().min(Joi.ref('startDate')).optional(),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(50).default(10)
+  }),
+
+  // 🎯 LẤY LỊCH HẸN CỦA BÁC SĨ
+  getDoctorAppointments: Joi.object({
+    status: Joi.string().valid('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW').optional(),
+    startDate: Joi.date().iso().optional(),
+    endDate: Joi.date().iso().min(Joi.ref('startDate')).optional(),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(50).default(10)
+  }),
+
+  // 🎯 TẠO LỊCH LÀM VIỆC
+  createSchedule: Joi.object({
+    doctorId: commonSchemas.objectId.required(),
+    date: Joi.date().iso().required(),
+    timeSlots: Joi.array().items(
+      Joi.object({
+        startTime: Joi.string().required(),
+        endTime: Joi.string().required(),
+        isAvailable: Joi.boolean().default(true)
+      })
+    ).required()
+  }),
+
+  // 🎯 LẤY LỊCH LÀM VIỆC CỦA BÁC SĨ
+  getDoctorSchedule: Joi.object({
+    date: Joi.date().iso().optional(),
+    startDate: Joi.date().iso().optional(),
+    endDate: Joi.date().iso().min(Joi.ref('startDate')).optional()
+  }),
+
+  // 🎯 CẬP NHẬT LỊCH LÀM VIỆC
+  updateSchedule: Joi.object({
+    timeSlots: Joi.array().items(
+      Joi.object({
+        startTime: Joi.string().required(),
+        endTime: Joi.string().required(),
+        isAvailable: Joi.boolean().default(true)
+      })
+    ).required()
+  }),
+
+  // 🎯 GỬI THÔNG BÁO NHẮC LỊCH HẸN
+  sendReminder: Joi.object({
+    message: Joi.string().max(500).optional()
+  }),
+
+  // ===== LEGACY MEDICAL RECORD SCHEMAS - SHOULD BE IN SEPARATE FILE =====
   // 🎯 TẠO HỒ SƠ BỆNH ÁN
   createMedicalRecord: Joi.object({
     doctorId: commonSchemas.objectId.required()
@@ -175,7 +261,21 @@ const medicalRecordValidation = {
   // 🎯 THỐNG KÊ
   getStats: Joi.object({
     timeframe: Joi.string().valid('7d', '30d', '90d', '1y').default('30d')
+  }),
+
+  // 🎯 TÌM KIẾM LỊCH HẸN NÂNG CAO
+  searchAppointments: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(10),
+    status: Joi.string().valid('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW').optional(),
+    startDate: Joi.date().iso().optional(),
+    endDate: Joi.date().iso().min(Joi.ref('startDate')).optional(),
+    doctorId: commonSchemas.objectId.optional(),
+    patientId: commonSchemas.objectId.optional(),
+    department: Joi.string().max(100).optional(),
+    sortBy: Joi.string().valid('appointmentDate', 'createdAt', 'updatedAt').default('appointmentDate'),
+    sortOrder: Joi.string().valid('asc', 'desc').default('asc')
   })
 };
 
-module.exports = medicalRecordValidation;
+module.exports = appointmentValidation;

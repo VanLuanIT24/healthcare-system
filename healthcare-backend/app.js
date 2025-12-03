@@ -15,12 +15,16 @@ const { initializeConfig } = require('./src/config');
 const authRoutes = require('./src/routes/auth.routes');
 const userRoutes = require('./src/routes/user.routes');
 const superAdminRoutes = require('./src/routes/superAdmin.routes');
+const adminRoutes = require('./src/routes/admin.routes'); // 🆕 ADMIN DASHBOARD ROUTES
 const appointmentRoutes = require('./src/routes/appointment.routes');
 const medicalRecordRoutes = require('./src/routes/medicalRecord.routes');
 const clinicalRoutes = require('./src/routes/clinical.routes');
 const patientRoutes = require('./src/routes/patient.routes');
 const prescriptionRoutes = require('./src/routes/prescription.routes');
 const laboratoryRoutes = require('./src/routes/laboratory.routes');
+const medicationRoutes = require('./src/routes/medication.routes'); // 🆕 MEDICATION ROUTES
+const reportRoutes = require('./src/routes/report.routes'); // 🆕 REPORT ROUTES
+const publicRoutes = require('./src/routes/public.routes'); // 🆕 PUBLIC ROUTES
 
 /**
  * ỨNG DỤNG EXPRESS CHÍNH - ĐÃ CẬP NHẬT
@@ -160,27 +164,34 @@ app.get('/', (req, res) => {
       auth: '/api/auth',
       users: '/api/users',
       superAdmin: '/api/super-admin',
+      admin: '/api/admin',
       appointments: '/api/appointments',
       medicalRecords: '/api/medical-records',
       clinical: '/api/clinical',
       patients: '/api/patients',
       prescriptions: '/api/prescriptions',
       laboratory: '/api/laboratory',
+      medications: '/api/medications',
+      reports: '/api/reports',
       health: '/health'
     }
   });
 });
 
 // 🎯 API ROUTES - ĐÃ SỬA LỖI (SỬ DỤNG app.use THAY VÌ router.use)
+app.use('/api/public', publicRoutes); // 🆕 PUBLIC ROUTES (không cần auth)
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/super-admin', superAdminRoutes);
+app.use('/api/admin', adminRoutes); // 🆕 ADMIN DASHBOARD ROUTES
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/medical-records', medicalRecordRoutes);
 app.use('/api/clinical', clinicalRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/laboratory', laboratoryRoutes);
+app.use('/api/medications', medicationRoutes); // 🆕 MEDICATION API
+app.use('/api/reports', reportRoutes); // 🆕 REPORT API
 
 // 🔍 DEBUG ENDPOINT (chỉ trong development) - CẢI THIỆN
 if (appConfig.isDev) {

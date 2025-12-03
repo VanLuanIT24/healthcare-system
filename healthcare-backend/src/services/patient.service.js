@@ -7,7 +7,7 @@ const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 class PatientService {
   
   /**
-   * 🎯 ĐĂNG KÝ BỆNH NHÂN MỚI - HOÀN CHỈNH
+   * 🎯 ĐĂNG KÝ BỆNH NHÂN MỚI - HOÀN CHỈNH VỚI VALIDATION CHẶT CHẼ
    */
   async registerPatient(patientData) {
     try {
@@ -15,12 +15,47 @@ class PatientService {
       if (!patientData || !patientData.email) {
         throw new AppError('Dữ liệu bệnh nhân không hợp lệ', 400, ERROR_CODES.VALIDATION_FAILED);
       }
+
+      // 🎯 VALIDATE CÁC TRƯỜNG BẮT BUỘC
+      const requiredFields = ['firstName', 'lastName', 'dateOfBirth', 'gender', 'phone'];
+      for (const field of requiredFields) {
+        if (!patientData[field]) {
+          throw new AppError(`Thiếu thông tin bắt buộc: ${field}`, 400, ERROR_CODES.VALIDATION_FAILED);
+        }
+      }
+
+      // 🎯 VALIDATE ĐỊA CHỈ
+      if (!patientData.address || !patientData.address.city || !patientData.address.street) {
+        throw new AppError('Địa chỉ không hợp lệ - Cần có đường và thành phố', 400, ERROR_CODES.VALIDATION_FAILED);
+      }
+
       console.log('👤 [SERVICE] Registering patient:', patientData.email);
 
       // 🎯 KIỂM TRA EMAIL ĐÃ TỒN TẠI
       const existingUser = await User.findOne({ email: patientData.email });
       if (existingUser) {
         throw new AppError('Email đã được đăng ký', 400, ERROR_CODES.DUPLICATE_ENTRY);
+      }
+
+      // ⚠️ QUAN TRỌNG: KIỂM TRA TRÙNG SỐ CMND/CCCD
+      if (patientData.nationalId) {
+        const existingPatient = await Patient.findOne({
+          'userId.personalInfo.nationalId': patientData.nationalId
+        });
+        if (existingPatient) {
+          throw new AppError('Số CMND/CCCD đã được đăng ký trong hệ thống', 400, ERROR_CODES.DUPLICATE_ENTRY);
+        }
+      }
+
+      // ⚠️ QUAN TRỌNG: KIỂM TRA TRÙNG SỐ BẢO HIỂM Y TẾ
+      if (patientData.insurance && patientData.insurance.policyNumber) {
+        const existingInsurance = await Patient.findOne({
+          'insurance.policyNumber': patientData.insurance.policyNumber,
+          'insurance.provider': patientData.insurance.provider
+        });
+        if (existingInsurance) {
+          throw new AppError('Số thẻ bảo hiểm y tế đã được đăng ký', 400, ERROR_CODES.DUPLICATE_ENTRY);
+        }
       }
 
       // 🎯 TẠO USER ACCOUNT
@@ -35,15 +70,17 @@ class PatientService {
           dateOfBirth: patientData.dateOfBirth,
           gender: patientData.gender,
           phone: patientData.phone,
-          address: patientData.address
+          address: patientData.address,
+          nationalId: patientData.nationalId // CMND/CCCD
         },
         createdBy: patientData.createdBy
       });
 
       await user.save();
 
-      // 🎯 TẠO PATIENT PROFILE
-      const patientId = await generatePatientId();
+      // 🎯 TẠO MÃ BỆNH NHÂN DUY NHẤT THEO FORMAT BỆNH VIỆN
+      // Format: BN + YYYYMM + 6 số tăng dần (VD: BN20251100001)
+      const patientId = await this.generateUniquePatientCode();
       
       const patientProfile = {
         userId: user._id,
@@ -58,7 +95,7 @@ class PatientService {
         lifestyle: patientData.lifestyle,
         insurance: patientData.insurance,
         preferences: patientData.preferences,
-        createdBy: patientData.createdBy  // 🎯 ADD THIS LINE
+        createdBy: patientData.createdBy
       };
 
       const patient = new Patient(patientProfile);
@@ -86,6 +123,36 @@ class PatientService {
       
       throw error;
     }
+  }
+
+  /**
+   * 🎯 TẠO MÃ BỆNH NHÂN DUY NHẤT THEO FORMAT BỆNH VIỆN
+   * Format: BN + YYYYMM + 6 số tăng dần
+   * VD: BN202511000001, BN202511000002...
+   */
+  async generateUniquePatientCode() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const prefix = `BN${year}${month}`;
+
+    // Tìm mã bệnh nhân lớn nhất trong tháng hiện tại
+    const lastPatient = await Patient.findOne({
+      patientId: new RegExp(`^${prefix}`)
+    }).sort({ patientId: -1 }).limit(1);
+
+    let nextNumber = 1;
+    if (lastPatient) {
+      // Lấy 6 số cuối và tăng lên 1
+      const lastNumber = parseInt(lastPatient.patientId.slice(-6));
+      nextNumber = lastNumber + 1;
+    }
+
+    // Format: BN + YYYYMM + 6 số (padding với 0)
+    const patientCode = `${prefix}${String(nextNumber).padStart(6, '0')}`;
+    
+    console.log('🆔 [SERVICE] Generated patient code:', patientCode);
+    return patientCode;
   }
 
   /**
@@ -743,7 +810,7 @@ class PatientService {
   }
 
   /**
-   * 🎯 NHẬP VIỆN BỆNH NHÂN - METHOD BỊ THIẾU
+   * 🎯 NHẬP VIỆN BỆNH NHÂN - CẢI TIẾN VỚI VALIDATION CHẶT CHẼ
    */
   async admitPatient(patientId, admissionData, admittedBy) {
     try {
@@ -755,9 +822,38 @@ class PatientService {
         throw new AppError('Không tìm thấy bệnh nhân', 404, ERROR_CODES.PATIENT_NOT_FOUND);
       }
 
-      // 🎯 KIỂM TRA BỆNH NHÂN ĐÃ NHẬP VIỆN CHƯA
+      // ⚠️ QUAN TRỌNG: CHECK XEM BỆNH NHÂN ĐÃ Ở TRONG VIỆN CHƯA
       if (patient.admissionStatus === 'ADMITTED') {
-        throw new AppError('Bệnh nhân đã nhập viện', 400, ERROR_CODES.INVALID_OPERATION);
+        throw new AppError(
+          `Bệnh nhân đang điều trị tại ${patient.currentAdmission.department}, Phòng ${patient.currentAdmission.room}`,
+          400,
+          ERROR_CODES.INVALID_OPERATION
+        );
+      }
+
+      // 🎯 VALIDATE DỮ LIỆU NHẬP VIỆN
+      if (!admissionData.department || !admissionData.room || !admissionData.bed) {
+        throw new AppError('Thiếu thông tin khoa/phòng/giường', 400, ERROR_CODES.VALIDATION_FAILED);
+      }
+
+      if (!admissionData.diagnosis) {
+        throw new AppError('Phải có chẩn đoán nhập viện', 400, ERROR_CODES.VALIDATION_FAILED);
+      }
+
+      // ⚠️ QUAN TRỌNG: CHECK GIƯỜNG TRỐNG
+      const existingBed = await Patient.findOne({
+        admissionStatus: 'ADMITTED',
+        'currentAdmission.room': admissionData.room,
+        'currentAdmission.bed': admissionData.bed,
+        'currentAdmission.department': admissionData.department
+      });
+
+      if (existingBed) {
+        throw new AppError(
+          `Giường ${admissionData.bed} - Phòng ${admissionData.room} đã có bệnh nhân`,
+          400,
+          'BED_OCCUPIED'
+        );
       }
 
       // 🎯 TẠO THÔNG TIN NHẬP VIỆN
@@ -780,12 +876,13 @@ class PatientService {
 
       await patient.save();
 
+      console.log(`✅ [SERVICE] Patient admitted: ${patientId} -> ${admissionData.department}/${admissionData.room}/${admissionData.bed}`);
+
       // 🎯 POPULATE KẾT QUẢ
       const result = await Patient.findOne({ patientId })
         .populate('currentAdmission.attendingDoctor', 'personalInfo')
         .populate('currentAdmission.admittedBy', 'personalInfo');
 
-      console.log('✅ [SERVICE] Patient admitted successfully:', patientId);
       return result.currentAdmission;
 
     } catch (error) {
@@ -795,13 +892,13 @@ class PatientService {
   }
 
   /**
-   * 🎯 XUẤT VIỆN BỆNH NHÂN - METHOD BỊ THIẾU
+   * 🎯 XUẤT VIỆN BỆNH NHÂN - CẢI TIẾN VỚI TỰ ĐỘNG TẠO HÓA ĐƠN VÀ TỔNG HỢP CHI PHÍ
    */
   async dischargePatient(patientId, dischargeData, dischargedBy) {
     try {
       console.log('🎉 [SERVICE] Discharging patient:', patientId);
 
-      const patient = await Patient.findOne({ patientId });
+      const patient = await Patient.findOne({ patientId }).populate('userId');
 
       if (!patient) {
         throw new AppError('Không tìm thấy bệnh nhân', 404, ERROR_CODES.PATIENT_NOT_FOUND);
@@ -812,14 +909,31 @@ class PatientService {
         throw new AppError('Bệnh nhân chưa nhập viện', 400, ERROR_CODES.INVALID_OPERATION);
       }
 
+      // ⚠️ VALIDATE DỮ LIỆU XUẤT VIỆN BẮT BUỘC
+      if (!dischargeData.dischargeReason) {
+        throw new AppError('Phải có lý do xuất viện', 400, ERROR_CODES.VALIDATION_FAILED);
+      }
+
+      if (!dischargeData.condition) {
+        throw new AppError('Phải ghi nhận tình trạng khi xuất viện', 400, ERROR_CODES.VALIDATION_FAILED);
+      }
+
+      // 🎯 TÍNH TOÁN THỜI GIAN NẰM VIỆN
+      const admissionDate = patient.currentAdmission.admissionDate;
+      const dischargeDate = new Date();
+      const daysInHospital = Math.ceil((dischargeDate - admissionDate) / (1000 * 60 * 60 * 24));
+
+      console.log(`📊 [SERVICE] Days in hospital: ${daysInHospital}`);
+
       // 🎯 CẬP NHẬT THÔNG TIN XUẤT VIỆN
       const dischargeRecord = {
-        dischargeDate: new Date(),
+        dischargeDate,
         dischargeReason: dischargeData.dischargeReason,
         condition: dischargeData.condition,
         followUpInstructions: dischargeData.followUpInstructions,
-        medicationsAtDischarge: dischargeData.medicationsAtDischarge,
-        dischargedBy: dischargedBy
+        medicationsAtDischarge: dischargeData.medicationsAtDischarge || [],
+        dischargedBy: dischargedBy,
+        daysInHospital
       };
 
       // 🎯 CẬP NHẬT LỊCH SỬ NHẬP VIỆN
@@ -831,14 +945,100 @@ class PatientService {
         };
       }
 
-      // 🎯 CẬP NHẬT TRẠNG THÁI
+      // 🎯 CẬP NHẬT TRẠNG THÁI (LUÔN CẬP NHẬT TRẠNG THÁI)
       patient.admissionStatus = 'DISCHARGED';
       patient.currentAdmission = null;
 
       await patient.save();
 
+      // ⚠️ QUAN TRỌNG: TỰ ĐỘNG TẠO HÓA ĐƠN KHI XUẤT VIỆN
+      let generatedBill = null;
+      try {
+        const Bill = require('../models/bill.model');
+        
+        // TỔNG HỢP CHI PHÍ
+        const billItems = [];
+        
+        // 1. Chi phí giường bệnh (tính theo ngày)
+        const bedFeePerDay = 500000; // 500k/ngày
+        billItems.push({
+          description: `Tiền giường bệnh (${daysInHospital} ngày)`,
+          category: 'ROOM',
+          quantity: daysInHospital,
+          unitPrice: bedFeePerDay,
+          amount: daysInHospital * bedFeePerDay
+        });
+
+        // 2. Chi phí khám và điều trị cơ bản
+        const consultationFee = 200000;
+        billItems.push({
+          description: 'Phí khám và điều trị',
+          category: 'CONSULTATION',
+          quantity: 1,
+          unitPrice: consultationFee,
+          amount: consultationFee
+        });
+
+        // 3. Tính tổng tiền
+        const totalAmount = billItems.reduce((sum, item) => sum + item.amount, 0);
+        const taxAmount = totalAmount * 0.1; // VAT 10%
+        const finalAmount = totalAmount + taxAmount;
+
+        // ÁP DỤNG BẢO HIỂM NẾU CÓ
+        let insuranceCovered = 0;
+        if (patient.insurance && patient.insurance.provider) {
+          // Giả sử bảo hiểm chi trả 70%
+          insuranceCovered = finalAmount * 0.7;
+        }
+
+        const patientPayAmount = finalAmount - insuranceCovered;
+
+        // TẠO MÃ HÓA ĐƠN
+        const billCount = await Bill.countDocuments();
+        const billNumber = `HD${String(billCount + 1).padStart(8, '0')}`;
+
+        const newBill = new Bill({
+          billNumber,
+          patientId: patient.userId._id,
+          patientInfo: {
+            name: `${patient.userId.personalInfo.firstName} ${patient.userId.personalInfo.lastName}`,
+            phone: patient.userId.personalInfo.phone,
+            address: patient.userId.personalInfo.address,
+            email: patient.userId.email
+          },
+          items: billItems,
+          totalAmount,
+          taxRate: 10,
+          taxAmount,
+          finalAmount,
+          insuranceCovered,
+          patientPayAmount,
+          status: 'PENDING',
+          dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 ngày
+          notes: `Hóa đơn xuất viện - ${dischargeData.dischargeReason}`,
+          createdBy: dischargedBy
+        });
+
+        generatedBill = await newBill.save();
+        console.log(`💰 [SERVICE] Auto-generated bill: ${billNumber} - Amount: ${patientPayAmount.toLocaleString()} VNĐ`);
+
+      } catch (billError) {
+        console.error('❌ [SERVICE] Failed to auto-generate bill:', billError.message);
+        // Không throw error, vẫn cho xuất viện thành công
+      }
+
       console.log('✅ [SERVICE] Patient discharged successfully:', patientId);
-      return dischargeRecord;
+      
+      return {
+        dischargeRecord,
+        daysInHospital,
+        bill: generatedBill ? {
+          billNumber: generatedBill.billNumber,
+          totalAmount: generatedBill.finalAmount,
+          insuranceCovered: generatedBill.insuranceCovered,
+          patientPayAmount: generatedBill.patientPayAmount
+        } : null
+      };
 
     } catch (error) {
       console.error('❌ [SERVICE] Discharge patient failed:', error.message);

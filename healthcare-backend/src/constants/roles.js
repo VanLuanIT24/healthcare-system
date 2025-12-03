@@ -1,4 +1,4 @@
-// src/constants/roles.js
+// healthcare-backend/src/constants/roles.js
 /**
  * 🏥 HỆ THỐNG PHÂN QUYỀN RBAC CHUẨN HEALTHCARE ENTERPRISE
  * Author: Healthcare Development Team

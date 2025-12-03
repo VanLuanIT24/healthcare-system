@@ -207,7 +207,7 @@ const patientValidation = {
 
   // 🎯 TÌM KIẾM BỆNH NHÂN
   searchPatients: Joi.object({
-    keyword: Joi.string().max(100).optional()
+    keyword: Joi.string().max(100).allow('', null).optional()
       .messages({
         'string.max': 'Từ khóa không được vượt quá 100 ký tự'
       }),

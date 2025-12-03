@@ -184,7 +184,7 @@ class ClinicalService {
   }
 
   /**
-   * 🎯 THÊM CHẨN ĐOÁN VÀO PHIÊN KHÁM
+   * 🎯 THÊM CHẨN ĐOÁN VÀO PHIÊN KHÁM - CẢI TIẾN VỚI ICD-10 VALIDATION
    */
   async addDiagnosis(consultationId, diagnosisData, diagnosedBy) {
     try {
@@ -194,6 +194,21 @@ class ClinicalService {
       
       if (!consultation) {
         throw new AppError('Không tìm thấy phiên khám', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
+      }
+
+      // ✅ VALIDATE ICD-10 CODE NẾU CÓ
+      if (diagnosisData.diagnosisCode) {
+        const isValidICD10 = this.validateICD10Code(diagnosisData.diagnosisCode);
+        if (!isValidICD10.valid) {
+          throw new AppError(
+            `Mã ICD-10 không hợp lệ: ${isValidICD10.message}`,
+            400,
+            ERROR_CODES.VALIDATION_ERROR
+          );
+        }
+        console.log('✅ [CLINICAL] ICD-10 validated:', diagnosisData.diagnosisCode, isValidICD10.description);
+      } else {
+        console.warn('⚠️ [CLINICAL] No ICD-10 code provided for diagnosis');
       }
 
       // 🎯 TẠO DIAGNOSIS ID
@@ -211,7 +226,7 @@ class ClinicalService {
 
       await diagnosis.save();
 
-      // 🎯 CẬP NHẬT MEDICAL RECORD
+      // 🎯 CẬP NHẬT MEDICAL RECORD VỚI AUDIT TRAIL
       const medicalRecord = await MedicalRecord.findById(consultation.medicalRecordId);
       if (medicalRecord) {
         if (!medicalRecord.diagnoses) medicalRecord.diagnoses = [];
@@ -221,6 +236,21 @@ class ClinicalService {
           type: diagnosisData.type || 'PRIMARY',
           certainty: diagnosisData.certainty || 'PROBABLE'
         });
+
+        // 🔒 GHI AUDIT TRAIL - KHÔNG CHO XÓA
+        if (!medicalRecord.auditTrail) medicalRecord.auditTrail = [];
+        medicalRecord.auditTrail.push({
+          action: 'DIAGNOSIS_ADDED',
+          performedBy: diagnosedBy,
+          timestamp: new Date(),
+          details: {
+            diagnosisId,
+            diagnosisName: diagnosisData.diagnosisName,
+            diagnosisCode: diagnosisData.diagnosisCode
+          }
+        });
+
+        medicalRecord.lastModifiedBy = diagnosedBy;
         await medicalRecord.save();
       }
 
@@ -236,6 +266,75 @@ class ClinicalService {
       console.error('❌ [CLINICAL] Add diagnosis failed:', error.message);
       throw error;
     }
+  }
+
+  /**
+   * 🔍 VALIDATE ICD-10 CODE FORMAT AND BASIC STRUCTURE
+   * ICD-10 format: Letter + 2-3 digits + optional decimal + 1-2 digits
+   * Example: A00, A00.0, A00.01, Z99.89
+   */
+  validateICD10Code(code) {
+    if (!code || typeof code !== 'string') {
+      return { valid: false, message: 'Mã ICD-10 không được để trống' };
+    }
+
+    // Chuẩn hóa: uppercase và trim
+    const normalizedCode = code.trim().toUpperCase();
+
+    // Regex: 1 letter + 2-3 digits + optional (.digit[digit])
+    const icd10Regex = /^[A-Z]\d{2}(\.\d{1,2})?$/;
+
+    if (!icd10Regex.test(normalizedCode)) {
+      return {
+        valid: false,
+        message: 'Định dạng mã ICD-10 không hợp lệ (ví dụ: A00, A00.0, Z99.89)'
+      };
+    }
+
+    // Kiểm tra chapter hợp lệ (A-Z)
+    const chapter = normalizedCode[0];
+    const icd10Chapters = {
+      'A': 'Certain infectious and parasitic diseases',
+      'B': 'Certain infectious and parasitic diseases',
+      'C': 'Neoplasms',
+      'D': 'Diseases of the blood and blood-forming organs',
+      'E': 'Endocrine, nutritional and metabolic diseases',
+      'F': 'Mental, Behavioral and Neurodevelopmental disorders',
+      'G': 'Diseases of the nervous system',
+      'H': 'Diseases of the eye and adnexa / ear and mastoid process',
+      'I': 'Diseases of the circulatory system',
+      'J': 'Diseases of the respiratory system',
+      'K': 'Diseases of the digestive system',
+      'L': 'Diseases of the skin and subcutaneous tissue',
+      'M': 'Diseases of the musculoskeletal system and connective tissue',
+      'N': 'Diseases of the genitourinary system',
+      'O': 'Pregnancy, childbirth and the puerperium',
+      'P': 'Certain conditions originating in the perinatal period',
+      'Q': 'Congenital malformations, deformations and chromosomal abnormalities',
+      'R': 'Symptoms, signs and abnormal clinical and laboratory findings',
+      'S': 'Injury, poisoning and certain other consequences of external causes',
+      'T': 'Injury, poisoning and certain other consequences of external causes',
+      'U': 'Codes for special purposes',
+      'V': 'External causes of morbidity',
+      'W': 'External causes of morbidity',
+      'X': 'External causes of morbidity',
+      'Y': 'External causes of morbidity',
+      'Z': 'Factors influencing health status and contact with health services'
+    };
+
+    if (!icd10Chapters[chapter]) {
+      return {
+        valid: false,
+        message: `Chapter '${chapter}' không tồn tại trong ICD-10`
+      };
+    }
+
+    return {
+      valid: true,
+      code: normalizedCode,
+      chapter: chapter,
+      description: icd10Chapters[chapter]
+    };
   }
 
   /**
@@ -858,6 +957,203 @@ class ClinicalService {
     } catch (error) {
       throw error;
     }
+  }
+
+  /**
+   * 🔒 CẬP NHẬT MEDICAL RECORD VỚI AUDIT TRAIL - KHÔNG CHO XÓA, CHỈ CHO SỬA
+   */
+  async updateMedicalRecord(recordId, updateData, updatedBy) {
+    try {
+      console.log('✏️ [CLINICAL] Updating medical record:', recordId);
+
+      const medicalRecord = await MedicalRecord.findOne({ recordId });
+      
+      if (!medicalRecord) {
+        throw new AppError('Không tìm thấy hồ sơ bệnh án', 404);
+      }
+
+      // 🔒 KHÔNG CHO XÓA - CHỈ CHO ARCHIVE
+      if (medicalRecord.isArchived) {
+        throw new AppError('Hồ sơ bệnh án đã được lưu trữ, không thể chỉnh sửa', 403);
+      }
+
+      // 🎯 LƯU TRẠNG THÁI CŨ VÀO AUDIT TRAIL
+      const oldState = medicalRecord.toObject();
+      delete oldState._id;
+      delete oldState.__v;
+      delete oldState.auditTrail;
+
+      if (!medicalRecord.auditTrail) medicalRecord.auditTrail = [];
+
+      medicalRecord.auditTrail.push({
+        action: 'RECORD_UPDATED',
+        performedBy: updatedBy,
+        timestamp: new Date(),
+        previousState: oldState,
+        changes: this.detectChanges(oldState, updateData)
+      });
+
+      // 🎯 CẬP NHẬT THÔNG TIN MỚI
+      const allowedFields = [
+        'chiefComplaint', 'symptoms', 'physicalExamination', 'diagnoses',
+        'treatmentPlan', 'followUp', 'notes', 'department', 'status'
+      ];
+
+      allowedFields.forEach(field => {
+        if (updateData[field] !== undefined) {
+          medicalRecord[field] = updateData[field];
+        }
+      });
+
+      medicalRecord.lastModifiedBy = updatedBy;
+      await medicalRecord.save();
+
+      console.log('✅ [CLINICAL] Medical record updated with audit trail:', recordId);
+      return await this.getMedicalRecord(recordId);
+
+    } catch (error) {
+      console.error('❌ [CLINICAL] Update medical record failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 🔒 ARCHIVE MEDICAL RECORD - KHÔNG XÓA THẬT, CHỈ ĐÁNH DẤU
+   */
+  async archiveMedicalRecord(recordId, archivedBy, reason) {
+    try {
+      console.log('📦 [CLINICAL] Archiving medical record:', recordId);
+
+      const medicalRecord = await MedicalRecord.findOne({ recordId });
+      
+      if (!medicalRecord) {
+        throw new AppError('Không tìm thấy hồ sơ bệnh án', 404);
+      }
+
+      if (medicalRecord.isArchived) {
+        throw new AppError('Hồ sơ bệnh án đã được lưu trữ trước đó', 400);
+      }
+
+      // 🔒 ĐÁNH DẤU LƯU TRỮ - KHÔNG XÓA
+      medicalRecord.isArchived = true;
+      medicalRecord.archivedAt = new Date();
+      medicalRecord.archivedBy = archivedBy;
+      medicalRecord.archiveReason = reason || 'Lưu trữ theo quy định';
+
+      // 🎯 GHI AUDIT TRAIL
+      if (!medicalRecord.auditTrail) medicalRecord.auditTrail = [];
+      medicalRecord.auditTrail.push({
+        action: 'RECORD_ARCHIVED',
+        performedBy: archivedBy,
+        timestamp: new Date(),
+        details: {
+          reason: medicalRecord.archiveReason
+        }
+      });
+
+      await medicalRecord.save();
+
+      console.log('✅ [CLINICAL] Medical record archived (not deleted):', recordId);
+      return {
+        success: true,
+        message: 'Hồ sơ bệnh án đã được lưu trữ',
+        recordId,
+        archivedAt: medicalRecord.archivedAt
+      };
+
+    } catch (error) {
+      console.error('❌ [CLINICAL] Archive medical record failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 🔓 RESTORE ARCHIVED MEDICAL RECORD
+   */
+  async restoreMedicalRecord(recordId, restoredBy) {
+    try {
+      console.log('♻️ [CLINICAL] Restoring archived medical record:', recordId);
+
+      const medicalRecord = await MedicalRecord.findOne({ recordId });
+      
+      if (!medicalRecord) {
+        throw new AppError('Không tìm thấy hồ sơ bệnh án', 404);
+      }
+
+      if (!medicalRecord.isArchived) {
+        throw new AppError('Hồ sơ bệnh án chưa được lưu trữ', 400);
+      }
+
+      // 🔓 KHÔI PHỤC HỒ SƠ
+      medicalRecord.isArchived = false;
+      medicalRecord.restoredAt = new Date();
+      medicalRecord.restoredBy = restoredBy;
+
+      // 🎯 GHI AUDIT TRAIL
+      if (!medicalRecord.auditTrail) medicalRecord.auditTrail = [];
+      medicalRecord.auditTrail.push({
+        action: 'RECORD_RESTORED',
+        performedBy: restoredBy,
+        timestamp: new Date(),
+        details: {
+          previousArchiveDate: medicalRecord.archivedAt,
+          previousArchiveReason: medicalRecord.archiveReason
+        }
+      });
+
+      await medicalRecord.save();
+
+      console.log('✅ [CLINICAL] Medical record restored:', recordId);
+      return await this.getMedicalRecord(recordId);
+
+    } catch (error) {
+      console.error('❌ [CLINICAL] Restore medical record failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 📋 GET AUDIT TRAIL FOR MEDICAL RECORD
+   */
+  async getMedicalRecordAuditTrail(recordId) {
+    try {
+      console.log('📜 [CLINICAL] Getting audit trail for medical record:', recordId);
+
+      const medicalRecord = await MedicalRecord.findOne({ recordId })
+        .select('recordId auditTrail')
+        .populate('auditTrail.performedBy', 'personalInfo email role');
+
+      if (!medicalRecord) {
+        throw new AppError('Không tìm thấy hồ sơ bệnh án', 404);
+      }
+
+      return {
+        recordId: medicalRecord.recordId,
+        auditTrail: medicalRecord.auditTrail || [],
+        totalActions: (medicalRecord.auditTrail || []).length
+      };
+
+    } catch (error) {
+      console.error('❌ [CLINICAL] Get audit trail failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 🔍 HELPER: DETECT CHANGES BETWEEN OLD AND NEW DATA
+   */
+  detectChanges(oldData, newData) {
+    const changes = [];
+    Object.keys(newData).forEach(key => {
+      if (JSON.stringify(oldData[key]) !== JSON.stringify(newData[key])) {
+        changes.push({
+          field: key,
+          oldValue: oldData[key],
+          newValue: newData[key]
+        });
+      }
+    });
+    return changes;
   }
 }
 

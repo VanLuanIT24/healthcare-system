@@ -220,6 +220,69 @@ class LaboratoryController {
       data: labOrder
     });
   });
+
+  // Get orders for admin dashboard (simple version)
+  getOrders = asyncHandler(async (req, res) => {
+    const { page = 1, limit = 50 } = req.query;
+    
+    const result = await laboratoryService.getPendingTests({
+      page,
+      limit
+    });
+
+    res.json({
+      success: true,
+      data: result.data || result,
+      pagination: result.pagination || {}
+    });
+  });
+
+  // Get stats for admin dashboard
+  getStats = asyncHandler(async (req, res) => {
+    const LabOrder = require('../models/labOrder.model');
+    const moment = require('moment');
+    
+    const today = moment().startOf('day').toDate();
+    const tomorrow = moment().endOf('day').toDate();
+
+    const [totalOrders, pendingOrders, completedOrders, todayOrders] = await Promise.all([
+      LabOrder.countDocuments(),
+      LabOrder.countDocuments({ status: 'PENDING' }),
+      LabOrder.countDocuments({ status: 'COMPLETED' }),
+      LabOrder.countDocuments({
+        orderDate: { $gte: today, $lte: tomorrow }
+      })
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        totalOrders,
+        pendingOrders,
+        completedOrders,
+        todayOrders
+      }
+    });
+  });
+
+  // Update result status (simple version)
+  updateResult = asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    const userId = req.user._id;
+
+    const labOrder = await laboratoryService.updateLabOrder(
+      orderId,
+      { status },
+      userId
+    );
+
+    res.json({
+      success: true,
+      message: 'Cập nhật trạng thái thành công',
+      data: labOrder
+    });
+  });
 }
 
 module.exports = new LaboratoryController();
