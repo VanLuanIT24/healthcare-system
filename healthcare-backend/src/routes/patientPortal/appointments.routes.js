@@ -24,15 +24,13 @@ const validateRequest = (schema) => {
 // Validation Schemas
 const bookAppointmentSchema = Joi.object({
   doctorId: Joi.string().required(),
-  departmentId: Joi.string().required(),
-  appointmentType: Joi.string()
-    .valid("Consultation", "Follow-up", "Routine")
-    .required(),
-  preferredDate: Joi.date().required(),
-  preferredTime: Joi.string()
+  departmentId: Joi.string().optional(),
+  appointmentDate: Joi.date().required(),
+  appointmentTime: Joi.string()
     .pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
     .required(),
-  reason: Joi.string().max(500).optional(),
+  type: Joi.string().valid("Consultation", "Follow-up", "Routine").optional(),
+  reason: Joi.string().max(500).required(),
   notes: Joi.string().max(500).optional(),
 });
 
@@ -45,9 +43,6 @@ const rescheduleSchema = Joi.object({
 });
 
 // Routes
-// GET: Lấy tất cả cuộc hẹn
-router.get("/", verifyAuth, AppointmentsController.getMyAppointments);
-
 // GET: Cuộc hẹn sắp tới
 router.get(
   "/upcoming",
@@ -57,6 +52,23 @@ router.get(
 
 // GET: Cuộc hẹn trong quá khứ
 router.get("/past", verifyAuth, AppointmentsController.getPastAppointments);
+
+// GET: Các khe khả dụng (PHẢI ĐẶT TRƯỚC /:appointmentId)
+router.get(
+  "/available-slots/:doctorId",
+  verifyAuth,
+  AppointmentsController.getAvailableSlots
+);
+
+// GET: Thống kê cuộc hẹn
+router.get(
+  "/statistics",
+  verifyAuth,
+  AppointmentsController.getAppointmentStats
+);
+
+// GET: Tất cả cuộc hẹn
+router.get("/", verifyAuth, AppointmentsController.getMyAppointments);
 
 // GET: Chi tiết cuộc hẹn theo ID
 router.get(
@@ -93,20 +105,6 @@ router.post(
   "/:appointmentId/confirm",
   verifyAuth,
   AppointmentsController.confirmAttendance
-);
-
-// GET: Các khe khả dụng
-router.get(
-  "/available-slots/:doctorId",
-  verifyAuth,
-  AppointmentsController.getAvailableSlots
-);
-
-// GET: Thống kê cuộc hẹn
-router.get(
-  "/statistics",
-  verifyAuth,
-  AppointmentsController.getAppointmentStats
 );
 
 module.exports = router;

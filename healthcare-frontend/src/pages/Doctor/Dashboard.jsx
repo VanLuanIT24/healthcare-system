@@ -60,8 +60,8 @@ const DoctorDashboard = () => {
   const [prescriptionForm] = Form.useForm();
 
   const [dashboardData, setDashboardData] = useState({
-    appointmentsToday: 0,
-    patientsWaiting: 0,
+    appointmentsToday: 0,  
+    patientsWaiting: 0, 
     consultationsCompleted: 0,
     pendingPrescriptions: 0,
     recentAppointments: [],

@@ -157,6 +157,46 @@ class UserController {
   }
 
   /**
+   * 🎯 LẤY DANH SÁCH BÁC SĨ
+   */
+  async getDoctors(req, res, next) {
+    try {
+      const { search, specialization, page = 1, limit = 10 } = req.query;
+
+      const filter = { role: "DOCTOR", isActive: true };
+
+      if (search) {
+        filter.$or = [
+          { "personalInfo.firstName": { $regex: search, $options: "i" } },
+          { "personalInfo.lastName": { $regex: search, $options: "i" } },
+          { email: { $regex: search, $options: "i" } },
+          { phone: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      if (specialization) {
+        filter.specialization = specialization;
+      }
+
+      const result = await userService.listUsers(filter, {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        sortBy: "createdAt",
+        sortOrder: "desc",
+      });
+
+      res.json({
+        success: true,
+        message: "Danh sách bác sĩ",
+        data: result.users,
+        pagination: result.pagination,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * 🎯 LẤY THÔNG TIN PROFILE
    */
   async getUserProfile(req, res, next) {

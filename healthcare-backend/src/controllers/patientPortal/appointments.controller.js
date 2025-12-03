@@ -15,7 +15,7 @@ class AppointmentsController {
    */
   static async getMyAppointments(req, res, next) {
     try {
-      const { patientId } = req.user;
+      const patientId = req.user._id || req.patientId;
       const { status, page = 1, limit = 10 } = req.query;
 
       const filter = { patientId };
@@ -29,7 +29,6 @@ class AppointmentsController {
         .skip(skip)
         .limit(parseInt(limit))
         .populate("doctorId", "name specialization email phone")
-        .populate("departmentId", "name")
         .lean();
 
       successResponse(
@@ -54,7 +53,7 @@ class AppointmentsController {
    */
   static async getAppointmentDetail(req, res, next) {
     try {
-      const { patientId } = req.user;
+      const patientId = req.user._id || req.patientId;
       const { appointmentId } = req.params;
 
       const appointment = await Appointment.findOne({
@@ -62,7 +61,6 @@ class AppointmentsController {
         patientId,
       })
         .populate("doctorId", "name specialization email phone")
-        .populate("departmentId", "name")
         .populate("consultationId");
 
       if (!appointment) {
@@ -85,7 +83,7 @@ class AppointmentsController {
    */
   static async getUpcomingAppointments(req, res, next) {
     try {
-      const { patientId } = req.user;
+      const patientId = req.user._id || req.patientId;
       const { limit = 5 } = req.query;
 
       const now = new Date();
@@ -98,7 +96,6 @@ class AppointmentsController {
         .sort({ appointmentDate: 1 })
         .limit(parseInt(limit))
         .populate("doctorId", "name specialization email")
-        .populate("departmentId", "name")
         .lean();
 
       successResponse(
@@ -117,7 +114,7 @@ class AppointmentsController {
    */
   static async getPastAppointments(req, res, next) {
     try {
-      const { patientId } = req.user;
+      const patientId = req.user._id || req.patientId;
       const { page = 1, limit = 10 } = req.query;
 
       const now = new Date();
@@ -135,7 +132,6 @@ class AppointmentsController {
         .skip(skip)
         .limit(parseInt(limit))
         .populate("doctorId", "name specialization email")
-        .populate("departmentId", "name")
         .lean();
 
       successResponse(
@@ -160,16 +156,22 @@ class AppointmentsController {
    */
   static async bookAppointment(req, res, next) {
     try {
-      const { patientId } = req.user;
+      // Get patientId from req.user._id (set by authenticate middleware)
+      const patientId = req.user._id || req.patientId;
       const {
         doctorId,
         appointmentDate,
         appointmentTime,
         reason,
-        type,
+        type = "Consultation",
         departmentId,
         notes,
       } = req.body;
+
+      // Validate required fields
+      if (!doctorId || !appointmentDate || !appointmentTime || !reason) {
+        return next(new AppError("Missing required fields", 400));
+      }
 
       // Validate doctor exists
       const doctor = await User.findById(doctorId);
@@ -177,10 +179,31 @@ class AppointmentsController {
         return next(new AppError("Invalid doctor", 404));
       }
 
+      // Parse appointmentDate if it's a string
+      let appointmentDateObj = new Date(appointmentDate);
+      if (isNaN(appointmentDateObj.getTime())) {
+        return next(new AppError("Invalid appointment date format", 400));
+      }
+
+      // Validate appointmentTime format (HH:MM)
+      const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(appointmentTime)) {
+        return next(new AppError("Invalid time format. Expected HH:MM", 400));
+      }
+
+      // Create date range for the appointment date
+      const startOfDay = new Date(appointmentDateObj);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(appointmentDateObj);
+      endOfDay.setHours(23, 59, 59, 999);
+
       // Check if appointment slot is available
       const existingAppointment = await Appointment.findOne({
         doctorId,
-        appointmentDate,
+        appointmentDate: {
+          $gte: startOfDay,
+          $lt: endOfDay,
+        },
         appointmentTime,
         status: { $in: ["SCHEDULED", "CONFIRMED"] },
       });
@@ -189,17 +212,26 @@ class AppointmentsController {
         return next(new AppError("This time slot is not available", 400));
       }
 
+      // Generate unique appointmentId
+      const appointmentId = `APT-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
+
       // Create appointment
       const appointment = new Appointment({
+        appointmentId,
         patientId,
         doctorId,
         departmentId,
-        appointmentDate,
+        appointmentDate: appointmentDateObj,
         appointmentTime,
         reason,
         type,
         notes,
         status: "SCHEDULED",
+        createdBy: patientId,
+        location: "Hospital", // Default location, can be updated by admin
+        mode: "IN_PERSON", // Default mode
       });
 
       await appointment.save();
@@ -221,7 +253,7 @@ class AppointmentsController {
    */
   static async rescheduleAppointment(req, res, next) {
     try {
-      const { patientId } = req.user;
+      const patientId = req.user._id || req.patientId;
       const { appointmentId } = req.params;
       const { newAppointmentDate, newAppointmentTime, reason } = req.body;
 
@@ -287,7 +319,7 @@ class AppointmentsController {
    */
   static async cancelAppointment(req, res, next) {
     try {
-      const { patientId } = req.user;
+      const patientId = req.user._id || req.patientId;
       const { appointmentId } = req.params;
       const { reason } = req.body;
 
@@ -345,7 +377,7 @@ class AppointmentsController {
    */
   static async confirmAttendance(req, res, next) {
     try {
-      const { patientId } = req.user;
+      const patientId = req.user._id || req.patientId;
       const { appointmentId } = req.params;
 
       const appointment = await Appointment.findOne({
@@ -387,12 +419,35 @@ class AppointmentsController {
    */
   static async getAvailableSlots(req, res, next) {
     try {
-      const { doctorId, appointmentDate } = req.query;
+      const { doctorId } = req.params;
+      const { appointmentDate } = req.query;
+
+      // Validate inputs
+      if (!doctorId || !appointmentDate) {
+        return next(
+          new AppError("doctorId and appointmentDate are required", 400)
+        );
+      }
+
+      // Parse and validate the date
+      const dateObj = new Date(appointmentDate);
+      if (isNaN(dateObj.getTime())) {
+        return next(new AppError("Invalid appointment date format", 400));
+      }
+
+      // Create date range
+      const startOfDay = new Date(dateObj);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(dateObj);
+      endOfDay.setHours(23, 59, 59, 999);
 
       // Get booked appointments for the doctor on that date
       const bookedAppointments = await Appointment.find({
         doctorId,
-        appointmentDate: new Date(appointmentDate),
+        appointmentDate: {
+          $gte: startOfDay,
+          $lt: endOfDay,
+        },
         status: { $in: ["SCHEDULED", "CONFIRMED"] },
       }).select("appointmentTime");
 
@@ -434,7 +489,7 @@ class AppointmentsController {
    */
   static async getAppointmentStats(req, res, next) {
     try {
-      const { patientId } = req.user;
+      const patientId = req.user._id || req.patientId;
 
       const stats = await Appointment.aggregate([
         { $match: { patientId } },
