@@ -46,26 +46,26 @@ async createUser(req, res, next) {
    * 🎯 LẤY USER THEO ID
    */
   async getUserById(req, res, next) {
-    try {
-      const { userId } = req.params;
-      const includeSensitive = req.user.role === 'SUPER_ADMIN';
-      
-      console.log('🎯 [USER CONTROLLER] Getting user by ID:', userId);
+  try {
+    const params = req.params; // Lấy cả object params
+    const includeSensitive = req.user.role === 'SUPER_ADMIN';
+    
+    console.log('🎯 [USER CONTROLLER] Getting user by ID:', params);
 
-      const user = await userService.getUserById(userId, includeSensitive);
-      
-      if (!user) {
-        throw new AppError('Không tìm thấy user', 404, ERROR_CODES.USER_NOT_FOUND);
-      }
-      
-      res.json({
-        success: true,
-        data: user
-      });
-    } catch (error) {
-      next(error);
+    const user = await userService.getUserById(params, includeSensitive);
+    
+    if (!user) {
+      throw new AppError('Không tìm thấy user', 404, ERROR_CODES.USER_NOT_FOUND);
     }
+    
+    res.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    next(error);
   }
+}
 
   /**
    * 🎯 CẬP NHẬT USER

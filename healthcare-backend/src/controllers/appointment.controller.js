@@ -83,30 +83,38 @@ class AppointmentController {
    * 🎯 LẤY LỊCH HẸN THEO ID
    */
   async getAppointmentById(req, res, next) {
-    try {
-      const { appointmentId } = req.params;
+  try {
+    const { id } = req.params; // ✅ Đổi từ appointmentId thành id
 
-      console.log('📋 [APPOINTMENT] Getting appointment by ID:', appointmentId);
+    console.log('📋 [APPOINTMENT] Getting appointment by ID:', id);
 
-      const appointment = await appointmentService.getAppointmentById(appointmentId);
-
-      if (!appointment) {
-        return res.status(404).json({
-          success: false,
-          error: 'Không tìm thấy lịch hẹn'
-        });
-      }
-
-      res.json({
-        success: true,
-        message: 'Lấy thông tin lịch hẹn thành công',
-        data: appointment
-      });
-
-    } catch (error) {
-      next(error);
+    // ✅ Tìm cả theo _id và appointmentId
+    let appointment;
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      // Nếu là ObjectId (24 hex characters)
+      appointment = await appointmentService.getAppointmentById(id);
+    } else {
+      // Nếu là appointmentId (AP123456ABC)
+      appointment = await appointmentService.getAppointment(id);
     }
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        error: 'Không tìm thấy lịch hẹn'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Lấy thông tin lịch hẹn thành công',
+      data: appointment
+    });
+
+  } catch (error) {
+    next(error);
   }
+}
 
   /**
    * 🎯 LẤY LỊCH HẸN CỦA BỆNH NHÂN
@@ -636,6 +644,51 @@ class AppointmentController {
       next(error);
     }
   }
+
+  async getTodayAppointments(req, res, next) {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const appointments = await appointmentService.getAppointmentsByDateRange(
+      today, 
+      tomorrow
+    );
+    
+    res.json({
+      success: true,
+      message: 'Lấy lịch hẹn hôm nay thành công',
+      data: appointments
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+async getUpcomingAppointments(req, res, next) {
+  try {
+    const { days = 7 } = req.query;
+    const today = new Date();
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() + parseInt(days));
+    
+    const appointments = await appointmentService.getAppointmentsByDateRange(
+      today, 
+      endDate
+    );
+    
+    res.json({
+      success: true,
+      message: 'Lấy lịch hẹn sắp tới thành công',
+      data: appointments
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 }
 
 module.exports = new AppointmentController();

@@ -4,6 +4,36 @@ const { ROLES } = require('../constants/roles');
 const { commonSchemas } = require('../middlewares/validation.middleware');
 
 // 🎯 SCHEMAS CHO TẤT CẢ CÁC HÀM
+
+// ==================== PARAMS SCHEMAS ====================
+
+// 🎯 CHO CẢ 'id' VÀ 'userId' PARAM (LINH HOẠT)
+const userIdParams = Joi.alternatives().try(
+  Joi.object({ 
+    id: commonSchemas.objectId.required().messages({
+      'any.required': 'ID là bắt buộc',
+      'string.hex': 'ID phải là hex string',
+      'string.length': 'ID phải có 24 ký tự'
+    })
+  }),
+  Joi.object({ 
+    userId: commonSchemas.objectId.required().messages({
+      'any.required': 'User ID là bắt buộc',
+      'string.hex': 'User ID phải là hex string',
+      'string.length': 'User ID phải có 24 ký tự'
+    })
+  })
+).messages({
+  'alternatives.match': 'Phải cung cấp ID hoặc userId'
+});
+
+// 🎯 RIÊNG CHO EMAIL PARAM
+const userEmailParams = Joi.object({
+  email: commonSchemas.email.required()
+});
+
+// ==================== BODY SCHEMAS ====================
+
 const createUserBody = Joi.object({
   email: commonSchemas.email.required(),
   password: commonSchemas.password.required(),
@@ -179,14 +209,6 @@ const assignRoleBody = Joi.object({
   })
 });
 
-const userIdParams = Joi.object({
-  userId: commonSchemas.objectId.required()
-});
-
-const userEmailParams = Joi.object({
-  email: commonSchemas.email.required()
-});
-
 const listUsersQuery = Joi.object({
   page: Joi.number().integer().min(1).default(1),
   limit: Joi.number().integer().min(1).max(100).default(10),
@@ -221,11 +243,29 @@ const verifyEmailBody = Joi.object({
   })
 });
 
-const uploadProfilePictureBody = Joi.object({
+const uploadAvatarBody = Joi.object({
   // File upload validation sẽ được xử lý bằng multer
 }).unknown(true);
 
-// 🎯 EXPORT CÁC SCHEMAS CHO TỪNG ROUTE
+// ==================== QUERY SCHEMAS (NEW) ====================
+
+const searchUsersQuery = Joi.object({
+  q: Joi.string().min(1).max(100).required().messages({
+    'string.min': 'Từ khóa tìm kiếm phải có ít nhất 1 ký tự',
+    'string.max': 'Từ khóa tìm kiếm không được vượt quá 100 ký tự',
+    'any.required': 'Từ khóa tìm kiếm là bắt buộc'
+  })
+});
+
+const usersByRoleParams = Joi.object({
+  role: Joi.string().valid(...Object.values(ROLES)).required().messages({
+    'any.only': 'Vai trò không hợp lệ',
+    'any.required': 'Vai trò là bắt buộc'
+  })
+});
+
+// ==================== EXPORT SCHEMAS ====================
+
 module.exports = {
   // 🎯 CHO CREATE USER
   createUser: {
@@ -287,9 +327,19 @@ module.exports = {
     body: verifyEmailBody
   },
 
-  // 🎯 CHO UPLOAD PROFILE PICTURE
-  uploadProfilePicture: {
-    body: uploadProfilePictureBody
+  // 🎯 CHO UPLOAD AVATAR
+  uploadAvatar: {
+    body: uploadAvatarBody
+  },
+
+  // 🎯 CHO SEARCH USERS (NEW)
+  searchUsers: {
+    query: searchUsersQuery
+  },
+
+  // 🎯 CHO GET USERS BY ROLE (NEW)
+  getUsersByRole: {
+    params: usersByRoleParams
   },
 
   // 🎯 EXPORT CÁC SCHEMAS RIÊNG LẺ (CHO LINH HOẠT)
@@ -305,6 +355,8 @@ module.exports = {
     checkUserPermissionBody,
     deleteUserBody,
     verifyEmailBody,
-    uploadProfilePictureBody
+    uploadAvatarBody,
+    searchUsersQuery,
+    usersByRoleParams
   }
 };
