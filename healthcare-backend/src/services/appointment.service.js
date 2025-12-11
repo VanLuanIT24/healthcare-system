@@ -127,19 +127,28 @@ class AppointmentService {
     }
   }
 
-  async getAppointmentById(appointmentId) {
-    try {
-      const appointment = await Appointment.findById(appointmentId)
+  async getAppointmentById(id) {
+  try {
+    // ✅ Tìm cả theo _id và appointmentId
+    let appointment = await Appointment.findById(id)
+      .populate('patientId', 'personalInfo email phone')
+      .populate('doctorId', 'personalInfo email professionalInfo')
+      .populate('createdBy', 'personalInfo email');
+    
+    if (!appointment) {
+      // Thử tìm theo appointmentId
+      appointment = await Appointment.findOne({ appointmentId: id })
         .populate('patientId', 'personalInfo email phone')
         .populate('doctorId', 'personalInfo email professionalInfo')
         .populate('createdBy', 'personalInfo email');
-      
-      return appointment;
-    } catch (error) {
-      console.error('❌ [SERVICE] Get appointment by ID failed:', error.message);
-      throw error;
     }
+    
+    return appointment;
+  } catch (error) {
+    console.error('❌ [SERVICE] Get appointment by ID failed:', error.message);
+    throw error;
   }
+}
 
   async getAppointmentsByUser(userId, userRole, filters = {}) {
     try {
@@ -444,6 +453,26 @@ class AppointmentService {
       throw error;
     }
   }
+
+  async getAppointmentsByDateRange(startDate, endDate) {
+  try {
+    const appointments = await Appointment.find({
+      appointmentDate: {
+        $gte: startDate,
+        $lte: endDate
+      },
+      status: { $nin: ['CANCELLED'] }
+    })
+    .populate('patientId', 'personalInfo email phone')
+    .populate('doctorId', 'personalInfo email professionalInfo')
+    .sort({ appointmentDate: 1 });
+    
+    return appointments;
+  } catch (error) {
+    console.error('❌ [SERVICE] Get appointments by date range failed:', error.message);
+    throw error;
+  }
+}
 
   /**
    * 🎯 LẤY LỊCH HẸN THEO DEPARTMENT

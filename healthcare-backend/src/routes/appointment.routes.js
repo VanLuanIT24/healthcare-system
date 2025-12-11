@@ -63,7 +63,7 @@ router.post(
 
 // 🎯 LẤY LỊCH LÀM VIỆC - PHẢI TRƯỚC /:appointmentId
 router.get(
-  '/schedules/doctor/:doctorId',
+  '/schedules/doctor/:id',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.APPOINTMENT_VIEW_SCHEDULE),
   validateQuery(appointmentValidation.getDoctorSchedule),
@@ -72,7 +72,7 @@ router.get(
 
 // 🎯 CẬP NHẬT LỊCH LÀM VIỆC - PHẢI TRƯỚC /:appointmentId
 router.put(
-  '/schedules/:scheduleId',
+  '/schedules/:id',
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
   requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
   validateBody(appointmentValidation.updateSchedule),
@@ -90,7 +90,7 @@ router.post(
 
 // 🎯 LẤY LỊCH HẸN THEO DEPARTMENT - PHẢI TRƯỚC /:appointmentId
 router.get(
-  '/department/:departmentId',
+  '/department/:id',
   requireRole(ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN, ROLES.DOCTOR),
   requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
   validateQuery(appointmentValidation.getDoctorSchedule),
@@ -117,7 +117,7 @@ router.get(
 
 // 🎯 LẤY LỊCH HẸN CỦA BỆNH NHÂN - PHẢI TRƯỚC /:appointmentId
 router.get(
-  '/patient/:patientId',
+  '/patient/:id',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
   requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
   requirePatientDataAccess('patientId'),
@@ -127,7 +127,7 @@ router.get(
 
 // 🎯 LẤY LỊCH SỬ PHẪU THUẬT - PHẢI TRƯỚC /:appointmentId
 router.get(
-  '/patient/:patientId/surgical-history',
+  '/patient/:id/surgical-history',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
   requirePatientDataAccess('patientId'),
@@ -136,7 +136,7 @@ router.get(
 
 // 🎯 LẤY TIỀN SỬ SẢN KHOA - PHẢI TRƯỚC /:appointmentId
 router.get(
-  '/patient/:patientId/obstetric-history',
+  '/patient/:id/obstetric-history',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
   requirePatientDataAccess('patientId'),
@@ -145,7 +145,7 @@ router.get(
 
 // 🎯 THÊM THÔNG TIN PHẪU THUẬT - PHẢI TRƯỚC /:appointmentId
 router.post(
-  '/patient/:patientId/surgical-history',
+  '/patient/:id/surgical-history',
   requireRole(ROLES.DOCTOR),
   requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
   requirePatientDataAccess('patientId'),
@@ -164,7 +164,7 @@ router.post(
 
 // 🎯 LẤY LỊCH HẸN CỦA BÁC SĨ - PHẢI TRƯỚC /:appointmentId
 router.get(
-  '/doctor/:doctorId',
+  '/doctor/:id',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
   requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
   validateQuery(appointmentValidation.getDoctorAppointments),
@@ -190,7 +190,7 @@ router.get(
 
 // ✅ LẤY LỊCH HẸN THEO ID (DYNAMIC ROUTE - ĐẶT CUỐI CÙNG)
 router.get(
-  '/:appointmentId',
+  '/:id',
   requireRole(ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
   appointmentController.getAppointmentById
@@ -198,7 +198,7 @@ router.get(
 
 // 🎯 CẬP NHẬT LỊCH HẸN
 router.put(
-  '/:appointmentId',
+  '/:id',
   requireRole(ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
   validateBody(appointmentValidation.updateAppointment),
@@ -207,7 +207,7 @@ router.put(
 
 // 🎯 CHECK-IN LỊCH HẸN
 router.patch(
-  '/:appointmentId/check-in',
+  '/:id/check-in',
   requireRole(ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
   appointmentController.checkInAppointment
@@ -215,7 +215,7 @@ router.patch(
 
 // 🎯 HOÀN THÀNH LỊCH HẸN
 router.patch(
-  '/:appointmentId/complete',
+  '/:id/complete',
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
   validateBody(appointmentValidation.completeAppointment),
@@ -224,7 +224,7 @@ router.patch(
 
 // 🎯 HỦY LỊCH HẹN
 router.post(
-  '/:appointmentId/cancel',
+  '/:id/cancel',
   requireRole(ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.APPOINTMENT_CANCEL),
   validateBody(appointmentValidation.cancelAppointment),
@@ -233,7 +233,7 @@ router.post(
 
 // 🎯 ĐẶT LẠI LỊCH HẸN
 router.post(
-  '/:appointmentId/reschedule',
+  '/:id/reschedule',
   requireRole(ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
   validateBody(appointmentValidation.rescheduleAppointment),
@@ -242,11 +242,27 @@ router.post(
 
 // 🎯 GỬI THÔNG BÁO NHẮC LỊCH HẸN
 router.post(
-  '/:appointmentId/remind',
+  '/:id/remind',
   requireRole(ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
   validateBody(appointmentValidation.sendReminder),
   appointmentController.sendAppointmentReminder
+);
+
+// 🎯 THÊM ROUTE THIẾU - Today's appointments
+router.get(
+  '/today',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
+  appointmentController.getTodayAppointments
+);
+
+// 🎯 THÊM ROUTE THIẾU - Upcoming appointments
+router.get(
+  '/upcoming',
+  requireRole(ROLES.DOCTOR, ROLES.PATIENT, ROLES.NURSE, ROLES.RECEPTIONIST),
+  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
+  appointmentController.getUpcomingAppointments
 );
 
 module.exports = router;

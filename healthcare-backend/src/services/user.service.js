@@ -158,8 +158,10 @@ async createUser(userData, currentUser) {
   /**
    * 🎯 LẤY USER THEO ID
    */
-  async getUserById(userId, includeSensitive = false) {
+  async getUserById(params, includeSensitive = false) {
     try {
+      const userId = this.extractUserId(params);
+      
       const user = await User.findById(userId)
         .select('-password -resetPasswordToken -resetPasswordExpires -loginAttempts -lockUntil');
 
@@ -187,6 +189,7 @@ async createUser(userData, currentUser) {
    */
   async updateUser(userId, updateData, currentUser) {
     try {
+      const userId = this.extractUserId(params);
       console.log('🎯 [USER SERVICE] Updating user:', userId);
 
       const user = await User.findById(userId);
@@ -248,6 +251,7 @@ async createUser(userData, currentUser) {
    */
   async disableUser(userId, reason, currentUser) {
     try {
+      const userId = this.extractUserId(params);
       console.log('🎯 [USER SERVICE] Disabling user:', userId);
 
       const user = await User.findById(userId);
@@ -292,6 +296,63 @@ async createUser(userData, currentUser) {
 
     } catch (error) {
       console.error('❌ [USER SERVICE] Disable user error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 GET USERS BY ROLE - HÀM MỚI
+   */
+  async getUsersByRole(role) {
+    try {
+      console.log('🎯 [USER SERVICE] Getting users by role:', role);
+
+      const filter = {
+        role: role,
+        isDeleted: false,
+        status: 'ACTIVE'
+      };
+
+      const result = await this.listUsers(filter, {
+        page: 1,
+        limit: 50,
+        sortBy: 'personalInfo.lastName',
+        sortOrder: 'asc'
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('❌ [USER SERVICE] Get users by role error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 SEARCH USERS - HÀM MỚI
+   */
+  async searchUsers(query) {
+    try {
+      console.log('🎯 [USER SERVICE] Searching users:', query);
+
+      const filter = {
+        $or: [
+          { 'personalInfo.firstName': { $regex: query, $options: 'i' } },
+          { 'personalInfo.lastName': { $regex: query, $options: 'i' } },
+          { email: { $regex: query, $options: 'i' } }
+        ],
+        isDeleted: false
+      };
+
+      const result = await this.listUsers(filter, {
+        page: 1,
+        limit: 20,
+        sortBy: 'createdAt',
+        sortOrder: 'desc'
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('❌ [USER SERVICE] Search users error:', error);
       throw error;
     }
   }
@@ -1062,5 +1123,26 @@ async getUserStatistics() {
     throw error;
   }
 }
+
+/**
+   * 🎯 HELPER: Extract userId từ params (hỗ trợ cả id và userId)
+   */
+  extractUserId(params) {
+    console.log('🎯 [USER SERVICE] Extracting userId from params:', params);
+    
+    // Ưu tiên id (frontend convention), fallback về userId (backend convention)
+    const userId = params.id || params.userId;
+    
+    if (!userId) {
+      throw new AppError(
+        'Không tìm thấy ID người dùng trong params',
+        400,
+        ERROR_CODES.VALIDATION_FAILED
+      );
+    }
+    
+    console.log('✅ [USER SERVICE] Extracted userId:', userId);
+    return userId;
+  }
 }
 module.exports = new UserService();

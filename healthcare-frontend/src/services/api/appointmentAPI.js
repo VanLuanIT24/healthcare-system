@@ -1,78 +1,74 @@
-// 📅 Appointment Management API
+// src/api/appointmentAPI.js
 import axios from '../axios';
 
 const appointmentAPI = {
-  // Create appointment
+  // ✅ FIX: Sử dụng đúng base path
   createAppointment: async (appointmentData) => {
-    return await axios.post('/appointments', appointmentData);
+    return await axios.post('/api/appointments', appointmentData);
   },
 
-  // Get all appointments
   getAppointments: async (params) => {
-    return await axios.get('/appointments', { params });
+    return await axios.get('/api/appointments', { params });
   },
 
-  // Get all appointments (alias for consistency)
-  getAllAppointments: async (params) => {
-    return await axios.get('/appointments', { params });
-  },
-
-  // Get appointment by ID
   getAppointmentById: async (id) => {
-    return await axios.get(`/appointments/${id}`);
+    return await axios.get(`/api/appointments/${id}`);
   },
 
-  // Update appointment
   updateAppointment: async (id, appointmentData) => {
-    return await axios.put(`/appointments/${id}`, appointmentData);
+    return await axios.put(`/api/appointments/${id}`, appointmentData);
   },
 
-  // Cancel appointment
-  cancelAppointment: async (id, reason) => {
-    return await axios.patch(`/appointments/${id}/cancel`, { reason });
+  // ✅ FIX: Sử dụng POST thay vì PATCH
+  cancelAppointment: async (id, data) => {
+    return await axios.post(`/api/appointments/${id}/cancel`, data);
   },
 
-  // Reschedule appointment
-  rescheduleAppointment: async (id, newDateTime) => {
-    return await axios.patch(`/appointments/${id}/reschedule`, { appointmentDate: newDateTime });
+  // ✅ FIX: Sử dụng POST thay vì PATCH
+  rescheduleAppointment: async (id, data) => {
+    return await axios.post(`/api/appointments/${id}/reschedule`, data);
   },
 
-  // Check-in appointment
+  // ✅ FIX: Sử dụng PATCH đúng
   checkInAppointment: async (id) => {
-    return await axios.patch(`/appointments/${id}/check-in`);
+    return await axios.patch(`/api/appointments/${id}/check-in`);
   },
 
-  // Complete appointment
   completeAppointment: async (id) => {
-    return await axios.patch(`/appointments/${id}/complete`);
+    return await axios.patch(`/api/appointments/${id}/complete`);
   },
 
-  // Get doctor's appointments
   getDoctorAppointments: async (doctorId, params) => {
-    return await axios.get(`/appointments/doctor/${doctorId}`, { params });
+    return await axios.get(`/api/appointments/doctor/${doctorId}`, { params });
   },
 
-  // Get available time slots
   getAvailableSlots: async (doctorId, date) => {
-    return await axios.get('/appointments/available-slots', {
+    return await axios.get('/api/appointments/available-slots', {
       params: { doctorId, date },
     });
   },
 
-  // Get today's appointments
   getTodayAppointments: async () => {
-    return await axios.get('/appointments/today');
+    return await axios.get('/api/appointments/today');
   },
 
-  // Get upcoming appointments
   getUpcomingAppointments: async (params) => {
-    return await axios.get('/appointments/upcoming', { params });
+    return await axios.get('/api/appointments/upcoming', { params });
   },
 
-  // Get appointment statistics
   getAppointmentStats: async (params) => {
-    return await axios.get('/appointments/stats', { params });
+    return await axios.get('/api/appointments/stats', { params });
   },
+
+  getTodayAppointments: async () => {
+  return await axios.get('/api/appointments/today');
+},
+
+getUpcomingAppointments: async (days = 7) => {
+  return await axios.get('/api/appointments/upcoming', { 
+    params: { days } 
+  });
+},
 };
 
 export default appointmentAPI;
