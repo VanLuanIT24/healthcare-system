@@ -1,7 +1,7 @@
 import { EnvironmentOutlined, FilterOutlined, MailOutlined, PhoneOutlined, SearchOutlined, StarFilled, UserOutlined } from '@ant-design/icons';
 import { Avatar, Button, Card, Col, Divider, Empty, Input, Rate, Row, Select, Space, Spin, Tag, Typography } from 'antd';
 import { useEffect, useState } from 'react';
-import { userAPI } from '../../services/api/userAPI';
+import userAPI from '../../services/api/userAPI';
 import './DoctorSelection.css';
 
 const { Search } = Input;
