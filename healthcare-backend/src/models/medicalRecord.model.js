@@ -173,13 +173,11 @@ const medicalRecordSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
+// ✅ FIX: Compound indexes chỉ - loại bỏ recordId index trùng (unique đã có)
 medicalRecordSchema.index({ patientId: 1, visitDate: -1 });
-medicalRecordSchema.index({ doctorId: 1 });
-medicalRecordSchema.index({ recordId: 1 });
+medicalRecordSchema.index({ doctorId: 1, visitDate: -1 });
 medicalRecordSchema.index({ 'diagnoses.code': 1 });
-medicalRecordSchema.index({ status: 1 });
-medicalRecordSchema.index({ department: 1 });
+medicalRecordSchema.index({ status: 1, department: 1 });
 medicalRecordSchema.index({ visitType: 1 });
 
 // Virtuals

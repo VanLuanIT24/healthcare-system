@@ -13,8 +13,14 @@ const appointmentValidation = {
     doctorId: commonSchemas.objectId.required(),
     appointmentDate: Joi.date().iso().required(),
     timeSlot: Joi.string().required(),
+    type: Joi.string().valid('CONSULTATION', 'FOLLOW_UP', 'CHECKUP', 'SURGERY', 'TEST', 'OTHER').required(),
+    location: Joi.string().required(),
+    mode: Joi.string().valid('IN_PERSON', 'TELEMEDICINE', 'PHONE').optional(),
+    room: Joi.string().optional(),
     reason: Joi.string().max(500).optional(),
-    notes: Joi.string().max(1000).optional()
+    notes: Joi.string().max(1000).optional(),
+    description: Joi.string().max(1000).optional(),
+    symptoms: Joi.array().items(Joi.string()).optional()
   }),
 
   // 🎯 CẬP NHẬT LỊCH HẸN
@@ -78,6 +84,17 @@ const appointmentValidation = {
 
   // 🎯 CẬP NHẬT LỊCH LÀM VIỆC
   updateSchedule: Joi.object({
+    doctorId: commonSchemas.objectId.required(),
+    date: Joi.date().iso().required(),
+    changes: Joi.object({
+      cancellations: Joi.array().items(Joi.string()).optional(),
+      reschedules: Joi.array().items(
+        Joi.object({
+          appointmentId: Joi.string().required(),
+          newTime: Joi.date().iso().required()
+        })
+      ).optional()
+    }).optional(),
     timeSlots: Joi.array().items(
       Joi.object({
         startTime: Joi.string().required(),
@@ -275,6 +292,24 @@ const appointmentValidation = {
     department: Joi.string().max(100).optional(),
     sortBy: Joi.string().valid('appointmentDate', 'createdAt', 'updatedAt').default('appointmentDate'),
     sortOrder: Joi.string().valid('asc', 'desc').default('asc')
+  }),
+
+  // 🎯 LẤY SLOT THỜI GIAN KHẢ DỤNG
+  getAvailableSlots: Joi.object({
+    doctorId: commonSchemas.objectId.required(),
+    date: Joi.date().iso().required()
+  }),
+
+  // 🎯 HOÀN THÀNH LỊCH HẸN
+  completeAppointment: Joi.object({
+    notes: Joi.string().max(1000).optional()
+  }),
+
+  // 🎯 THỐNG KÊ LỊCH HẸN
+  getAppointmentStats: Joi.object({
+    startDate: Joi.date().iso().optional(),
+    endDate: Joi.date().iso().min(Joi.ref('startDate')).optional(),
+    status: Joi.string().valid('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW').optional()
   })
 };
 

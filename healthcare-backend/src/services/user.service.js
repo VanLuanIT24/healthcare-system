@@ -1,4 +1,6 @@
 // src/services/user.service.js
+const path = require('path');
+const fs = require('fs').promises;
 const User = require('../models/user.model');
 const Patient = require('../models/patient.model');
 const { 
@@ -14,6 +16,18 @@ const { hashPassword, comparePassword } = require('../utils/hash');
 const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
 const EmailService = require('../utils/email');
+
+// Helper to delete file
+async function deleteFile(filePath) {
+  try {
+    await fs.unlink(filePath);
+  } catch (error) {
+    // Ignore if file doesn't exist
+    if (error.code !== 'ENOENT') {
+      console.error('Error deleting file:', error);
+    }
+  }
+}
 
 class UserService {
 // src/services/user.service.js - Sửa hàm createUser

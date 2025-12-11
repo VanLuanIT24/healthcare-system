@@ -138,7 +138,7 @@ async createUser(req, res, next) {
         limit = 10, 
         role, 
         search,
-        status = 'ACTIVE',
+        status,
         sortBy = 'createdAt',
         sortOrder = 'desc',
         includeDeleted = false
@@ -148,9 +148,11 @@ async createUser(req, res, next) {
         page, limit, role, search, status
       });
 
-      const filter = { status };
-      if (role) filter.role = role;
-      if (search) {
+      // Build filter object, ignoring empty strings
+      const filter = {};
+      if (status && status !== '') filter.status = status;
+      if (role && role !== '') filter.role = role;
+      if (search && search !== '') {
         filter.$or = [
           { 'personalInfo.firstName': { $regex: search, $options: 'i' } },
           { 'personalInfo.lastName': { $regex: search, $options: 'i' } },
@@ -341,7 +343,7 @@ async assignRole(req, res, next) {
   async deleteUser(req, res, next) {
     try {
       const { userId } = req.params;
-      const { reason } = req.body;
+      const { reason } = req.query;
       const deleterId = req.user._id;
       
       console.log('🎯 [USER CONTROLLER] Deleting user:', userId);
@@ -563,6 +565,73 @@ async restoreUser(req, res, next) {
       next(error);
     }
   }
+
+  /**
+ * 🎯 SEARCH USERS
+ */
+async searchUsers(req, res, next) {
+  try {
+    const { q } = req.query;
+    
+    console.log('🎯 [USER CONTROLLER] Searching users:', q);
+
+    const filter = {
+      $or: [
+        { 'personalInfo.firstName': { $regex: q, $options: 'i' } },
+        { 'personalInfo.lastName': { $regex: q, $options: 'i' } },
+        { email: { $regex: q, $options: 'i' } }
+      ],
+      isDeleted: false
+    };
+
+    const result = await userService.listUsers(filter, {
+      page: 1,
+      limit: 20,
+      sortBy: 'createdAt',
+      sortOrder: 'desc'
+    });
+    
+    res.json({
+      success: true,
+      data: result.users,
+      pagination: result.pagination
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * 🎯 GET USERS BY ROLE
+ */
+async getUsersByRole(req, res, next) {
+  try {
+    const { role } = req.params;
+    
+    console.log('🎯 [USER CONTROLLER] Getting users by role:', role);
+
+    const filter = {
+      role: role,
+      isDeleted: false,
+      status: 'ACTIVE'
+    };
+
+    const result = await userService.listUsers(filter, {
+      page: 1,
+      limit: 50,
+      sortBy: 'personalInfo.lastName',
+      sortOrder: 'asc'
+    });
+    
+    res.json({
+      success: true,
+      data: result.users,
+      pagination: result.pagination
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 }
 
 module.exports = new UserController();

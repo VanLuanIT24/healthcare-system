@@ -16,15 +16,16 @@ const userValidation = require('../validations/user.validation');
 const { 
   PERMISSIONS, 
   ROLES, 
-  ROLE_HIERARCHY,  // 🎯 THÊM IMPORT NÀY
-  canCreateRole    // 🎯 THÊM IMPORT NÀY
-} = require('../constants/roles');  // 🎯 ĐẢM BẢO ĐÚNG PATH
+  ROLE_HIERARCHY,
+  canCreateRole
+} = require('../constants/roles');
 const { upload } = require('../utils/fileUpload');
+const Joi = require('joi');
 
 // 🔐 TẤT CẢ ROUTES ĐỀU YÊU CẦU XÁC THỰC
 router.use(authenticate);
 
-// 👥 USER MANAGEMENT ROUTES - ĐÃ TỐI ƯU PHÂN QUYỀN
+// 👥 USER MANAGEMENT ROUTES - FIXED TO MATCH FRONTEND API
 
 // 🎯 TẠO USER MỚI - POST /api/users
 router.post(
@@ -106,23 +107,23 @@ router.put(
   userController.updateUserProfile
 );
 
-// 🎯 UPLOAD PROFILE PICTURE - POST /api/users/profile/picture
+// 🎯 UPLOAD AVATAR - POST /api/users/avatar (MATCH FRONTEND)
 router.post(
-  '/profile/picture',
-  upload.single('profilePicture'),
-  validateBody(userValidation.schemas.uploadProfilePictureBody),
+  '/avatar',
+  upload.single('avatar'),
   userController.uploadProfilePicture
 );
 
-// 🎯 RESEND VERIFICATION EMAIL - POST /api/users/profile/resend-verification
+// 🎯 RESEND VERIFICATION EMAIL - POST /api/users/:id/resend-verification (MATCH FRONTEND)
 router.post(
-  '/profile/resend-verification',
+  '/:id/resend-verification',
+  validateParams(userValidation.schemas.userIdParams),
   userController.resendVerificationEmail
 );
 
-// 🎯 LẤY USER THEO ID - GET /api/users/:userId
+// 🎯 LẤY USER THEO ID - GET /api/users/:id (CHANGE :userId → :id)
 router.get(
-  '/:userId',
+  '/:id',
   rbacRequirePermission(PERMISSIONS.VIEW_USER),
   validateParams(userValidation.schemas.userIdParams),
   userController.getUserById
@@ -136,9 +137,9 @@ router.get(
   userController.getUserByEmail
 );
 
-// 🎯 CẬP NHẬT USER - PUT /api/users/:userId
+// 🎯 CẬP NHẬT USER - PUT /api/users/:id (CHANGE :userId → :id)
 router.put(
-  '/:userId',
+  '/:id',
   rbacRequirePermission(PERMISSIONS.UPDATE_USER),
   validateCombined({
     params: userValidation.schemas.userIdParams,
@@ -147,9 +148,9 @@ router.put(
   userController.updateUser
 );
 
-// 🎯 VÔ HIỆU HÓA USER - PATCH /api/users/:userId/disable
+// 🎯 VÔ HIỆU HÓA USER - PATCH /api/users/:id/disable (CHANGE :userId → :id)
 router.patch(
-  '/:userId/disable',
+  '/:id/disable',
   rbacRequirePermission(PERMISSIONS.DISABLE_USER),
   validateCombined({
     params: userValidation.schemas.userIdParams,
@@ -158,17 +159,17 @@ router.patch(
   userController.disableUser
 );
 
-// 🎯 KÍCH HOẠT LẠI USER - PATCH /api/users/:userId/enable
+// 🎯 KÍCH HOẠT LẠI USER - PATCH /api/users/:id/enable (CHANGE :userId → :id)
 router.patch(
-  '/:userId/enable',
+  '/:id/enable',
   rbacRequirePermission(PERMISSIONS.UPDATE_USER),
   validateParams(userValidation.schemas.userIdParams),
   userController.enableUser
 );
 
-// 🎯 GÁN ROLE CHO USER - PATCH /api/users/:userId/role
+// 🎯 GÁN ROLE CHO USER - PATCH /api/users/:id/role (CHANGE :userId → :id)
 router.patch(
-  '/:userId/role',
+  '/:id/role',
   rbacRequirePermission(PERMISSIONS.UPDATE_USER),
   validateCombined({
     params: userValidation.schemas.userIdParams,
@@ -177,17 +178,17 @@ router.patch(
   userController.assignRole
 );
 
-// 🎯 LẤY PERMISSIONS CỦA USER - GET /api/users/:userId/permissions
+// 🎯 LẤY PERMISSIONS CỦA USER - GET /api/users/:id/permissions (CHANGE :userId → :id)
 router.get(
-  '/:userId/permissions',
+  '/:id/permissions',
   rbacRequirePermission(PERMISSIONS.VIEW_USER),
   validateParams(userValidation.schemas.userIdParams),
   userController.getUserPermissions
 );
 
-// 🎯 KIỂM TRA QUYỀN USER - POST /api/users/:userId/check-permission
+// 🎯 KIỂM TRA QUYỀN USER - POST /api/users/:id/check-permission (CHANGE :userId → :id)
 router.post(
-  '/:userId/check-permission',
+  '/:id/check-permission',
   rbacRequirePermission(PERMISSIONS.VIEW_USER),
   validateCombined({
     params: userValidation.schemas.userIdParams,
@@ -196,9 +197,9 @@ router.post(
   userController.checkUserPermission
 );
 
-// 🎯 XÓA USER (SOFT DELETE) - DELETE /api/users/:userId
+// 🎯 XÓA USER (SOFT DELETE) - DELETE /api/users/:id (CHANGE :userId → :id)
 router.delete(
-  '/:userId',
+  '/:id',
   rbacRequirePermission(PERMISSIONS.DELETE_USER),
   validateCombined({
     params: userValidation.schemas.userIdParams,
@@ -207,25 +208,25 @@ router.delete(
   userController.deleteUser
 );
 
-// 🎯 KHÔI PHỤC USER ĐÃ XÓA - PATCH /api/users/:userId/restore
-router.patch(
-  '/:userId/restore',
+// 🎯 KHÔI PHỤC USER ĐÃ XÓA - POST /api/users/:id/restore (CHANGE METHOD: PATCH → POST, :userId → :id)
+router.post(
+  '/:id/restore',
   rbacRequirePermission(PERMISSIONS.UPDATE_USER),
   validateParams(userValidation.schemas.userIdParams),
   userController.restoreUser
 );
 
-// 🎯 DANH SÁCH USER ĐÃ XÓA - GET /api/users/deleted/list
+// 🎯 DANH SÁCH USER ĐÃ XÓA - GET /api/users/deleted (CHANGE PATH: /deleted/list → /deleted)
 router.get(
-  '/deleted/list',
+  '/deleted',
   rbacRequirePermission(PERMISSIONS.VIEW_USER),
   validateQuery(userValidation.schemas.listUsersQuery),
   userController.listDeletedUsers
 );
 
-// 🎯 THỐNG KÊ USER - GET /api/users/stats/overview
+// 🎯 THỐNG KÊ USER - GET /api/users/stats (CHANGE PATH: /stats/overview → /stats)
 router.get(
-  '/stats/overview',
+  '/stats',
   rbacRequirePermission(PERMISSIONS.VIEW_REPORTS),
   userController.getUserStatistics
 );
@@ -235,6 +236,56 @@ router.post(
   '/verify-email',
   validateBody(userValidation.schemas.verifyEmailBody),
   userController.verifyEmail
+);
+
+// 🎯 SEARCH USERS - GET /api/users/search (NEW ROUTE)
+router.get(
+  '/search',
+  rbacRequirePermission(PERMISSIONS.VIEW_USER),
+  validateQuery(Joi.object({
+    q: Joi.string().min(1).max(100).required()
+  })),
+  async (req, res, next) => {
+    try {
+      const { q } = req.query;
+      
+      console.log('🎯 [USER ROUTE] Searching users:', q);
+
+      const users = await userController.searchUsers(q);
+      
+      res.json({
+        success: true,
+        data: users
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// 🎯 GET USERS BY ROLE - GET /api/users/by-role (NEW ROUTE)
+router.get(
+  '/by-role/:role',
+  rbacRequirePermission(PERMISSIONS.VIEW_USER),
+  validateParams(Joi.object({
+    role: Joi.string().valid(...Object.values(ROLES)).required()
+  })),
+  async (req, res, next) => {
+    try {
+      const { role } = req.params;
+      
+      console.log('🎯 [USER ROUTE] Getting users by role:', role);
+
+      const users = await userController.getUsersByRole(role);
+      
+      res.json({
+        success: true,
+        data: users
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 module.exports = router;

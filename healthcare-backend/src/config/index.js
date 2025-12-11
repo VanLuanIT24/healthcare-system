@@ -1,7 +1,7 @@
 // src/config/index.js
-const appConfig = require('./app.config');
+// ✅ FIX: Tránh circular dependency bằng cách import trực tiếp từ app.config.js
+const { config: appConfig } = require('./app.config');
 const connectDatabase = require('./db.config');
-const superAdminService = require('../services/superAdmin.service');
 
 async function initializeConfig() {
   console.log('🚀 Đang khởi tạo cấu hình hệ thống...');
@@ -20,6 +20,8 @@ async function initializeConfig() {
     console.log(`👑 Super Admin Email: ${appConfig.superAdmin.email}`);
 
     try {
+      // ✅ FIX: Lazy loading service để tránh circular dependency
+      const superAdminService = require('../services/superAdmin.service');
       const adminStatus = await superAdminService.getSuperAdminStatus();
       console.log(`🔐 Super Admin Status: ${adminStatus.exists ? 'ACTIVE' : 'INACTIVE'}`);
     } catch (error) {

@@ -1,4 +1,5 @@
 const MedicalRecord = require('../models/medicalRecord.model');
+const Patient = require('../models/patient.model');
 const User = require('../models/user.model');
 const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 const { generateMedicalCode } = require('../utils/healthcare.utils');
@@ -17,11 +18,7 @@ class MedicalRecordService {
       console.log('🏥 [MEDICAL] Creating medical record for patient:', patientId);
 
       // 🎯 KIỂM TRA BỆNH NHÂN
-      const patient = await User.findOne({ 
-        _id: patientId, 
-        role: 'PATIENT',
-        status: 'ACTIVE'
-      });
+      const patient = await Patient.findById(patientId);
       
       if (!patient) {
         throw new AppError('Không tìm thấy bệnh nhân', 404, ERROR_CODES.PATIENT_NOT_FOUND);
@@ -565,13 +562,13 @@ class MedicalRecordService {
       // 🎯 LỌC THÔNG TIN SẢN KHOA
       const obstetricHistory = {
         pregnancies: medicalHistory.medicalHistory.medications.filter(med => 
-          med.category === 'PREGNANCY' || med.condition.toLowerCase().includes('thai')
+          med.category === 'PREGNANCY' || (med.condition && med.condition.toLowerCase().includes('thai'))
         ),
         deliveries: medicalHistory.medicalHistory.surgeries.filter(surgery =>
-          surgery.condition.toLowerCase().includes('sinh') || surgery.category === 'DELIVERY'
+          (surgery.condition && surgery.condition.toLowerCase().includes('sinh')) || surgery.category === 'DELIVERY'
         ),
         complications: medicalHistory.medicalHistory.chronicConditions.filter(condition =>
-          condition.condition.toLowerCase().includes('sản') || condition.category === 'OBSTETRIC'
+          (condition.condition && condition.condition.toLowerCase().includes('sản')) || condition.category === 'OBSTETRIC'
         )
       };
 
@@ -654,29 +651,33 @@ class MedicalRecordService {
    */
   async recordClinicalFindings(consultationId, findings, recordedBy) {
     try {
-      console.log('🔍 [MEDICAL] Recording clinical findings for consultation:', consultationId);
+      console.log('🔍 [MEDICAL] Recording clinical findings for record:', consultationId);
 
-      // 🎯 TRONG THỰC TẾ, SẼ CÓ LIÊN KẾT VỚI CONSULTATION MODEL
-      // Ở đây tạm thời tạo medical record mới cho findings
+      // Tìm medical record hiện tại
+      const medicalRecord = await MedicalRecord.findOne({ recordId: consultationId });
+      if (!medicalRecord) {
+        throw new AppError('Không tìm thấy hồ sơ bệnh án', 404);
+      }
+
+      // Cập nhật clinical findings
+      medicalRecord.physicalExamination = {
+        findings: findings.findings || 'No findings',
+        observations: findings.observations || findings.examination || '',
+        notes: findings.notes || ''
+      };
       
-      const recordId = `MR${generateMedicalCode(8)}`;
+      // Cập nhật department và chief complaint nếu có
+      if (findings.department) {
+        medicalRecord.department = findings.department;
+      }
+      if (findings.chiefComplaint) {
+        medicalRecord.chiefComplaint = findings.chiefComplaint;
+      }
       
-      const medicalRecord = new MedicalRecord({
-        recordId,
-        patientId: findings.patientId,
-        doctorId: recordedBy,
-        department: findings.department || 'GENERAL',
-        visitType: 'CONSULTATION',
-        visitDate: new Date(),
-        chiefComplaint: findings.chiefComplaint || 'Khám lâm sàng',
-        physicalExamination: {
-          findings: findings.findings,
-          observations: findings.observations,
-          notes: findings.notes
-        },
-        status: 'COMPLETED',
-        createdBy: recordedBy
-      });
+      medicalRecord.status = 'COMPLETED';
+      medicalRecord.lastModifiedBy = recordedBy;
+
+      console.log('💾 [MEDICAL] Updating medical record with clinical findings');
 
       await medicalRecord.save();
 
@@ -685,11 +686,12 @@ class MedicalRecordService {
         .populate('patientId', 'personalInfo email phone dateOfBirth gender')
         .populate('doctorId', 'personalInfo email specialization');
 
-      console.log('✅ [MEDICAL] Clinical findings recorded:', recordId);
+      console.log('✅ [MEDICAL] Clinical findings recorded for:', consultationId);
       return result;
 
     } catch (error) {
       console.error('❌ [MEDICAL] Record clinical findings failed:', error.message);
+      console.error('❌ [MEDICAL] Error details:', error);
       throw error;
     }
   }

@@ -1,7 +1,9 @@
 // src/services/patient.service.js
+const mongoose = require('mongoose');
 const Patient = require('../models/patient.model');
 const User = require('../models/user.model');
-const { generatePatientId, calculateAge, calculatePatientPriority } = require('../utils/healthcare.utils');
+const MedicalRecord = require('../models/medicalRecord.model');
+const { generatePatientId, calculateAge, calculatePatientPriority, generateMedicalCode } = require('../utils/healthcare.utils');
 const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 
 class PatientService {
@@ -331,6 +333,40 @@ class PatientService {
 
     } catch (error) {
       console.error('❌ [SERVICE] Get patient insurance failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 UPDATE PATIENT INSURANCE
+   */
+  async updatePatientInsurance(patientId, insuranceData, updatedBy) {
+    try {
+      const patient = await Patient.findOne({ patientId });
+
+      if (!patient) {
+        throw new AppError('Không tìm thấy bệnh nhân', 404, ERROR_CODES.PATIENT_NOT_FOUND);
+      }
+
+      // Update insurance fields
+      patient.insurance = {
+        ...patient.insurance,
+        ...insuranceData,
+        lastUpdated: new Date(),
+        updatedBy
+      };
+
+      await patient.save();
+
+      console.log(`✅ Insurance updated for patient: ${patientId}`);
+
+      return {
+        patientId: patient.patientId,
+        insurance: patient.insurance
+      };
+
+    } catch (error) {
+      console.error('❌ [SERVICE] Update patient insurance failed:', error.message);
       throw error;
     }
   }
@@ -694,10 +730,19 @@ class PatientService {
     try {
       console.log('📋 [SERVICE] Getting demographics for:', patientId);
 
-      const patient = await Patient.findOne({ patientId })
-        .populate('userId', 'personalInfo email phone address')
-        .populate('createdBy', 'personalInfo email')
-        .populate('emergencyInfo.primaryPhysician', 'personalInfo phone');
+      // Hỗ trợ cả MongoDB ObjectId và patientId string
+      let patient;
+      if (mongoose.Types.ObjectId.isValid(patientId) && patientId.length === 24) {
+        patient = await Patient.findById(patientId)
+          .populate('userId', 'personalInfo email phone address')
+          .populate('createdBy', 'personalInfo email')
+          .populate('emergencyInfo.primaryPhysician', 'personalInfo phone');
+      } else {
+        patient = await Patient.findOne({ patientId })
+          .populate('userId', 'personalInfo email phone address')
+          .populate('createdBy', 'personalInfo email')
+          .populate('emergencyInfo.primaryPhysician', 'personalInfo phone');
+      }
 
       if (!patient) {
         throw new AppError('Không tìm thấy bệnh nhân', 404, ERROR_CODES.PATIENT_NOT_FOUND);
@@ -750,14 +795,54 @@ class PatientService {
   }
 
   /**
+   * 🎯 LẤY BỆNH NHÂN THEO ID - FULL DATA
+   */
+  async getPatientById(patientId) {
+    try {
+      console.log('📋 [SERVICE] Getting full patient data for:', patientId);
+
+      // Hỗ trợ cả MongoDB ObjectId và patientId string (BN001, BN002, etc.)
+      let patient;
+      if (mongoose.Types.ObjectId.isValid(patientId) && patientId.length === 24) {
+        // Tìm theo MongoDB _id
+        patient = await Patient.findById(patientId)
+          .populate('userId', 'email personalInfo status isActive')
+          .populate('createdBy', 'personalInfo email')
+          .populate('emergencyInfo.primaryPhysician', 'personalInfo phone');
+      } else {
+        // Tìm theo patientId string
+        patient = await Patient.findOne({ patientId })
+          .populate('userId', 'email personalInfo status isActive')
+          .populate('createdBy', 'personalInfo email')
+          .populate('emergencyInfo.primaryPhysician', 'personalInfo phone');
+      }
+
+      if (!patient) {
+        throw new AppError('Không tìm thấy bệnh nhân', 404, ERROR_CODES.PATIENT_NOT_FOUND);
+      }
+
+      return patient;
+
+    } catch (error) {
+      console.error('❌ [SERVICE] Get patient by ID failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
    * 🎯 CẬP NHẬT THÔNG TIN NHÂN KHẨU - METHOD BỊ THIẾU
    */
   async updatePatientDemographics(patientId, updateData, updatedBy) {
     try {
       console.log('✏️ [SERVICE] Updating demographics for:', patientId);
 
-      const patient = await Patient.findOne({ patientId })
-        .populate('userId');
+      // Hỗ trợ cả MongoDB ObjectId và patientId string (BN001, BN002, etc.)
+      let patient;
+      if (mongoose.Types.ObjectId.isValid(patientId) && patientId.length === 24) {
+        patient = await Patient.findById(patientId).populate('userId');
+      } else {
+        patient = await Patient.findOne({ patientId }).populate('userId');
+      }
 
       if (!patient || !patient.userId) {
         throw new AppError('Không tìm thấy bệnh nhân', 404, ERROR_CODES.PATIENT_NOT_FOUND);
@@ -875,6 +960,30 @@ class PatientService {
       patient.admissionHistory.push(admissionRecord);
 
       await patient.save();
+
+      // 🎯 TẠO INPATIENT MEDICAL RECORD
+      const recordId = generateMedicalCode(10);
+      const inpatientRecord = new MedicalRecord({
+        recordId,
+        patientId: patient.userId,  // Use User ObjectId, not Patient ObjectId
+        doctorId: admissionData.attendingDoctor,
+        department: admissionData.department,
+        visitType: 'INPATIENT',
+        visitDate: new Date(),
+        chiefComplaint: admissionData.diagnosis,
+        status: 'DRAFT',
+        createdBy: admittedBy,
+        admissionInfo: {
+          admissionDate: new Date(),
+          department: admissionData.department,
+          room: admissionData.room,
+          bed: admissionData.bed,
+          admittingDiagnosis: admissionData.diagnosis
+        }
+      });
+      
+      await inpatientRecord.save();
+      console.log('✅ [SERVICE] INPATIENT medical record created:', recordId);
 
       console.log(`✅ [SERVICE] Patient admitted: ${patientId} -> ${admissionData.department}/${admissionData.room}/${admissionData.bed}`);
 

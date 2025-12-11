@@ -7,14 +7,14 @@ const patientSchema = new mongoose.Schema({
     ref: 'User',
     required: true,
     unique: true,
-    index: true
+    // ✅ FIX: Removed 'index: true' - unique đã tạo index
   },
   
   patientId: {
     type: String,
     unique: true,
     required: true,
-    index: true,
+    // ✅ FIX: Removed 'index: true' - unique đã tạo index
     uppercase: true,
     trim: true
   },
@@ -377,15 +377,12 @@ const patientSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// 🔍 INDEXES TỐI ƯU
-patientSchema.index({ patientId: 1 });
-patientSchema.index({ userId: 1 });
+// ✅ FIX: INDEXES TỐI ƯU - loại bỏ patientId và userId index (unique đã có)
 patientSchema.index({ 'insurance.provider': 1 });
-patientSchema.index({ admissionStatus: 1 });
+patientSchema.index({ admissionStatus: 1, riskLevel: 1 });
 patientSchema.index({ 'allergies.allergen': 1 });
 patientSchema.index({ 'chronicConditions.condition': 1 });
-patientSchema.index({ riskLevel: 1 });
-patientSchema.index({ createdAt: 1 });
+patientSchema.index({ createdAt: -1 });
 patientSchema.index({ 'emergencyInfo.contactPhone': 1 });
 
 // 🔮 VIRTUAL FIELDS

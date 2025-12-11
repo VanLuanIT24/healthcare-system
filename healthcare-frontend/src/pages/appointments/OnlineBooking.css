@@ -1,0 +1,245 @@
+/* Online Booking Page Styles - Modern Design */
+
+.online-booking-page {
+  padding: 24px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+}
+
+.booking-header {
+  text-align: center;
+  margin-bottom: 40px;
+  animation: fadeInDown 0.6s ease-out;
+}
+
+.booking-header h1 {
+  font-size: 42px;
+  margin-bottom: 12px;
+}
+
+.booking-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  padding: 40px;
+}
+
+.booking-steps {
+  margin-bottom: 48px;
+}
+
+.booking-steps .ant-steps-item-icon {
+  font-size: 24px;
+}
+
+.step-content {
+  min-height: 500px;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* Step Cards */
+.booking-step-card {
+  border-radius: 20px;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.booking-form .ant-form-item-label > label {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.booking-form .ant-input,
+.booking-form .ant-input-number,
+.booking-form .ant-select-selector,
+.booking-form .ant-picker {
+  border-radius: 12px;
+}
+
+/* Doctor Grid */
+.doctor-grid {
+  margin-top: 24px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.doctor-card {
+  border-radius: 16px;
+  text-align: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid rgba(102, 126, 234, 0.1);
+  height: 100%;
+}
+
+.doctor-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
+  border-color: rgba(102, 126, 234, 0.4);
+}
+
+.doctor-card.selected {
+  border-color: #667eea;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(240, 147, 251, 0.05) 100%);
+  box-shadow: 0 12px 40px rgba(102, 126, 234, 0.3);
+}
+
+.doctor-avatar {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.doctor-card h4 {
+  margin: 12px 0 8px;
+  font-weight: 700;
+}
+
+/* Calendar Card */
+.calendar-card {
+  border-radius: 16px;
+  border: 2px solid rgba(102, 126, 234, 0.1);
+}
+
+.calendar-card .ant-picker {
+  width: 100%;
+  height: auto;
+}
+
+.doctor-summary-card {
+  border-radius: 16px;
+  border: 2px solid rgba(102, 126, 234, 0.1);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(240, 147, 251, 0.05) 100%);
+}
+
+/* Time Slots */
+.slots-card {
+  border-radius: 16px;
+  border: 2px solid rgba(102, 126, 234, 0.1);
+  min-height: 400px;
+}
+
+.time-slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.time-slot {
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+.time-slot:not(.disabled):hover {
+  transform: translateY(-2px);
+  border-color: #667eea;
+  color: #667eea;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.2);
+}
+
+.time-slot.selected {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
+  box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+}
+
+.time-slot.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+/* Step Actions */
+.step-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 2px solid rgba(102, 126, 234, 0.1);
+}
+
+.step-actions .ant-btn {
+  min-width: 140px;
+  height: 44px;
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+/* Booking Details */
+.booking-details-card {
+  max-width: 500px;
+  margin: 0 auto;
+  border-radius: 16px;
+  border: 2px solid rgba(102, 126, 234, 0.1);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(240, 147, 251, 0.05) 100%);
+}
+
+/* Animations */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .online-booking-page {
+    padding: 16px;
+  }
+
+  .booking-container {
+    padding: 24px 16px;
+  }
+
+  .booking-header h1 {
+    font-size: 32px;
+  }
+
+  .time-slots-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+  }
+
+  .doctor-grid {
+    max-height: 400px;
+  }
+
+  .step-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .step-actions .ant-btn {
+    width: 100%;
+  }
+}

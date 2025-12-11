@@ -82,10 +82,25 @@ function validateHealthcareEmail(email) {
 
 /**
  * 🎯 TẠO MÃ XÁC NHẬN Y TẾ
+ * @param {string|number} prefixOrLength - Prefix (e.g., 'PR', 'LAB', 'CONS') or length if number
+ * @param {number} length - Length of random part (default 10)
+ * @returns {string} Generated code with prefix if provided
  */
-function generateMedicalCode(length = 8) {
+function generateMedicalCode(prefixOrLength = 8, length = 10) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
+  
+  // If first parameter is a number, it's the old API (length only)
+  if (typeof prefixOrLength === 'number') {
+    let result = '';
+    for (let i = 0; i < prefixOrLength; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+  
+  // New API: prefix + random code
+  const prefix = prefixOrLength;
+  let result = prefix;
   
   for (let i = 0; i < length; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));

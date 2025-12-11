@@ -62,13 +62,36 @@ router.post(
 );
 
 
-// 2. TÌM KIẾM BỆNH NHÂN
+// 2. TÌM KIẾM BỆNH NHÂN - Phải đặt trước /:patientId
 router.get(
   '/search',
   validateQuery(patientValidation.searchPatients),
   requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD, ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.BILLING_STAFF),
   requirePermission(PERMISSIONS['PATIENT.VIEW']),
   patientController.searchPatients
+);
+
+// 2.1. LẤY DANH SÁCH TẤT CẢ BỆNH NHÂN
+router.get(
+  '/',
+  validateQuery(patientValidation.searchPatients),
+  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD, ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.BILLING_STAFF),
+  requirePermission(PERMISSIONS['PATIENT.VIEW']),
+  patientController.getAllPatients
+);
+
+// 2.2. LẤY THỐNG KÊ BỆNH NHÂN
+router.get(
+  '/stats',
+  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
+  requirePermission(PERMISSIONS['PATIENT.VIEW']),
+  patientController.getPatientStats
+);
+
+// 2.5. LẤY BỆNH NHÂN THEO ID (FULL DATA) - Đặt sau /search
+router.get('/:patientId',
+  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD, ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.PATIENT),
+  patientController.getPatientById
 );
 
 // 3. THÔNG TIN NHÂN KHẨU
@@ -119,7 +142,14 @@ router.put('/:patientId/insurance',
   patientController.updatePatientInsurance
 );
 
-// 6. DỊ ỨNG & TIỀN SỬ
+// 6. LIÊN HỆ - PAT-7
+router.get('/:patientId/contacts',
+  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD, ROLES.DOCTOR, ROLES.NURSE),
+  requirePatientDataAccess('patientId'),
+  patientController.getPatientContacts
+);
+
+// 7. DỊ ỨNG & TIỀN SỬ
 router.get('/:patientId/allergies',
   requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD, ROLES.DOCTOR, ROLES.NURSE, ROLES.PATIENT),
   requirePatientDataAccess('patientId'),

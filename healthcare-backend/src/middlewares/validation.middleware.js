@@ -137,13 +137,23 @@ function validate(schema, source = 'body') {
           } : data) : 'NO DATA'
       });
 
-      // 🎯 KIỂM TRA DỮ LIỆU TỒN TẠI (chỉ cho body)
-      if (source === 'body' && (!data || Object.keys(data).length === 0)) {
+      // 🎯 KIỂM TRA DỮ LIỆU TỒN TẠI (chỉ cho body, skip nếu có file upload)
+      const hasFileUpload = req.file || req.files;
+      if (source === 'body' && (!data || Object.keys(data).length === 0) && !hasFileUpload) {
         console.log('❌ [VALIDATION] Request body is empty or missing');
         return res.status(400).json({
           success: false,
           message: 'Dữ liệu request không được để trống',
           error: 'REQUEST_BODY_EMPTY'
+        });
+      }
+
+      // 🎯 CLEAN EMPTY STRINGS for query params (convert to undefined)
+      if (source === 'query' && data) {
+        Object.keys(data).forEach(key => {
+          if (data[key] === '') {
+            data[key] = undefined;
+          }
         });
       }
 

@@ -12,7 +12,7 @@ const { requireRole } = require('../middlewares/rbac.middleware');
 
 // Middleware: Tất cả route admin phải authenticate và có role admin
 router.use(authenticate);
-router.use(requireRole(['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'DEPARTMENT_HEAD']));
+router.use(requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'DEPARTMENT_HEAD'));
 
 /**
  * Dashboard Statistics
@@ -26,6 +26,9 @@ router.get('/dashboard/revenue-chart', adminController.getRevenueChart);
 // GET /api/admin/dashboard/department-stats - Thống kê theo khoa
 router.get('/dashboard/department-stats', adminController.getDepartmentStats);
 
+// GET /api/admin/dashboard/departments - Alias for department-stats
+router.get('/dashboard/departments', adminController.getDepartmentStats);
+
 // GET /api/admin/dashboard/patient-distribution - Phân bố bệnh nhân
 router.get('/dashboard/patient-distribution', adminController.getPatientDistribution);
 
@@ -37,5 +40,8 @@ router.get('/dashboard/recent-activities', adminController.getRecentActivities);
  */
 // GET /api/admin/system-health - Kiểm tra sức khỏe hệ thống
 router.get('/system-health', adminController.getSystemHealth);
+
+// GET /api/admin/system/health - Alias for system-health
+router.get('/system/health', adminController.getSystemHealth);
 
 module.exports = router;

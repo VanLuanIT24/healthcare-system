@@ -9,6 +9,10 @@ const { commonSchemas } = require('../middlewares/validation.middleware');
 const medicalRecordValidation = {
   // 🎯 TẠO HỒ SƠ BỆNH ÁN
   createMedicalRecord: Joi.object({
+    patientId: commonSchemas.objectId.required()
+      .messages({
+        'any.required': 'Vui lòng chọn bệnh nhân'
+      }),
     doctorId: commonSchemas.objectId.required()
       .messages({
         'any.required': 'Vui lòng chọn bác sĩ'

@@ -20,12 +20,27 @@ const { authenticate } = require('../middlewares/auth.middleware');
 // APPLY AUTH MIDDLEWARE CHO TẤT CẢ ROUTES
 router.use(authenticate);
 
+// 🎯 TÌM KIẾM HỒ SƠ THEO CHẨN ĐOÁN - MUST BE BEFORE /:recordId
+router.get(
+  '/search',
+  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DOCTOR, ROLES.NURSE),
+  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
+  medicalRecordController.searchMedicalRecordsByDiagnosis
+);
+
+// 🎯 THỐNG KÊ HỒ SƠ BỆNH ÁN - MUST BE BEFORE /:recordId
+router.get(
+  '/stats',
+  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
+  medicalRecordController.getMedicalRecordsStats
+);
+
 // 🎯 TẠO HỒ SƠ BỆNH ÁN
 router.post(
-  '/patient/:patientId',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.CREATE_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
+  '/',
+  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DOCTOR, ROLES.NURSE),
+  requirePermission(PERMISSIONS['MEDICAL.CREATE_RECORDS']),
   validateBody(medicalRecordValidation.createMedicalRecord),
   medicalRecordController.createMedicalRecord
 );
@@ -40,10 +55,9 @@ router.get(
 
 // 🎯 LẤY TẤT CẢ HỒ SƠ BỆNH ÁN CỦA BỆNH NHÂN
 router.get(
-  '/patient/:patientId/records',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
+  '/patient/:patientId',
+  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DOCTOR, ROLES.NURSE, ROLES.PATIENT),
+  requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
   validateQuery(medicalRecordValidation.getPatientMedicalRecords),
   medicalRecordController.getPatientMedicalRecords
 );
@@ -67,13 +81,12 @@ router.post(
   medicalRecordController.recordVitalSigns
 );
 
-// 🎯 LẤY LỊCH SỬ DẤU HIỆU SINH TỒN
+// 🎯 LẤY LỊCH SỬ DẤU HIỆU SINH TỒN - MR-3
 router.get(
-  '/patient/:patientId/vital-signs/history',
+  '/patient/:patientId/vital-signs',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
   requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
   requirePatientDataAccess('patientId'),
-  validateQuery(medicalRecordValidation.getVitalSignsHistory),
   medicalRecordController.getVitalSignsHistory
 );
 
@@ -94,6 +107,41 @@ router.get(
   requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
   requirePatientDataAccess('patientId'),
   medicalRecordController.getMedicalHistory
+);
+
+// 🎯 THÊM TIỀN SỬ PHẪU THUẬT - MR-6
+router.post(
+  '/patient/:patientId/surgical-history',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE),
+  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  requirePatientDataAccess('patientId'),
+  medicalRecordController.addSurgicalHistory
+);
+
+// 🎯 LẤY TIỀN SỬ PHẪU THUẬT - MR-7
+router.get(
+  '/patient/:patientId/surgical-history',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
+  requirePatientDataAccess('patientId'),
+  medicalRecordController.getSurgicalHistory
+);
+
+// 🎯 LẤY TIỀN SỬ SẢN KHOA - MR-8
+router.get(
+  '/patient/:patientId/obstetric-history',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
+  requirePatientDataAccess('patientId'),
+  medicalRecordController.getObstetricHistory
+);
+
+// 🎯 GHI NHẬN PHÁT HIỆN LÂM SÀNG - MR-9
+router.post(
+  '/:recordId/clinical-findings',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.SUPER_ADMIN),
+  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  medicalRecordController.recordClinicalFindings
 );
 
 // 🎯 LƯU TRỮ HỒ SƠ BỆNH ÁN

@@ -744,12 +744,21 @@ class ClinicalService {
         throw new AppError('Không tìm thấy kế hoạch điều trị', 404);
       }
 
-      if (medicalRecord.status === 'COMPLETED') {
+      if (!medicalRecord.treatmentPlan) {
+        throw new AppError('Chưa có kế hoạch điều trị', 400);
+      }
+
+      if (medicalRecord.treatmentPlan.status === 'COMPLETED') {
         throw new AppError('Kế hoạch điều trị đã hoàn thành', 400);
       }
 
-      // 🎯 CẬP NHẬT TRẠNG THÁI
-      medicalRecord.status = 'COMPLETED';
+      // 🎯 CẬP NHẬT TRẠNG THÁI TREATMENT PLAN
+      if (!medicalRecord.treatmentPlan) {
+        medicalRecord.treatmentPlan = {};
+      }
+      medicalRecord.treatmentPlan.status = 'COMPLETED';
+      medicalRecord.treatmentPlan.completedDate = new Date();
+      medicalRecord.treatmentPlan.completedBy = completedBy;
       medicalRecord.lastModifiedBy = completedBy;
       await medicalRecord.save();
 
@@ -900,9 +909,17 @@ class ClinicalService {
     try {
       console.log('🏥 [CLINICAL] Recording discharge summary for patient:', patientId);
 
+      // 🎯 TÌM PATIENT TO GET ObjectId
+      const Patient = require('../models/patient.model');
+      const patient = await Patient.findOne({ patientId });
+      
+      if (!patient) {
+        throw new AppError('Không tìm thấy bệnh nhân', 404);
+      }
+
       // 🎯 TÌM MEDICAL RECORD NHẬP VIỆN
       let medicalRecord = await MedicalRecord.findOne({
-        patientId,
+        patientId: patient._id,
         visitType: 'INPATIENT',
         status: { $in: ['DRAFT', 'COMPLETED'] }
       }).sort({ visitDate: -1 });

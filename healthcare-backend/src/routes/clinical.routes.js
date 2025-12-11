@@ -24,7 +24,7 @@ router.use(authenticate);
 router.post(
   '/patient/:patientId/doctor/:doctorId/consultations',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.CREATE_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS['MEDICAL.CREATE_RECORDS']),
   requirePatientDataAccess('patientId'),
   validateBody(clinicalValidation.createConsultation),
   clinicalController.createConsultation
@@ -34,7 +34,7 @@ router.post(
 router.get(
   '/consultations/:consultationId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
   clinicalController.getConsultation
 );
 
@@ -42,7 +42,7 @@ router.get(
 router.put(
   '/consultations/:consultationId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
   validateBody(clinicalValidation.updateConsultation),
   clinicalController.updateConsultation
 );
@@ -51,7 +51,7 @@ router.put(
 router.post(
   '/consultations/:consultationId/diagnoses',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.CREATE_DIAGNOSIS),
+  requirePermission(PERMISSIONS['DIAGNOSIS.CREATE']),
   validateBody(clinicalValidation.addDiagnosis),
   clinicalController.addDiagnosis
 );
@@ -60,7 +60,7 @@ router.post(
 router.get(
   '/patient/:patientId/diagnoses',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
   requirePatientDataAccess('patientId'),
   validateQuery(clinicalValidation.getPatientDiagnoses),
   clinicalController.getPatientDiagnoses
@@ -70,7 +70,7 @@ router.get(
 router.post(
   '/consultations/:consultationId/symptoms',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
   validateBody(clinicalValidation.recordSymptoms),
   clinicalController.recordSymptoms
 );
@@ -79,7 +79,7 @@ router.post(
 router.post(
   '/consultations/:consultationId/physical-exam',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
   validateBody(clinicalValidation.recordPhysicalExam),
   clinicalController.recordPhysicalExam
 );
@@ -88,7 +88,7 @@ router.post(
 router.post(
   '/consultations/:consultationId/complete',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
   clinicalController.completeConsultation
 );
 
@@ -96,7 +96,7 @@ router.post(
 router.put(
   '/diagnoses/:diagnosisId',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.UPDATE_DIAGNOSIS),
+  requirePermission(PERMISSIONS['DIAGNOSIS.UPDATE']),
   validateBody(clinicalValidation.updateDiagnosis),
   clinicalController.updateDiagnosis
 );
@@ -105,7 +105,7 @@ router.put(
 router.post(
   '/patient/:patientId/treatment-plans',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.CREATE_TREATMENT_PLANS),
+  requirePermission(PERMISSIONS['TREATMENT.CREATE_PLANS']),
   requirePatientDataAccess('patientId'),
   validateBody(clinicalValidation.createTreatmentPlan),
   clinicalController.createTreatmentPlan
@@ -115,7 +115,7 @@ router.post(
 router.get(
   '/treatment-plans/:planId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS.VIEW_TREATMENT_PLANS),
+  requirePermission(PERMISSIONS['TREATMENT.VIEW_PLANS']),
   clinicalController.getTreatmentPlan
 );
 
@@ -123,7 +123,7 @@ router.get(
 router.post(
   '/patient/:patientId/progress-notes',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
   requirePatientDataAccess('patientId'),
   validateBody(clinicalValidation.recordProgressNote),
   clinicalController.recordProgressNote
@@ -133,7 +133,7 @@ router.post(
 router.put(
   '/treatment-plans/:planId',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.UPDATE_TREATMENT_PLANS),
+  requirePermission(PERMISSIONS['TREATMENT.UPDATE_PLANS']),
   validateBody(clinicalValidation.updateTreatmentPlan),
   clinicalController.updateTreatmentPlan
 );
@@ -142,7 +142,7 @@ router.put(
 router.post(
   '/treatment-plans/:planId/complete',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.UPDATE_TREATMENT_PLANS),
+  requirePermission(PERMISSIONS['TREATMENT.UPDATE_PLANS']),
   clinicalController.completeTreatmentPlan
 );
 
@@ -150,7 +150,7 @@ router.post(
 router.get(
   '/patient/:patientId/progress-notes',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
   requirePatientDataAccess('patientId'),
   validateQuery(clinicalValidation.getProgressNotes),
   clinicalController.getProgressNotes
@@ -160,7 +160,7 @@ router.get(
 router.post(
   '/patient/:patientId/nursing-notes',
   requireRole(ROLES.NURSE),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
   requirePatientDataAccess('patientId'),
   validateBody(clinicalValidation.recordNursingNote),
   clinicalController.recordNursingNote
@@ -170,7 +170,7 @@ router.post(
 router.post(
   '/patient/:patientId/discharge-summary',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
   requirePatientDataAccess('patientId'),
   validateBody(clinicalValidation.recordDischargeSummary),
   clinicalController.recordDischargeSummary

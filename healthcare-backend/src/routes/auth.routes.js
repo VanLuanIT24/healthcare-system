@@ -125,4 +125,18 @@ router.post(
   authController.logoutAllSessions
 );
 
+// 🎯 VERIFY EMAIL (PUBLIC)
+router.get(
+  '/verify-email/:token',
+  authController.verifyEmail
+);
+
+// 🎯 RESEND VERIFICATION EMAIL (PUBLIC)
+router.post(
+  '/resend-verification',
+  sanitizeInput(['email']),
+  validateBody(authValidation.resendVerification.body),
+  authController.resendVerification
+);
+
 module.exports = router;

@@ -117,10 +117,10 @@ const diagnosisSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
+// ✅ FIX: Compound indexes chỉ
 diagnosisSchema.index({ patientId: 1, diagnosedDate: -1 });
 diagnosisSchema.index({ diagnosisCode: 1 });
-diagnosisSchema.index({ doctorId: 1 });
+diagnosisSchema.index({ doctorId: 1, diagnosedDate: -1 });
 diagnosisSchema.index({ status: 1 });
 
 // Virtuals

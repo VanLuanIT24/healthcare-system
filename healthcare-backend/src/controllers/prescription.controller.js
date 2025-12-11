@@ -248,6 +248,41 @@ class PrescriptionController {
       data: medication
     });
   });
+
+  // 🎯 THÊM THUỐC VÀO ĐƠN THUỐC - PRESC-1
+  addMedicationToPrescription = asyncHandler(async (req, res) => {
+    const { prescriptionId } = req.params;
+    const medicationData = req.body;
+
+    const prescription = await prescriptionService.addMedicationToPrescription(
+      prescriptionId,
+      medicationData
+    );
+
+    res.json({
+      success: true,
+      message: 'Thêm thuốc vào đơn thành công',
+      data: prescription
+    });
+  });
+
+  // 🎯 CẬP NHẬT THUỐC TRONG ĐƠN - PRESC-2
+  updateMedicationInPrescription = asyncHandler(async (req, res) => {
+    const { prescriptionId, medicationId } = req.params;
+    const updateData = req.body;
+
+    const prescription = await prescriptionService.updateMedicationInPrescription(
+      prescriptionId,
+      medicationId,
+      updateData
+    );
+
+    res.json({
+      success: true,
+      message: 'Cập nhật thuốc trong đơn thành công',
+      data: prescription
+    });
+  });
 }
 
 module.exports = new PrescriptionController();

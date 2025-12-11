@@ -145,26 +145,176 @@ async function createNurses() {
   return nurses;
 }
 
+// Tạo Receptionists
+async function createReceptionists() {
+  const hashedPassword = await bcrypt.hash('Reception@123', 10);
+  const receptionists = [];
+
+  for (let i = 1; i <= 5; i++) {
+    const receptionist = new User({
+      email: `receptionist${i}@hospital.com`,
+      password: hashedPassword,
+      role: 'RECEPTIONIST',
+      status: 'ACTIVE',
+      personalInfo: {
+        firstName: `Lễ tân ${i}`,
+        lastName: i % 2 === 0 ? 'Vũ' : 'Đỗ',
+        phone: `092000${String(i).padStart(4, '0')}`,
+        dateOfBirth: `199${i % 10}-0${(i % 12) + 1}-10`,
+        gender: i % 2 === 0 ? 'MALE' : 'FEMALE'
+      }
+    });
+
+    await receptionist.save();
+    receptionists.push(receptionist);
+  }
+
+  console.log(`✅ Created ${receptionists.length} receptionists`);
+  return receptionists;
+}
+
+// Tạo Lab Technicians
+async function createLabTechnicians() {
+  const hashedPassword = await bcrypt.hash('Lab@123', 10);
+  const labTechs = [];
+  const departments = ['HEMATOLOGY', 'BIOCHEMISTRY', 'MICROBIOLOGY'];
+
+  for (let i = 1; i <= 5; i++) {
+    const labTech = new User({
+      email: `lab${i}@hospital.com`,
+      password: hashedPassword,
+      role: 'LAB_TECHNICIAN',
+      status: 'ACTIVE',
+      personalInfo: {
+        firstName: `KTV ${i}`,
+        lastName: i % 2 === 0 ? 'Ngô' : 'Dương',
+        phone: `093000${String(i).padStart(4, '0')}`,
+        dateOfBirth: `199${i % 10}-0${(i % 12) + 1}-05`,
+        gender: i % 2 === 0 ? 'MALE' : 'FEMALE'
+      },
+      professionalInfo: {
+        department: departments[i % departments.length],
+        licenseNumber: `LT-${String(i).padStart(6, '0')}`,
+        yearsOfExperience: 2 + (i % 5)
+      }
+    });
+
+    await labTech.save();
+    labTechs.push(labTech);
+  }
+
+  console.log(`✅ Created ${labTechs.length} lab technicians`);
+  return labTechs;
+}
+
+// Tạo Pharmacists
+async function createPharmacists() {
+  const hashedPassword = await bcrypt.hash('Pharmacy@123', 10);
+  const pharmacists = [];
+
+  for (let i = 1; i <= 3; i++) {
+    const pharmacist = new User({
+      email: `pharmacist${i}@hospital.com`,
+      password: hashedPassword,
+      role: 'PHARMACIST',
+      status: 'ACTIVE',
+      personalInfo: {
+        firstName: `Dược sĩ ${i}`,
+        lastName: i % 2 === 0 ? 'Lý' : 'Trịnh',
+        phone: `094000${String(i).padStart(4, '0')}`,
+        dateOfBirth: `198${i % 10}-0${(i % 12) + 1}-15`,
+        gender: i % 2 === 0 ? 'MALE' : 'FEMALE'
+      },
+      professionalInfo: {
+        licenseNumber: `PH-${String(i).padStart(6, '0')}`,
+        yearsOfExperience: 3 + (i % 7)
+      }
+    });
+
+    await pharmacist.save();
+    pharmacists.push(pharmacist);
+  }
+
+  console.log(`✅ Created ${pharmacists.length} pharmacists`);
+  return pharmacists;
+}
+
+// Tạo Billing Staff
+async function createBillingStaff() {
+  const hashedPassword = await bcrypt.hash('Billing@123', 10);
+  const billingStaff = [];
+
+  for (let i = 1; i <= 3; i++) {
+    const billing = new User({
+      email: `billing${i}@hospital.com`,
+      password: hashedPassword,
+      role: 'BILLING_STAFF',
+      status: 'ACTIVE',
+      personalInfo: {
+        firstName: `NV Thanh toán ${i}`,
+        lastName: i % 2 === 0 ? 'Cao' : 'Phan',
+        phone: `094000${String(i).padStart(4, '0')}`,
+        dateOfBirth: `199${i % 10}-0${(i % 12) + 1}-20`,
+        gender: i % 2 === 0 ? 'FEMALE' : 'MALE'
+      }
+    });
+
+    await billing.save();
+    billingStaff.push(billing);
+  }
+
+  console.log(`✅ Created ${billingStaff.length} billing staff`);
+  return billingStaff;
+}
+
+// Tạo Admin Staff
+async function createAdminStaff() {
+  const hashedPassword = await bcrypt.hash('AdminStaff@123', 10);
+  const adminStaff = [];
+
+  for (let i = 1; i <= 2; i++) {
+    const admin = new User({
+      email: `adminstaff${i}@hospital.com`,
+      password: hashedPassword,
+      role: 'HOSPITAL_ADMIN',
+      status: 'ACTIVE',
+      personalInfo: {
+        firstName: `Quản trị ${i}`,
+        lastName: i % 2 === 0 ? 'Mai' : 'Đặng',
+        phone: `095000${String(i).padStart(4, '0')}`,
+        dateOfBirth: `198${i % 10}-0${(i % 12) + 1}-01`,
+        gender: i % 2 === 0 ? 'MALE' : 'FEMALE'
+      }
+    });
+
+    await admin.save();
+    adminStaff.push(admin);
+  }
+
+  console.log(`✅ Created ${adminStaff.length} admin staff`);
+  return adminStaff;
+}
+
 // Tạo Patients
 async function createPatients(adminUser) {
   const hashedPassword = await bcrypt.hash('Patient@123', 10);
   const patients = [];
-  const firstNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng'];
-  const lastNames = ['Văn A', 'Thị B', 'Văn C', 'Thị D', 'Văn E', 'Thị F', 'Văn G', 'Thị H'];
-  const bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  const firstNames = ['Bệnh nhân'];
+  const lastNames = ['Võ', 'Tô', 'Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ'];
+  const bloodTypes = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
 
-  for (let i = 1; i <= 50; i++) {
+  for (let i = 1; i <= 20; i++) {
     // Create User
     const user = new User({
-      email: `patient${i}@example.com`,
+      email: `patient${i}@hospital.com`,
       password: hashedPassword,
       role: 'PATIENT',
       status: 'ACTIVE',
       personalInfo: {
-        firstName: firstNames[i % firstNames.length],
+        firstName: `${firstNames[0]} ${i}`,
         lastName: lastNames[i % lastNames.length],
-        phone: `092${String(i).padStart(7, '0')}`,
-        dateOfBirth: `19${50 + (i % 50)}-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
+        phone: `096000${String(i).padStart(4, '0')}`,
+        dateOfBirth: `19${70 + (i % 30)}-${String((i % 12) + 1).padStart(2, '0')}-${String((i % 28) + 1).padStart(2, '0')}`,
         gender: i % 2 === 0 ? 'MALE' : 'FEMALE',
         address: {
           street: `${i} Đường ABC`,
@@ -181,7 +331,7 @@ async function createPatients(adminUser) {
     // Create Patient Profile
     const patient = new Patient({
       userId: user._id,
-      patientId: `BN202511${String(i).padStart(6, '0')}`,
+      patientId: `P-${String(i).padStart(6, '0')}`,
       bloodType: bloodTypes[i % bloodTypes.length],
       height: 150 + (i % 40),
       weight: 45 + (i % 40),
@@ -485,6 +635,11 @@ async function seedDatabase() {
     const superAdmin = await createSuperAdmin();
     const doctors = await createDoctors();
     const nurses = await createNurses();
+    const receptionists = await createReceptionists();
+    const labTechs = await createLabTechnicians();
+    const pharmacists = await createPharmacists();
+    const billingStaff = await createBillingStaff();
+    const adminStaff = await createAdminStaff();
     const patients = await createPatients(superAdmin);
     const appointments = await createAppointments(patients, doctors, superAdmin);
     const bills = await createBills(patients, superAdmin);
@@ -496,16 +651,27 @@ async function seedDatabase() {
     console.log(`   - 1 Super Admin`);
     console.log(`   - ${doctors.length} Doctors`);
     console.log(`   - ${nurses.length} Nurses`);
+    console.log(`   - ${receptionists.length} Receptionists`);
+    console.log(`   - ${labTechs.length} Lab Technicians`);
+    console.log(`   - ${pharmacists.length} Pharmacists`);
+    console.log(`   - ${billingStaff.length} Billing Staff`);
+    console.log(`   - ${adminStaff.length} Admin Staff`);
     console.log(`   - ${patients.length} Patients`);
     console.log(`   - ${appointments.length} Appointments`);
     console.log(`   - ${bills.length} Bills`);
     console.log(`   - 5 Medications`);
     console.log(`   - 3 Lab Tests`);
     console.log('\n🔑 Login credentials:');
-    console.log('   Admin: admin@hospital.com / Admin@123');
+    console.log('   Super Admin: admin@hospital.com / Admin@123');
     console.log('   Doctor: doctor1@hospital.com / Doctor@123');
     console.log('   Nurse: nurse1@hospital.com / Nurse@123');
-    console.log('   Patient: patient1@example.com / Patient@123');
+    console.log('   Receptionist: receptionist1@hospital.com / Reception@123');
+    console.log('   Lab Tech: lab1@hospital.com / Lab@123');
+    console.log('   Pharmacist: pharmacist1@hospital.com / Pharmacy@123');
+    console.log('   Billing: billing1@hospital.com / Billing@123');
+    console.log('   Admin Staff: adminstaff1@hospital.com / AdminStaff@123');
+    console.log('   Patient: patient1@hospital.com / Patient@123');
+    console.log('\n📄 Full account list: See TEST_ACCOUNTS.md');
 
     process.exit(0);
   } catch (error) {

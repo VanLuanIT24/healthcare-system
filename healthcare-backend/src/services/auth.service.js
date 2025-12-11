@@ -708,13 +708,24 @@ class AuthService {
    * 🎯 SANITIZE USER DATA
    */
   sanitizeUser(user) {
-    const sanitized = { ...user };
+    // Convert Mongoose document to plain object
+    const userObj = user.toObject ? user.toObject() : user;
     
-    delete sanitized.password;
-    delete sanitized.resetPasswordToken;
-    delete sanitized.resetPasswordExpires;
-    delete sanitized.loginAttempts;
-    delete sanitized.lockUntil;
+    const sanitized = {
+      _id: userObj._id,
+      email: userObj.email,
+      role: userObj.role,
+      personalInfo: userObj.personalInfo,
+      department: userObj.department,
+      specialization: userObj.specialization,
+      professionalInfo: userObj.professionalInfo,
+      contactInfo: userObj.contactInfo,
+      status: userObj.status,
+      isEmailVerified: userObj.isEmailVerified,
+      permissions: userObj.permissions,
+      createdAt: userObj.createdAt,
+      updatedAt: userObj.updatedAt
+    };
 
     return sanitized;
   }
@@ -733,6 +744,98 @@ class AuthService {
     
     return messages[status] || 'Tài khoản không hoạt động';
   }
+
+  /**
+ * 🎯 VERIFY EMAIL - HÀM MỚI
+ */
+async verifyEmail(token) {
+  try {
+    console.log('📧 [AUTH SERVICE] Verifying email with token');
+
+    const user = await User.findByVerificationToken(token);
+    if (!user) {
+      throw new AppError('Token xác thực email không hợp lệ hoặc đã hết hạn', 400, ERROR_CODES.AUTH_INVALID_TOKEN);
+    }
+
+    // Xác thực email
+    user.verifyEmail();
+    await user.save();
+
+    // Gửi email chào mừng
+    if (process.env.SEND_WELCOME_EMAIL === 'true') {
+      try {
+        await emailService.sendWelcomeEmail(user);
+        console.log(`✅ Welcome email sent to: ${user.email}`);
+      } catch (emailError) {
+        console.error('❌ Welcome email failed:', emailError.message);
+      }
+    }
+
+    // Log hoạt động
+    await AuditLog.logAction({
+      action: 'EMAIL_VERIFIED',
+      userId: user._id,
+      userRole: user.role,
+      userEmail: user.email,
+      resource: 'User',
+      resourceId: user._id,
+      success: true,
+      category: 'AUTHENTICATION'
+    });
+
+    console.log(`✅ Email verified successfully for: ${user.email}`);
+
+    return {
+      message: 'Email đã được xác thực thành công',
+      user: this.sanitizeUser(user)
+    };
+
+  } catch (error) {
+    console.error('❌ Verify email error:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * 🎯 RESEND VERIFICATION EMAIL - HÀM MỚI
+ */
+async resendVerification(email) {
+  try {
+    console.log('📧 [AUTH SERVICE] Resending verification email:', email);
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      // Không tiết lộ email có tồn tại
+      return { 
+        message: 'Nếu email tồn tại, email xác thực sẽ được gửi lại' 
+      };
+    }
+
+    if (user.isEmailVerified) {
+      throw new AppError('Email đã được xác thực', 400);
+    }
+
+    // Tạo token mới
+    const newToken = user.generateEmailVerificationToken();
+    await user.save();
+
+    // Gửi email xác thực
+    try {
+      await emailService.sendVerificationEmail(user, newToken);
+      console.log(`✅ Verification email resent to: ${user.email}`);
+    } catch (emailError) {
+      console.error('❌ Verification email failed:', emailError.message);
+    }
+
+    return { 
+      message: 'Email xác thực đã được gửi lại' 
+    };
+
+  } catch (error) {
+    console.error('❌ Resend verification error:', error.message);
+    throw error;
+  }
+}
 }
 
 module.exports = new AuthService();

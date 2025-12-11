@@ -1,0 +1,201 @@
+/* 📄 Public Pages Common Styles */
+
+.public-page {
+  width: 100%;
+  min-height: 100vh;
+  background: white;
+}
+
+/* Page Hero */
+.page-hero {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 80px 0;
+  margin-bottom: 60px;
+}
+
+.page-hero h1 {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  animation: fadeInDown 0.8s ease-in-out;
+}
+
+.page-hero .ant-typography {
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+  animation: fadeInUp 0.8s ease-in-out;
+}
+
+/* Section */
+.section {
+  padding: 60px 0;
+}
+
+.section .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Value Cards */
+.value-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.value-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #1890ff;
+}
+
+/* Contact Info Card */
+.contact-info-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.contact-info-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #1890ff;
+}
+
+/* CTA Button */
+.cta-button {
+  background: white;
+  color: #1890ff;
+  border: none;
+  padding: 12px 40px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.cta-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+/* Services Page */
+.service-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  height: 100%;
+  border: 2px solid transparent;
+}
+
+.service-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  border-color: #1890ff;
+}
+
+.service-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+/* Doctor Card */
+.doctor-card {
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.doctor-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.doctor-avatar {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  border-radius: 8px 8px 0 0;
+}
+
+.doctor-info {
+  padding: 20px;
+}
+
+/* Timeline */
+.ant-timeline {
+  padding: 20px 0;
+}
+
+.ant-timeline-item-content {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* Animations */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-hero {
+    padding: 60px 0;
+  }
+
+  .page-hero h1 {
+    font-size: 32px !important;
+  }
+
+  .section {
+    padding: 40px 0;
+  }
+
+  .service-icon {
+    font-size: 48px;
+  }
+
+  .doctor-avatar {
+    height: 200px;
+  }
+}
+
+@media (max-width: 576px) {
+  .page-hero {
+    padding: 40px 0;
+  }
+
+  .page-hero h1 {
+    font-size: 28px !important;
+  }
+
+  .page-hero .ant-typography {
+    font-size: 14px !important;
+  }
+
+  .cta-button {
+    padding: 10px 24px;
+    font-size: 14px;
+  }
+}

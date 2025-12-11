@@ -21,21 +21,58 @@ class LaboratoryService {
       // Kiểm tra thông tin xét nghiệm
       const testsWithDetails = [];
       for (let test of testData.tests) {
-        const labTest = await LabTest.findById(test.testId);
+        let labTest;
+        
+        // Tìm test theo testId hoặc testCode
+        if (test.testId) {
+          labTest = await LabTest.findById(test.testId);
+        } else if (test.testCode) {
+          labTest = await LabTest.findOne({ code: test.testCode });
+        }
+        
+        // Nếu không tìm thấy, tạo test entry từ data provided
         if (!labTest) {
-          throw new AppError(`Xét nghiệm ${test.testId} không tồn tại`, 404);
+          // Fallback: sử dụng thông tin từ request nếu có đầy đủ
+          if (test.testCode && test.testName && test.category) {
+            // Convert specimenRequirements array to string or undefined
+            const specimenReqs = test.specimenRequirements 
+              ? (Array.isArray(test.specimenRequirements) 
+                  ? test.specimenRequirements.join(', ') 
+                  : test.specimenRequirements)
+              : undefined;
+            
+            testsWithDetails.push({
+              // testId will be undefined - model needs to allow this or we create placeholder
+              testCode: test.testCode,
+              testName: test.testName,
+              category: test.category,
+              specimenType: test.specimenType || 'BLOOD',
+              specimenRequirements: specimenReqs,
+              instructions: test.instructions,
+              price: test.price || 0,
+              priority: test.urgency || test.priority || 'ROUTINE'
+            });
+            continue;
+          } else {
+            throw new AppError(`Xét nghiệm ${test.testId || test.testCode} không tồn tại`, 404);
+          }
         }
 
+        // Convert specimenRequirements array to string if needed
+        const specimenReqs = Array.isArray(labTest.specimenRequirements)
+          ? labTest.specimenRequirements.join(', ')
+          : labTest.specimenRequirements;
+
         testsWithDetails.push({
-          testId: test.testId,
+          testId: labTest._id,
           testCode: labTest.code,
           testName: labTest.name,
           category: labTest.category,
-          specimenType: test.specimenType,
-          specimenRequirements: labTest.specimenRequirements,
+          specimenType: test.specimenType || labTest.specimenType,
+          specimenRequirements: specimenReqs,
           instructions: test.instructions,
-          price: labTest.pricing.price,
-          priority: test.priority
+          price: labTest.pricing?.price || 0,
+          priority: test.urgency || test.priority || labTest.turnaroundTime?.priority || 'ROUTINE'
         });
       }
 

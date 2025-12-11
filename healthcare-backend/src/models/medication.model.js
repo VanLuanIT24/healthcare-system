@@ -132,12 +132,10 @@ const medicationSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
-medicationSchema.index({ name: 1 });
-medicationSchema.index({ genericName: 1 });
-medicationSchema.index({ category: 1 });
-medicationSchema.index({ 'stock.current': 1 });
-medicationSchema.index({ status: 1 });
+// ✅ FIX: Compound indexes và text search
+medicationSchema.index({ name: 'text', genericName: 'text' });
+medicationSchema.index({ category: 1, status: 1 });
+medicationSchema.index({ 'stock.current': 1, status: 1 });
 
 // Virtuals
 medicationSchema.virtual('isLowStock').get(function() {

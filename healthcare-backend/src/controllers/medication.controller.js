@@ -539,6 +539,86 @@ class MedicationController {
       });
     }
   }
+
+  /**
+   * 🎯 LẤY BÁO CÁO TỒN KHO
+   */
+  static async getMedicationInventory(req, res) {
+    try {
+      const {
+        page = 1,
+        limit = 20,
+        category,
+        status, // ACTIVE, INACTIVE, DISCONTINUED
+        sortBy = 'name',
+        sortOrder = 'asc'
+      } = req.query;
+
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const skip = (pageNum - 1) * limitNum;
+
+      // 🔍 XÂY DỰNG QUERY
+      const query = { deletedAt: { $exists: false } };
+
+      if (category) {
+        query.category = category;
+      }
+
+      if (status) {
+        query.status = status;
+      }
+
+      // Lấy tổng số bản ghi
+      const total = await Medication.countDocuments(query);
+
+      // Lấy dữ liệu có phân trang
+      const inventory = await Medication.find(query)
+        .select('medicationId name genericName brandName category stock pricing expiryDate status')
+        .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean();
+
+      // Tính toán chi tiết tồn kho
+      const inventoryReport = inventory.map(med => ({
+        medicationId: med.medicationId,
+        name: med.name,
+        genericName: med.genericName,
+        brandName: med.brandName,
+        category: med.category,
+        currentStock: med.stock?.current || 0,
+        minimumStock: med.stock?.minimumLevel || 0,
+        reorderLevel: med.stock?.reorderLevel || 0,
+        maximumStock: med.stock?.maximumLevel || 0,
+        unitPrice: med.pricing?.unitPrice || 0,
+        totalValue: (med.stock?.current || 0) * (med.pricing?.unitPrice || 0),
+        status: med.stock?.current <= med.stock?.minimumLevel ? 'CRITICAL' :
+                med.stock?.current <= med.stock?.reorderLevel ? 'LOW' : 'NORMAL',
+        expiryDate: med.expiryDate,
+        medicationStatus: med.status
+      }));
+
+      res.json({
+        success: true,
+        data: inventoryReport,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          pages: Math.ceil(total / limitNum),
+          totalValue: inventoryReport.reduce((sum, item) => sum + item.totalValue, 0)
+        }
+      });
+    } catch (error) {
+      console.error('❌ Get medication inventory error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Không thể lấy báo cáo tồn kho',
+        message: error.message
+      });
+    }
+  }
 }
 
 module.exports = MedicationController;

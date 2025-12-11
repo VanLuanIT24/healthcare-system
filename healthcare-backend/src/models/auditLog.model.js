@@ -11,12 +11,12 @@ const auditLogSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    index: true,
+    // ✅ FIX: Removed 'index: true' - sẽ tạo compound index ở dưới
   },
   userRole: {
     type: String,
-    required: false, // ✅ SỬA: required: true -> false
-    index: true,
+    required: false,
+    // ✅ FIX: Removed 'index: true' - không cần index riêng
   },
   userEmail: String,
   userName: String,
@@ -25,17 +25,17 @@ const auditLogSchema = new mongoose.Schema({
   action: {
     type: String,
     required: true,
-    index: true,
+    // ✅ FIX: Removed 'index: true' - sẽ tạo compound index ở dưới
   },
   resource: {
     type: String,
-    required: false, // ✅ SỬA: required: true -> false
-    default: 'User', // ✅ THÊM default value
-    index: true,
+    required: false,
+    default: 'User',
+    // ✅ FIX: Removed 'index: true' - sẽ tạo compound index ở dưới
   },
   resourceId: {
     type: mongoose.Schema.Types.ObjectId,
-    index: true,
+    // ✅ FIX: Removed 'index: true' - sẽ tạo compound index ở dưới
   },
 
   // ========== THÔNG TIN REQUEST ==========
@@ -84,14 +84,14 @@ const auditLogSchema = new mongoose.Schema({
       'OTHER'
     ],
     default: 'OTHER',
-    index: true,
+    // ✅ FIX: Removed 'index: true' - không cần index riêng
   },
 
   // ========== THÔNG TIN BỆNH NHÂN (CHO HIPAA) ==========
   patientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    index: true,
+    // ✅ FIX: Removed 'index: true' - sẽ tạo compound index ở dưới
   },
 
   // ========== METADATA LINH HOẠT ==========
@@ -101,7 +101,7 @@ const auditLogSchema = new mongoose.Schema({
   timestamp: {
     type: Date,
     default: Date.now,
-    index: true,
+    // ✅ FIX: Removed 'index: true' - sẽ tạo compound index ở dưới
   },
   
 }, {

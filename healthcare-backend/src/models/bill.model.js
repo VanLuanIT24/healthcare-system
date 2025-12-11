@@ -124,7 +124,7 @@ const billSchema = new mongoose.Schema({
   // Trạng thái
   status: {
     type: String,
-    enum: ['DRAFT', 'ISSUED', 'PARTIAL', 'PAID', 'OVERDUE', 'WRITTEN_OFF'],
+    enum: ['DRAFT', 'ISSUED', 'PARTIAL', 'PAID', 'OVERDUE', 'WRITTEN_OFF', 'VOIDED'],
     default: 'DRAFT'
   },
   
@@ -148,11 +148,9 @@ const billSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
+// ✅ FIX: Compound indexes chỉ - loại bỏ single field indexes trùng lặp
 billSchema.index({ patientId: 1, issueDate: -1 });
-billSchema.index({ billId: 1 });
-billSchema.index({ status: 1 });
-billSchema.index({ dueDate: 1 });
+billSchema.index({ status: 1, dueDate: 1 });
 
 // Virtuals
 billSchema.virtual('isOverdue').get(function() {

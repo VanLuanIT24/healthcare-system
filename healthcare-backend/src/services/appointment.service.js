@@ -1,5 +1,6 @@
 const Appointment = require('../models/appointment.model');
 const User = require('../models/user.model');
+const Patient = require('../models/patient.model');
 const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 const { generateMedicalCode } = require('../utils/healthcare.utils');
 
@@ -20,12 +21,8 @@ class AppointmentService {
         throw new AppError('Không tìm thấy bác sĩ hoặc bác sĩ không hoạt động', 404, 'DOCTOR_NOT_FOUND');
       }
 
-      // Validate patient exists
-      const patient = await User.findOne({ 
-        _id: appointmentData.patientId, 
-        role: 'PATIENT',
-        status: 'ACTIVE'
-      });
+      // Validate patient exists - tìm trong Patient collection
+      const patient = await Patient.findById(appointmentData.patientId);
       
       if (!patient) {
         throw new AppError('Không tìm thấy bệnh nhân', 404, 'PATIENT_NOT_FOUND');
@@ -86,6 +83,62 @@ class AppointmentService {
       .populate('patientId', 'personalInfo email phone')
       .populate('doctorId', 'personalInfo email professionalInfo')
       .populate('createdBy', 'personalInfo email');
+  }
+
+  async getAllAppointments(filters = {}) {
+    try {
+      const { page = 1, limit = 10, status, startDate, endDate } = filters;
+      const skip = (page - 1) * limit;
+
+      let query = {};
+      
+      if (status) query.status = status;
+      
+      if (startDate && endDate) {
+        query.appointmentDate = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate)
+        };
+      }
+
+      const [appointments, total] = await Promise.all([
+        Appointment.find(query)
+          .populate('patientId', 'personalInfo email phone')
+          .populate('doctorId', 'personalInfo email professionalInfo')
+          .sort({ appointmentDate: -1 })
+          .skip(skip)
+          .limit(limit),
+        Appointment.countDocuments(query)
+      ]);
+
+      return {
+        appointments,
+        pagination: {
+          currentPage: page,
+          totalPages: Math.ceil(total / limit),
+          totalItems: total,
+          itemsPerPage: limit
+        }
+      };
+
+    } catch (error) {
+      console.error('❌ [SERVICE] Get all appointments failed:', error.message);
+      throw error;
+    }
+  }
+
+  async getAppointmentById(appointmentId) {
+    try {
+      const appointment = await Appointment.findById(appointmentId)
+        .populate('patientId', 'personalInfo email phone')
+        .populate('doctorId', 'personalInfo email professionalInfo')
+        .populate('createdBy', 'personalInfo email');
+      
+      return appointment;
+    } catch (error) {
+      console.error('❌ [SERVICE] Get appointment by ID failed:', error.message);
+      throw error;
+    }
   }
 
   async getAppointmentsByUser(userId, userRole, filters = {}) {
@@ -473,12 +526,15 @@ class AppointmentService {
       // 🎯 KIỂM TRA BÁC SĨ
       const doctor = await User.findOne({ 
         _id: doctorId, 
-        role: 'DOCTOR',
-        isActive: true 
+        role: 'DOCTOR'
       });
       
       if (!doctor) {
         throw new AppError('Không tìm thấy bác sĩ', 404);
+      }
+      
+      if (!doctor.isActive && doctor.status !== 'ACTIVE') {
+        throw new AppError('Bác sĩ không còn hoạt động', 400);
       }
 
       // 🎯 XỬ LÝ CÁC THAY ĐỔI TRONG LỊCH
@@ -632,7 +688,7 @@ class AppointmentService {
           results.details.push({
             appointmentId: appointment.appointmentId,
             status: 'success',
-            patient: appointment.patientId.name
+            patient: appointment.patientId?.name || 'Unknown'
           });
         } catch (error) {
           results.failed++;
@@ -640,7 +696,7 @@ class AppointmentService {
             appointmentId: appointment.appointmentId,
             status: 'failed',
             error: error.message,
-            patient: appointment.patientId.name
+            patient: appointment.patientId?.name || 'Unknown'
           });
         }
       }
@@ -995,6 +1051,203 @@ class AppointmentService {
 
     } catch (error) {
       console.error('❌ [APPOINTMENT] Get doctor schedule failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 CHECK-IN LỊCH HẸN
+   */
+  async checkInAppointment(appointmentId, userId) {
+    try {
+      const appointment = await Appointment.findById(appointmentId);
+
+      if (!appointment) {
+        throw new AppError('Không tìm thấy lịch hẹn', 404, 'APPOINTMENT_NOT_FOUND');
+      }
+
+      if (appointment.status === 'CHECKED_IN') {
+        throw new AppError('Lịch hẹn đã check-in rồi', 400, 'ALREADY_CHECKED_IN');
+      }
+
+      if (appointment.status !== 'SCHEDULED' && appointment.status !== 'ARRIVED') {
+        throw new AppError('Không thể check-in lịch hẹn này', 400, 'INVALID_STATUS');
+      }
+
+      appointment.status = 'CHECKED_IN';
+      appointment.checkedInAt = new Date();
+      appointment.checkedInBy = userId;
+
+      return await appointment.save();
+    } catch (error) {
+      console.error('❌ [APPOINTMENT] Check-in failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 HOÀN THÀNH LỊCH HẸN
+   */
+  async completeAppointment(appointmentId, userId, completionData = {}) {
+    try {
+      const appointment = await Appointment.findById(appointmentId);
+
+      if (!appointment) {
+        throw new AppError('Không tìm thấy lịch hẹn', 404, 'APPOINTMENT_NOT_FOUND');
+      }
+
+      if (!['CHECKED_IN', 'ONGOING'].includes(appointment.status)) {
+        throw new AppError('Không thể hoàn thành lịch hẹn này', 400, 'INVALID_STATUS');
+      }
+
+      appointment.status = 'COMPLETED';
+      appointment.completedAt = new Date();
+      appointment.completedBy = userId;
+      
+      // Lưu notes nếu có
+      if (completionData.notes) {
+        appointment.notes = completionData.notes;
+      }
+
+      return await appointment.save();
+    } catch (error) {
+      console.error('❌ [APPOINTMENT] Complete appointment failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 LẤY CÁC SLOT THỜI GIAN KHẢ DỤNG
+   */
+  async getAvailableSlots(doctorId, date) {
+    try {
+      if (!doctorId || !date) {
+        throw new AppError('Thiếu doctorId hoặc date', 400, 'MISSING_PARAMS');
+      }
+
+      // Kiểm tra bác sĩ tồn tại
+      const doctor = await User.findById(doctorId).select('role status');
+      if (!doctor || doctor.role !== 'DOCTOR') {
+        throw new AppError('Không tìm thấy bác sĩ', 404, 'DOCTOR_NOT_FOUND');
+      }
+
+      // Lấy tất cả appointments của bác sĩ trong ngày
+      const dayStart = new Date(date);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(date);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const appointments = await Appointment.find({
+        doctorId,
+        appointmentDate: { $gte: dayStart, $lte: dayEnd },
+        status: { $nin: ['CANCELLED'] }
+      }).select('appointmentDate duration');
+
+      // Định nghĩa slot thời gian (mỗi slot 30 phút)
+      const slots = [];
+      const slotDuration = 30; // 30 minutes
+      const workStart = 8; // 8 AM
+      const workEnd = 17; // 5 PM
+
+      for (let hour = workStart; hour < workEnd; hour++) {
+        for (let minute = 0; minute < 60; minute += slotDuration) {
+          const slotStart = new Date(date);
+          slotStart.setHours(hour, minute, 0, 0);
+          const slotEnd = new Date(slotStart);
+          slotEnd.setMinutes(slotEnd.getMinutes() + slotDuration);
+
+          // Kiểm tra slot có bị occupied không
+          const isOccupied = appointments.some(apt => {
+            const aptStart = apt.appointmentDate;
+            const aptEnd = new Date(aptStart.getTime() + apt.duration * 60000);
+            return !(slotEnd <= aptStart || slotStart >= aptEnd);
+          });
+
+          slots.push({
+            time: slotStart.toISOString(),
+            available: !isOccupied
+          });
+        }
+      }
+
+      return slots;
+    } catch (error) {
+      console.error('❌ [APPOINTMENT] Get available slots failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 LẤY THỐNG KÊ LỊCH HẸN
+   */
+  async getAppointmentStats(options = {}) {
+    try {
+      const { startDate, endDate, status } = options;
+
+      const query = {};
+
+      if (startDate && endDate) {
+        query.appointmentDate = {
+          $gte: new Date(startDate),
+          $lte: new Date(endDate)
+        };
+      }
+
+      if (status) {
+        query.status = status;
+      }
+
+      // Thống kê theo trạng thái
+      const stats = await Appointment.aggregate([
+        { $match: query },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+
+      // Tổng cộng
+      const total = await Appointment.countDocuments(query);
+
+      // Thống kê theo bác sĩ
+      const byDoctor = await Appointment.aggregate([
+        { $match: query },
+        {
+          $group: {
+            _id: '$doctorId',
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'doctorInfo'
+          }
+        },
+        {
+          $project: {
+            doctorId: '$_id',
+            doctorName: { $arrayElemAt: ['$doctorInfo.personalInfo.firstName', 0] },
+            count: 1
+          }
+        }
+      ]);
+
+      return {
+        total,
+        byStatus: stats,
+        byDoctor,
+        dateRange: {
+          start: startDate,
+          end: endDate
+        }
+      };
+    } catch (error) {
+      console.error('❌ [APPOINTMENT] Get stats failed:', error.message);
       throw error;
     }
   }

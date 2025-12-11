@@ -9,36 +9,44 @@ class BillingService {
    */
   async createBill(patientId, billData, createdBy) {
     try {
-      // Kiểm tra bệnh nhân tồn tại
-      const patient = await Patient.findById(patientId);
+      // Kiểm tra bệnh nhân tồn tại và populate thông tin user
+      const patient = await Patient.findById(patientId).populate('userId', 'personalInfo email');
+      
       if (!patient) {
         throw new AppError('Không tìm thấy bệnh nhân', 404, 'PATIENT_NOT_FOUND');
       }
 
       // Tạo mã hóa đơn tự động
       const billCount = await Bill.countDocuments();
-      const billNumber = `HD${String(billCount + 1).padStart(6, '0')}`;
+      const billId = `HD${String(billCount + 1).padStart(6, '0')}`;
 
-      // Tính toán số tiền
-      const totalAmount = this.calculateTotalAmount(billData.items);
-      const taxAmount = this.calculateTax(totalAmount, billData.taxRate);
-      const finalAmount = totalAmount + taxAmount;
+      // Chuyển đổi items thành services format của model
+      const services = (billData.items || []).map(item => ({
+        serviceName: item.description,
+        description: item.description,
+        quantity: item.quantity || 1,
+        unitPrice: item.unitPrice,
+        discount: 0,
+        taxRate: billData.taxRate || 0,
+        total: (item.quantity || 1) * item.unitPrice
+      }));
+
+      // Tính toán các trường theo model
+      const subtotal = services.reduce((sum, service) => sum + service.total, 0);
+      const totalTax = subtotal * (billData.taxRate || 0) / 100;
+      const grandTotal = subtotal + totalTax;
+      const balanceDue = grandTotal; // Chưa thanh toán gì
 
       const bill = new Bill({
-        billNumber,
+        billId,
         patientId,
-        patientInfo: {
-          name: `${patient.personalInfo.firstName} ${patient.personalInfo.lastName}`,
-          phone: patient.personalInfo.phone,
-          address: patient.personalInfo.address,
-          email: patient.personalInfo.email
-        },
-        items: billData.items,
-        totalAmount,
-        taxRate: billData.taxRate || 0,
-        taxAmount,
-        finalAmount,
-        status: 'PENDING',
+        billType: (billData.items && billData.items[0] && billData.items[0].category) || 'OTHER',
+        services,
+        subtotal,
+        totalTax,
+        grandTotal,
+        balanceDue,
+        status: 'ISSUED',
         dueDate: billData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         createdBy,
         notes: billData.notes
@@ -57,10 +65,7 @@ class BillingService {
   async getBill(billId, userId, userRole) {
     try {
       const bill = await Bill.findById(billId)
-        .populate('patientId', 'personalInfo patientId')
-        .populate('createdBy', 'name email')
-        .populate('updatedBy', 'name email')
-        .populate('voidedBy', 'name email');
+        .populate('patientId', 'personalInfo patientId');
 
       if (!bill) {
         throw new AppError('Không tìm thấy hóa đơn', 404, 'BILL_NOT_FOUND');
@@ -156,17 +161,29 @@ class BillingService {
         if (filters.endDate) query.createdAt.$lte = new Date(filters.endDate);
       }
 
-      const options = {
-        page: filters.page || 1,
-        limit: filters.limit || 10,
-        sort: { createdAt: -1 },
-        populate: {
-          path: 'createdBy',
-          select: 'name email'
-        }
-      };
+      const page = parseInt(filters.page) || 1;
+      const limit = parseInt(filters.limit) || 10;
+      const skip = (page - 1) * limit;
 
-      return await Bill.paginate(query, options);
+      // Manual pagination
+      const [bills, totalDocs] = await Promise.all([
+        Bill.find(query)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate('createdBy', 'name email'),
+        Bill.countDocuments(query)
+      ]);
+
+      return {
+        docs: bills,
+        totalDocs,
+        limit,
+        page,
+        totalPages: Math.ceil(totalDocs / limit),
+        hasNextPage: page < Math.ceil(totalDocs / limit),
+        hasPrevPage: page > 1
+      };
     } catch (error) {
       console.error('❌ [BILLING SERVICE] Get patient bills error:', error);
       throw error;
@@ -410,6 +427,153 @@ class BillingService {
       return stats[0] || { totalRevenue: 0, totalBills: 0, averageBillAmount: 0 };
     } catch (error) {
       console.error('❌ [BILLING SERVICE] Get revenue stats error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 LẤY TẤT CẢ HÓA ĐƠN
+   */
+  async getAllBills(options = {}) {
+    try {
+      const { 
+        page = 1, 
+        limit = 10,
+        status,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = options;
+
+      const skip = (page - 1) * limit;
+      const filter = {};
+
+      if (status) {
+        filter.status = status;
+      }
+
+      const bills = await Bill.find(filter)
+        .populate('patientId', 'personalInfo patientId')
+        .populate('createdBy', 'personalInfo email')
+        .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
+        .skip(skip)
+        .limit(limit);
+
+      const total = await Bill.countDocuments(filter);
+
+      return {
+        bills,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('❌ [BILLING SERVICE] Get all bills error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 HỒI TIỀN
+   */
+  async refundPayment(paymentId, refundData, userId) {
+    try {
+      const Bill = require('../models/bill.model');
+      
+      // Tìm hóa đơn có payment này
+      const bill = await Bill.findOne({ 
+        'payments._id': paymentId 
+      });
+
+      if (!bill) {
+        throw new AppError('Không tìm thấy thanh toán', 404, 'PAYMENT_NOT_FOUND');
+      }
+
+      // Tìm payment
+      const payment = bill.payments.id(paymentId);
+      if (!payment) {
+        throw new AppError('Không tìm thấy thanh toán', 404, 'PAYMENT_NOT_FOUND');
+      }
+
+      // Kiểm tra có thể hoàn tiền
+      if (payment.status === 'REFUNDED') {
+        throw new AppError('Thanh toán này đã được hoàn tiền', 400, 'PAYMENT_ALREADY_REFUNDED');
+      }
+
+      // Tạo refund
+      const refund = {
+        _id: require('mongoose').Types.ObjectId(),
+        amount: refundData.amount || payment.amount,
+        reason: refundData.reason || 'Customer request',
+        refundDate: new Date(),
+        refundedBy: userId,
+        status: 'COMPLETED'
+      };
+
+      // Cập nhật payment
+      payment.status = 'REFUNDED';
+      payment.refund = refund;
+
+      // Tính toán lại balanceDue
+      const totalPaid = bill.payments
+        .filter(p => p.status !== 'REFUNDED')
+        .reduce((sum, p) => sum + p.amount, 0);
+
+      bill.balanceDue = bill.grandTotal - totalPaid + refund.amount;
+      if (bill.balanceDue === 0) {
+        bill.status = 'PAID';
+      } else if (bill.balanceDue < bill.grandTotal && bill.balanceDue > 0) {
+        bill.status = 'PARTIAL';
+      }
+
+      await bill.save();
+
+      return {
+        paymentId,
+        refund,
+        newBalance: bill.balanceDue
+      };
+    } catch (error) {
+      console.error('❌ [BILLING SERVICE] Refund payment error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 🎯 LẤY CÁC HÓA ĐƠN CHƯA THANH TOÁN
+   */
+  async getOutstandingBills(options = {}) {
+    try {
+      const { page = 1, limit = 10 } = options;
+      const skip = (page - 1) * limit;
+
+      const bills = await Bill.find({
+        status: { $in: ['ISSUED', 'PARTIAL'] },
+        balanceDue: { $gt: 0 }
+      })
+        .populate('patientId', 'personalInfo patientId')
+        .sort({ dueDate: 1 })
+        .skip(skip)
+        .limit(limit);
+
+      const total = await Bill.countDocuments({
+        status: { $in: ['ISSUED', 'PARTIAL'] },
+        balanceDue: { $gt: 0 }
+      });
+
+      return {
+        bills,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
+    } catch (error) {
+      console.error('❌ [BILLING SERVICE] Get outstanding bills error:', error);
       throw error;
     }
   }

@@ -46,6 +46,69 @@ class AppointmentController {
   }
 
   /**
+   * 🎯 LẤY TẤT CẢ LỊCH HẸN
+   */
+  async getAllAppointments(req, res, next) {
+    try {
+      const { 
+        status, 
+        page = 1, 
+        limit = 10,
+        startDate,
+        endDate
+      } = req.query;
+
+      console.log('📋 [APPOINTMENT] Getting all appointments');
+
+      const appointments = await appointmentService.getAllAppointments({
+        status,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        startDate,
+        endDate
+      });
+
+      res.json({
+        success: true,
+        message: 'Lấy danh sách lịch hẹn thành công',
+        data: appointments
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 LẤY LỊCH HẸN THEO ID
+   */
+  async getAppointmentById(req, res, next) {
+    try {
+      const { appointmentId } = req.params;
+
+      console.log('📋 [APPOINTMENT] Getting appointment by ID:', appointmentId);
+
+      const appointment = await appointmentService.getAppointmentById(appointmentId);
+
+      if (!appointment) {
+        return res.status(404).json({
+          success: false,
+          error: 'Không tìm thấy lịch hẹn'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Lấy thông tin lịch hẹn thành công',
+        data: appointment
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * 🎯 LẤY LỊCH HẸN CỦA BỆNH NHÂN
    */
   async getPatientAppointments(req, res, next) {
@@ -458,6 +521,115 @@ class AppointmentController {
         success: true,
         message: 'Gửi nhắc nhở tự động hoàn tất',
         data: result
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 CHECK-IN LỊCH HẸN
+   */
+  async checkInAppointment(req, res, next) {
+    try {
+      const { appointmentId } = req.params;
+
+      console.log('✅ [APPOINTMENT] Check-in appointment:', appointmentId);
+
+      const appointment = await appointmentService.checkInAppointment(
+        appointmentId,
+        req.user._id
+      );
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
+        resource: 'Appointment',
+        resourceId: appointmentId,
+        metadata: { status: 'CHECKED_IN' }
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: 'Check-in lịch hẹn thành công',
+        data: appointment
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 HOÀN THÀNH LỊCH HẸN
+   */
+  async completeAppointment(req, res, next) {
+    try {
+      const { appointmentId } = req.params;
+
+      console.log('✅ [APPOINTMENT] Completing appointment:', appointmentId);
+
+      const appointment = await appointmentService.completeAppointment(
+        appointmentId,
+        req.user._id,
+        req.body
+      );
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
+        resource: 'Appointment',
+        resourceId: appointmentId,
+        metadata: { status: 'COMPLETED' }
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: 'Hoàn thành lịch hẹn thành công',
+        data: appointment
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 LẤY CÁC SLOT THỜI GIAN KHẢ DỤNG
+   */
+  async getAvailableSlots(req, res, next) {
+    try {
+      const { doctorId, date } = req.query;
+
+      console.log('📅 [APPOINTMENT] Getting available slots:', { doctorId, date });
+
+      const slots = await appointmentService.getAvailableSlots(doctorId, date);
+
+      res.json({
+        success: true,
+        data: slots
+      });
+
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * 🎯 LẤY THỐNG KÊ LỊCH HẸN
+   */
+  async getAppointmentStats(req, res, next) {
+    try {
+      const { startDate, endDate, status } = req.query;
+
+      console.log('📊 [APPOINTMENT] Getting appointment stats');
+
+      const stats = await appointmentService.getAppointmentStats({
+        startDate,
+        endDate,
+        status
+      });
+
+      res.json({
+        success: true,
+        data: stats
       });
 
     } catch (error) {

@@ -146,9 +146,41 @@ const billingSchemas = {
     limit: Joi.number().min(1).max(100).default(10)
   }),
 
+  // 🎯 REFUND PAYMENT SCHEMA
+  refundPayment: Joi.object({
+    amount: Joi.number().positive().required()
+      .messages({
+        'number.base': 'Số tiền hoàn phải là số',
+        'number.positive': 'Số tiền hoàn phải lớn hơn 0'
+      }),
+    reason: Joi.string().min(5).max(500)
+      .messages({
+        'string.min': 'Lý do hoàn phải có ít nhất 5 ký tự',
+        'string.max': 'Lý do hoàn không được vượt quá 500 ký tự'
+      })
+  }),
+
+  // 🎯 UPDATE BILL SCHEMA
+  updateBill: Joi.object({
+    items: Joi.array().items(
+      Joi.object({
+        description: Joi.string().min(2).max(200),
+        quantity: Joi.number().min(1),
+        unitPrice: Joi.number().min(0)
+      })
+    ),
+    taxRate: Joi.number().min(0).max(100),
+    notes: Joi.string().max(500),
+    dueDate: Joi.date()
+  }),
+
   // 🎯 ID VALIDATION
-  billId: commonSchemas.objectId,
-  patientId: commonSchemas.objectId
+  billId: Joi.object({
+    billId: commonSchemas.objectId.required()
+  }),
+  patientId: Joi.object({
+    patientId: commonSchemas.objectId.required()
+  })
 };
 
 // 🎯 VALIDATION FUNCTIONS
@@ -156,6 +188,7 @@ const validateBilling = {
   createBill: (data) => billingSchemas.createBill.validate(data, { abortEarly: false }),
   updateBill: (data) => billingSchemas.updateBill.validate(data, { abortEarly: false }),
   processPayment: (data) => billingSchemas.processPayment.validate(data, { abortEarly: false }),
+  refundPayment: (data) => billingSchemas.refundPayment.validate(data, { abortEarly: false }),
   voidBill: (data) => billingSchemas.voidBill.validate(data, { abortEarly: false }),
   billQuery: (data) => billingSchemas.billQuery.validate(data, { abortEarly: false }),
   paymentQuery: (data) => billingSchemas.paymentQuery.validate(data, { abortEarly: false })

@@ -1,192 +1,163 @@
-// healthcare-frontend/src/contexts/AuthContext.jsx
-import React, {
-  createContext,
-  useState,
-  useContext,
-  useCallback,
-  useEffect,
-} from "react";
-import axios from "axios";
+// 🔐 Authentication Context
+import { message } from 'antd';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import authAPI from '../services/api/authAPI';
 
-const AuthContext = createContext();
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api";
-
-// Create axios instance with config
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Add interceptor to include token
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Handle response errors
-apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    // Không log out nếu error từ logout endpoint
-    const isLogoutRequest = error.config?.url?.includes("/auth/logout");
-
-    if (error.response?.status === 401 && !isLogoutRequest) {
-      // Token expired or invalid
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
-
-      // 🎯 Redirect to unified login page (/superadmin/login)
-      window.location.href = "/superadmin/login";
-    }
-    return Promise.reject(error);
-  }
-);
-
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Initialize auth state from localStorage
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    const storedToken = localStorage.getItem("accessToken");
-
-    if (storedUser && storedToken) {
-      try {
-        const userData = JSON.parse(storedUser);
-        setUser(userData);
-      } catch (err) {
-        console.error("Error parsing stored user:", err);
-        localStorage.removeItem("user");
-        localStorage.removeItem("accessToken");
-      }
-    }
-    // Set loading to false immediately
-    setLoading(false);
-  }, []);
-
-  const login = useCallback(async (email, password) => {
-    try {
-      setError(null);
-      const response = await apiClient.post("/auth/login", { email, password });
-
-      console.log("Login response:", response.data);
-
-      if (response.data.success) {
-        const { user: userData, tokens } = response.data.data;
-        const { accessToken, refreshToken } = tokens;
-
-        // Check if userData is Mongoose document and extract _doc
-        const plainUserData = userData._doc || userData;
-
-        console.log("Plain user data:", plainUserData);
-        console.log("Tokens:", tokens);
-
-        // Store tokens and user
-        localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("refreshToken", refreshToken);
-        localStorage.setItem("user", JSON.stringify(plainUserData));
-
-        setUser(plainUserData);
-        return plainUserData;
-      }
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || "Đăng nhập thất bại";
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  const register = useCallback(async (userData) => {
-    try {
-      setError(null);
-      const response = await apiClient.post("/auth/register", userData);
-
-      if (response.data.success) {
-        return response.data.data;
-      }
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || "Đăng ký thất bại";
-      setError(errorMessage);
-      throw err;
-    }
-  }, []);
-
-  const logout = useCallback(async () => {
-    try {
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (refreshToken) {
-        // Try to call backend logout, but don't fail if it doesn't work
-        try {
-          await apiClient.post("/auth/logout", { refreshToken });
-        } catch (err) {
-          console.warn("Backend logout call failed:", err);
-          // Continue with frontend logout regardless
-        }
-      }
-    } catch (err) {
-      console.error("Logout error:", err);
-    } finally {
-      // Always clear storage regardless of API call success
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
-      setUser(null);
-      setError(null);
-    }
-  }, []);
-
-  const refreshAccessToken = useCallback(async () => {
-    try {
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (!refreshToken) throw new Error("No refresh token");
-
-      const response = await apiClient.post("/auth/refresh-token", {
-        refreshToken,
-      });
-
-      if (response.data.success) {
-        const { accessToken } = response.data.data;
-        localStorage.setItem("accessToken", accessToken);
-        return accessToken;
-      }
-    } catch (err) {
-      console.error("Token refresh failed:", err);
-      logout();
-      throw err;
-    }
-  }, [logout]);
-
-  const value = {
-    user,
-    loading,
-    error,
-    login,
-    register,
-    logout,
-    refreshAccessToken,
-    isAuthenticated: !!user,
-    isSuperAdmin: user?.role === "SUPER_ADMIN",
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+const AuthContext = createContext(null);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
+    throw new Error('useAuth must be used within AuthProvider');
   }
   return context;
 };
 
-export default AuthProvider;
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Load user from localStorage on mount
+  useEffect(() => {
+    const loadUser = () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        const token = localStorage.getItem('accessToken');
+        
+        if (storedUser && token) {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error('Error loading user:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  // Login function
+  const login = useCallback(async (email, password) => {
+    try {
+      setLoading(true);
+      const response = await authAPI.login(email, password);
+      
+      if (response.success) {
+        // Backend returns: { user, tokens: { accessToken, refreshToken }, sessionId }
+        const { user, tokens, sessionId } = response.data;
+        
+        // Store user and tokens
+        localStorage.setItem('user', JSON.stringify(user));
+        localStorage.setItem('accessToken', tokens.accessToken);
+        localStorage.setItem('refreshToken', tokens.refreshToken);
+        if (sessionId) {
+          localStorage.setItem('sessionId', sessionId);
+        }
+        
+        setUser(user);
+        setIsAuthenticated(true);
+        
+        return { success: true, user };
+      }
+      
+      throw new Error(response.message || 'Đăng nhập thất bại');
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Đăng nhập thất bại';
+      return { success: false, error: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Logout function
+  const logout = useCallback(async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      await authAPI.logout(refreshToken);
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      // Clear storage
+      localStorage.removeItem('user');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      
+      setUser(null);
+      setIsAuthenticated(false);
+      
+      message.info('Đã đăng xuất');
+    }
+  }, []);
+
+  // Update user profile
+  const updateUserProfile = useCallback((updatedUser) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  }, []);
+
+  // Check if user has specific role
+  const hasRole = useCallback((role) => {
+    if (!user || !user.role) return false;
+    return user.role === role;
+  }, [user]);
+
+  // Check if user has any of the roles
+  const hasAnyRole = useCallback((roles) => {
+    if (!user || !user.role) return false;
+    return roles.includes(user.role);
+  }, [user]);
+
+  // Check if user has specific permission
+  const hasPermission = useCallback((permission) => {
+    if (!user || !user.permissions) return false;
+    return user.permissions.includes(permission);
+  }, [user]);
+
+  // Get dashboard route based on role
+  const getDashboardRoute = useCallback(() => {
+    if (!user || !user.role) return '/login';
+    
+    const roleRoutes = {
+      'SUPER_ADMIN': '/dashboard/super-admin',
+      'HOSPITAL_ADMIN': '/dashboard/hospital-admin',
+      'DEPARTMENT_HEAD': '/dashboard/hospital-admin',
+      'DOCTOR': '/dashboard/doctor',
+      'NURSE': '/dashboard/nurse',
+      'PHARMACIST': '/dashboard/pharmacist',
+      'LAB_TECHNICIAN': '/dashboard/lab-technician',
+      'RECEPTIONIST': '/dashboard/receptionist',
+      'BILLING_STAFF': '/dashboard/billing',
+      'PATIENT': '/dashboard/patient',
+    };
+    
+    return roleRoutes[user.role] || '/dashboard/patient';
+  }, [user]);
+
+  const value = {
+    user,
+    loading,
+    isAuthenticated,
+    login,
+    logout,
+    updateUserProfile,
+    hasRole,
+    hasAnyRole,
+    hasPermission,
+    getDashboardRoute,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export default AuthContext;

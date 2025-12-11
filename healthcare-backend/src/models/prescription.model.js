@@ -158,10 +158,9 @@ const prescriptionSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
+// ✅ FIX: Compound indexes chỉ - loại bỏ prescriptionId index trùng (unique đã có)
 prescriptionSchema.index({ patientId: 1, issueDate: -1 });
-prescriptionSchema.index({ doctorId: 1 });
-prescriptionSchema.index({ prescriptionId: 1 });
+prescriptionSchema.index({ doctorId: 1, issueDate: -1 });
 prescriptionSchema.index({ status: 1 });
 prescriptionSchema.index({ 'medications.medicationId': 1 });
 

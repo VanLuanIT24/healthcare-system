@@ -7,16 +7,17 @@ const {
   requireRole 
 } = require('../middlewares/auth.middleware');
 const { 
-  validate,
+  validateBody,
   validateParams 
 } = require('../middlewares/validation.middleware');
+const prescriptionValidation = require('../validations/prescription.validation');
 const {
   createPrescriptionValidation,
   updatePrescriptionValidation,
   dispenseMedicationValidation,
   checkDrugInteractionValidation,
   medicationAdministrationValidation
-} = require('../validations/prescription.validation');
+} = prescriptionValidation;
 const { PERMISSIONS, ROLES } = require('../constants/roles');
 
 // Áp dụng xác thực cho tất cả routes
@@ -25,100 +26,115 @@ router.use(authenticate);
 // Routes cho bác sĩ
 router.post(
   '/patients/:patientId/prescriptions',
-  requirePermission(PERMISSIONS.CREATE_PRESCRIPTIONS),
-  validate(createPrescriptionValidation),
+  requirePermission(PERMISSIONS['PRESCRIPTION.CREATE']),
+  validateBody(createPrescriptionValidation.body),
   prescriptionController.createPrescription
 );
 
 router.get(
-  '/prescriptions/:prescriptionId',
-  requirePermission(PERMISSIONS.VIEW_PRESCRIPTIONS),
+  '/:prescriptionId',
+  requirePermission(PERMISSIONS['PRESCRIPTION.VIEW']),
   prescriptionController.getPrescription
 );
 
 router.put(
-  '/prescriptions/:prescriptionId',
-  requirePermission(PERMISSIONS.UPDATE_PRESCRIPTIONS),
-  validate(updatePrescriptionValidation),
+  '/:prescriptionId',
+  requirePermission(PERMISSIONS['PRESCRIPTION.UPDATE']),
+  validateBody(updatePrescriptionValidation.body),
   prescriptionController.updatePrescription
 );
 
 router.delete(
-  '/prescriptions/:prescriptionId/cancel',
-  requirePermission(PERMISSIONS.UPDATE_PRESCRIPTIONS),
+  '/:prescriptionId/cancel',
+  requirePermission(PERMISSIONS['PRESCRIPTION.UPDATE']),
   prescriptionController.cancelPrescription
+);
+
+// 🎯 QUẢN LÝ THUỐC TRONG ĐƠN - PRESC-1,2
+router.post(
+  '/:prescriptionId/medications',
+  requirePermission(PERMISSIONS['PRESCRIPTION.UPDATE']),
+  validateBody(prescriptionValidation.addMedicationToPrescriptionValidation.body),
+  prescriptionController.addMedicationToPrescription
+);
+
+router.put(
+  '/:prescriptionId/medications/:medicationId',
+  requirePermission(PERMISSIONS['PRESCRIPTION.UPDATE']),
+  validateBody(prescriptionValidation.updateMedicationInPrescriptionValidation.body),
+  prescriptionController.updateMedicationInPrescription
 );
 
 // Routes cho dược sĩ
 router.post(
-  '/prescriptions/:prescriptionId/dispense',
-  requirePermission(PERMISSIONS.DISPENSE_MEDICATION),
-  validate(dispenseMedicationValidation),
+  '/:prescriptionId/dispense',
+  requirePermission(PERMISSIONS['PRESCRIPTION.DISPENSE']),
+  validateBody(dispenseMedicationValidation.body),
   prescriptionController.dispenseMedication
 );
 
 router.get(
   '/pharmacy/orders',
-  requirePermission(PERMISSIONS.DISPENSE_MEDICATION),
+  requirePermission(PERMISSIONS['PRESCRIPTION.DISPENSE']),
   prescriptionController.getPharmacyOrders
 );
 
 router.patch(
-  '/prescriptions/:prescriptionId/dispense-status',
-  requirePermission(PERMISSIONS.DISPENSE_MEDICATION),
+  '/:prescriptionId/dispense-status',
+  requirePermission(PERMISSIONS['PRESCRIPTION.DISPENSE']),
   prescriptionController.updateDispenseStatus
 );
 
 // Routes cho y tá
 router.post(
   '/patients/:patientId/medication-administration',
-  requireRole([ROLES.NURSE, ROLES.DOCTOR]),
-  validate(medicationAdministrationValidation),
+  requireRole(ROLES.NURSE, ROLES.DOCTOR),
+  validateBody(medicationAdministrationValidation.body),
   prescriptionController.recordMedicationAdministration
 );
 
 // Routes chung
 router.get(
   '/patients/:patientId/prescriptions',
-  requirePermission(PERMISSIONS.VIEW_PRESCRIPTIONS),
+  requirePermission(PERMISSIONS['PRESCRIPTION.VIEW']),
   prescriptionController.getPatientPrescriptions
 );
 
 router.get(
   '/patients/:patientId/medication-history',
-  requirePermission(PERMISSIONS.VIEW_PRESCRIPTIONS),
+  requirePermission(PERMISSIONS['PRESCRIPTION.VIEW']),
   prescriptionController.getMedicationHistory
 );
 
 router.post(
   '/drug-interactions/check',
-  requirePermission(PERMISSIONS.CREATE_PRESCRIPTIONS),
-  validate(checkDrugInteractionValidation),
+  requirePermission(PERMISSIONS['PRESCRIPTION.CREATE']),
+  validateBody(checkDrugInteractionValidation.body),
   prescriptionController.checkDrugInteraction
 );
 
 router.get(
   '/patients/:patientId/medication-coverage/:medicationId',
-  requirePermission(PERMISSIONS.VIEW_PRESCRIPTIONS),
+  requirePermission(PERMISSIONS['PRESCRIPTION.VIEW']),
   prescriptionController.checkMedicationCoverage
 );
 
 // Routes quản lý thuốc
 router.post(
   '/medications',
-  requireRole([ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN]),
+  requireRole(ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN),
   prescriptionController.addMedication
 );
 
 router.get(
   '/medications/:medicationId/stock',
-  requirePermission(PERMISSIONS.VIEW_INVENTORY),
+  requirePermission(PERMISSIONS['INVENTORY.VIEW']),
   prescriptionController.getMedicationStock
 );
 
 router.put(
   '/medications/:medicationId',
-  requireRole([ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN]),
+  requireRole(ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN),
   prescriptionController.updateMedication
 );
 

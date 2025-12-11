@@ -1,0 +1,165 @@
+/* Protected Layout Styles */
+.protected-layout {
+  min-height: 100vh;
+}
+
+.layout-sider {
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  overflow: auto;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+}
+
+.logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 16px;
+  border-radius: 8px;
+}
+
+.logo h2 {
+  color: #fff;
+  margin: 0;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.layout-header {
+  background: #fff;
+  padding: 0 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: sticky;
+  top: 0;
+  z-index: 9;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.trigger {
+  font-size: 20px;
+  cursor: pointer;
+  transition: color 0.3s;
+  color: #595959;
+}
+
+.trigger:hover {
+  color: #1890ff;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.notification-badge {
+  cursor: pointer;
+}
+
+.header-icon {
+  font-size: 20px;
+  color: #595959;
+  transition: color 0.3s;
+}
+
+.header-icon:hover {
+  color: #1890ff;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+
+.user-profile:hover {
+  background: #f5f5f5;
+}
+
+.user-avatar {
+  background: #1890ff;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #262626;
+  font-size: 14px;
+}
+
+.user-role {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.layout-content {
+  margin: 24px;
+  padding: 24px;
+  min-height: calc(100vh - 112px);
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* Menu Overrides */
+.ant-menu-dark .ant-menu-item-selected {
+  background-color: #1890ff !important;
+}
+
+.ant-menu-dark.ant-menu-dark:not(.ant-menu-horizontal) .ant-menu-item-selected {
+  background-color: #1890ff !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .page-title {
+    display: none;
+  }
+
+  .user-info {
+    display: none;
+  }
+
+  .layout-content {
+    margin: 16px;
+    padding: 16px;
+  }
+
+  .layout-header {
+    padding: 0 16px;
+  }
+
+  .header-right {
+    gap: 16px;
+  }
+}

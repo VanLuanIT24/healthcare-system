@@ -113,9 +113,9 @@ const consultationSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
+// ✅ FIX: Compound indexes chỉ
 consultationSchema.index({ patientId: 1, consultationDate: -1 });
-consultationSchema.index({ doctorId: 1 });
+consultationSchema.index({ doctorId: 1, consultationDate: -1 });
 consultationSchema.index({ medicalRecordId: 1 });
 consultationSchema.index({ status: 1 });
 

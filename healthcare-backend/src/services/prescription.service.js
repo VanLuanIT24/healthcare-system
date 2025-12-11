@@ -333,8 +333,11 @@ class PrescriptionService {
       throw new AppError('Thuốc không có trong đơn', 404);
     }
 
-    // Kiểm tra tồn kho
-    const medicationStock = await Medication.findById(dispenseData.medicationId);
+    // Kiểm tra tồn kho - use medication.medicationId (the actual Medication document _id)
+    const medicationStock = await Medication.findById(medication.medicationId);
+    if (!medicationStock) {
+      throw new AppError('Không tìm thấy thông tin thuốc', 404);
+    }
     const stockCheck = medicationStock.checkAvailability(dispenseData.quantity);
     if (!stockCheck.available) {
       throw new AppError(`Không đủ tồn kho. Còn ${stockCheck.currentStock}`, 400);
@@ -753,6 +756,89 @@ class PrescriptionService {
 
     await medication.save();
     return medication;
+  }
+
+  /**
+   * 💊 THÊM THUỐC VÀO ĐƠN THUỐC - PRESC-1
+   */
+  async addMedicationToPrescription(prescriptionId, medicationData) {
+    try {
+      console.log('💊 [PHARMACY] Adding medication to prescription:', prescriptionId);
+
+      const prescription = await Prescription.findById(prescriptionId);
+      if (!prescription) {
+        throw new AppError('Không tìm thấy đơn thuốc', 404);
+      }
+
+      if (prescription.status === 'CANCELLED') {
+        throw new AppError('Không thể thêm thuốc vào đơn đã hủy', 400);
+      }
+
+      // Kiểm tra thuốc tồn tại
+      const medication = await Medication.findById(medicationData.medicationId);
+      if (!medication) {
+        throw new AppError('Không tìm thấy thuốc', 404);
+      }
+
+      // Kiểm tra tồn kho
+      const totalQty = medicationData.totalQuantity || medicationData.quantity || 0;
+      const stockCheck = medication.checkAvailability(totalQty);
+      if (!stockCheck.available) {
+        throw new AppError(
+          `Thuốc ${medication.name} không đủ tồn kho. Còn ${stockCheck.currentStock}, cần ${totalQty}`,
+          400
+        );
+      }
+
+      // Thêm thuốc vào đơn
+      prescription.medications.push(medicationData);
+      await prescription.save();
+
+      await prescription.populate('medications.medicationId');
+      return prescription;
+
+    } catch (error) {
+      console.error('❌ [PHARMACY] Add medication to prescription failed:', error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * 💊 CẬP NHẬT THUỐC TRONG ĐƠN - PRESC-2
+   */
+  async updateMedicationInPrescription(prescriptionId, medicationId, updateData) {
+    try {
+      console.log('💊 [PHARMACY] Updating medication in prescription:', prescriptionId);
+
+      const prescription = await Prescription.findById(prescriptionId);
+      if (!prescription) {
+        throw new AppError('Không tìm thấy đơn thuốc', 404);
+      }
+
+      if (prescription.status === 'CANCELLED') {
+        throw new AppError('Không thể cập nhật đơn đã hủy', 400);
+      }
+
+      // Tìm thuốc trong đơn
+      const medIndex = prescription.medications.findIndex(
+        med => med.medicationId.toString() === medicationId
+      );
+
+      if (medIndex === -1) {
+        throw new AppError('Không tìm thấy thuốc trong đơn', 404);
+      }
+
+      // Cập nhật thông tin
+      Object.assign(prescription.medications[medIndex], updateData);
+      await prescription.save();
+
+      await prescription.populate('medications.medicationId');
+      return prescription;
+
+    } catch (error) {
+      console.error('❌ [PHARMACY] Update medication in prescription failed:', error.message);
+      throw error;
+    }
   }
 }
 

@@ -14,7 +14,8 @@ const labTestSchema = new mongoose.Schema({
   code: {
     type: String,
     required: true,
-    unique: true
+    unique: true,
+    // ✅ Note: unique tự động tạo index
   },
   category: {
     type: String,
@@ -77,12 +78,10 @@ const labTestSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes
-labTestSchema.index({ name: 1 });
-labTestSchema.index({ code: 1 });
-labTestSchema.index({ category: 1 });
+// ✅ FIX: Indexes - loại bỏ code index (unique đã có)
+labTestSchema.index({ name: 'text' });
+labTestSchema.index({ category: 1, status: 1 });
 labTestSchema.index({ specimenType: 1 });
-labTestSchema.index({ status: 1 });
 
 // Virtuals
 labTestSchema.virtual('isAvailable').get(function() {

@@ -143,6 +143,16 @@ const medicationValidation = {
     limit: Joi.number().integer().min(1).max(100).default(20)
   }),
 
+  // 🎯 LẤY BÁO CÁO TỒN KHO
+  getInventory: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+    category: Joi.string().max(100).optional(),
+    status: Joi.string().valid('ACTIVE', 'INACTIVE', 'DISCONTINUED').optional(),
+    sortBy: Joi.string().valid('name', 'category', 'currentStock', 'totalValue').default('name'),
+    sortOrder: Joi.string().valid('asc', 'desc').default('asc')
+  }),
+
   // Lấy theo ID (param)
   medicationId: Joi.object({
     id: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required()

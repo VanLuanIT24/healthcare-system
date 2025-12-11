@@ -8,10 +8,10 @@ const userSchema = new mongoose.Schema({
   email: {
     type: String,
     required: true,
-    unique: true,
+    unique: true, // ✅ unique tự động tạo index
     lowercase: true,
     trim: true,
-    index: true
+    // ✅ FIX: Removed 'index: true' - unique đã tạo index
   },
   password: {
     type: String,
@@ -175,14 +175,11 @@ const userSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
-userSchema.index({ email: 1 });
-userSchema.index({ role: 1 });
-userSchema.index({ status: 1 });
-userSchema.index({ isActive: 1 });
-userSchema.index({ isDeleted: 1 });
+// ✅ FIX: Indexes - loại bỏ email index (unique đã có)
+userSchema.index({ role: 1, status: 1 });
+userSchema.index({ isActive: 1, isDeleted: 1 });
 userSchema.index({ 'personalInfo.phone': 1 });
-userSchema.index({ createdAt: 1 });
+userSchema.index({ createdAt: -1 });
 userSchema.index({ 'professionalInfo.department': 1 });
 userSchema.index({ 'professionalInfo.specialization': 1 });
 

@@ -14,7 +14,7 @@ class MedicalRecordController {
    */
   async createMedicalRecord(req, res, next) {
     try {
-      const { patientId } = req.params;
+      const { patientId } = req.body; // Lấy từ body thay vì params
       const recordData = req.body;
       
       console.log('🏥 [MEDICAL] Creating medical record for patient:', patientId);
@@ -31,8 +31,8 @@ class MedicalRecordController {
         resourceId: medicalRecord._id,
         metadata: { 
           recordId: medicalRecord.recordId,
-          patientId: medicalRecord.patientId._id,
-          doctorId: medicalRecord.doctorId._id
+          patientId: medicalRecord.patientId?._id || medicalRecord.patientId,
+          doctorId: medicalRecord.doctorId?._id || medicalRecord.doctorId
         }
       })(req, res, () => {});
 
@@ -376,13 +376,31 @@ async addSurgicalHistory(req, res, next) {
  */
 async recordClinicalFindings(req, res, next) {
   try {
+    const { recordId } = req.params;
     const findingsData = req.body;
     
-    console.log('🔍 [MEDICAL] Recording clinical findings');
+    console.log('🔍 [MEDICAL] Recording clinical findings for record:', recordId);
+
+    // Get the medical record to extract patientId
+    const medicalRecord = await medicalRecordService.getMedicalRecord(recordId);
+    
+    // Extract patientId safely
+    let patientId;
+    if (medicalRecord.patientId) {
+      patientId = medicalRecord.patientId._id || medicalRecord.patientId;
+    } else {
+      throw new AppError('Không tìm thấy thông tin bệnh nhân', 404);
+    }
+    
+    // Merge patientId with findings data
+    const completeFindings = {
+      ...findingsData,
+      patientId
+    };
 
     const result = await medicalRecordService.recordClinicalFindings(
-      findingsData.consultationId,
-      findingsData,
+      recordId,
+      completeFindings,
       req.user._id
     );
 
@@ -391,7 +409,7 @@ async recordClinicalFindings(req, res, next) {
       resource: 'MedicalRecord',
       category: 'CLINICAL_FINDINGS',
       metadata: { 
-        patientId: findingsData.patientId,
+        patientId: completeFindings.patientId,
         recordedBy: req.user._id
       }
     })(req, res, () => {});
@@ -421,9 +439,12 @@ async searchMedicalRecordsByDiagnosis(req, res, next) {
       filters
     );
 
+    // Return success even with empty results
     res.json({
       success: true,
-      message: 'Tìm kiếm hồ sơ theo chẩn đoán thành công',
+      message: result.medicalRecords && result.medicalRecords.length > 0 
+        ? 'Tìm kiếm hồ sơ theo chẩn đoán thành công'
+        : 'Không tìm thấy hồ sơ phù hợp',
       data: result
     });
 

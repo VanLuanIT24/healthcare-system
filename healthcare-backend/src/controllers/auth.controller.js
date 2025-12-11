@@ -299,6 +299,36 @@ class AuthController {
   ];
 
   /**
+ * 🎯 VERIFY EMAIL - HÀM MỚI
+ */
+verifyEmail = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  
+  const result = await authService.verifyEmail(token);
+
+  res.status(200).json({
+    success: true,
+    message: result.message,
+    data: { user: result.user }
+  });
+});
+
+/**
+ * 🎯 RESEND VERIFICATION EMAIL - HÀM MỚI
+ */
+resendVerification = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  
+  const result = await authService.resendVerification(email);
+
+  res.status(200).json({
+    success: true,
+    message: result.message,
+    data: null
+  });
+});
+
+  /**
    * 🎯 HEALTH CHECK
    */
   healthCheck = asyncHandler(async (req, res) => {

@@ -616,6 +616,147 @@ class AdminController {
       });
     }
   }
+
+  /**
+   * GET /api/admin/audit-logs
+   * Lấy danh sách audit logs
+   */
+  async getAuditLogs(req, res) {
+    try {
+      const { page = 1, limit = 20, action, module: moduleFilter, search = '', startDate, endDate } = req.query;
+      
+      console.log('📋 [ADMIN] Fetching audit logs:', { page, limit, action, module: moduleFilter });
+
+      const query = {};
+      
+      if (action) query.action = action;
+      if (moduleFilter) query.module = moduleFilter;
+      
+      if (search) {
+        query.$or = [
+          { 'user.email': { $regex: search, $options: 'i' } },
+          { action: { $regex: search, $options: 'i' } },
+          { module: { $regex: search, $options: 'i' } }
+        ];
+      }
+      
+      if (startDate || endDate) {
+        query.timestamp = {};
+        if (startDate) query.timestamp.$gte = new Date(startDate);
+        if (endDate) query.timestamp.$lte = new Date(endDate);
+      }
+
+      const skip = (page - 1) * limit;
+
+      const logs = await AuditLog.find(query)
+        .populate('user', 'firstName lastName email role')
+        .sort({ timestamp: -1 })
+        .limit(limit * 1)
+        .skip(skip);
+
+      const total = await AuditLog.countDocuments(query);
+
+      res.json({
+        success: true,
+        data: {
+          logs,
+          pagination: {
+            total,
+            page: parseInt(page),
+            limit: parseInt(limit),
+            pages: Math.ceil(total / limit)
+          }
+        }
+      });
+    } catch (error) {
+      console.error('❌ [ADMIN] Get audit logs error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy audit logs',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * GET /api/admin/audit-logs/:id
+   * Lấy chi tiết một audit log
+   */
+  async getAuditLogById(req, res) {
+    try {
+      const { id } = req.params;
+      
+      const log = await AuditLog.findById(id)
+        .populate('user', 'firstName lastName email role');
+
+      if (!log) {
+        return res.status(404).json({
+          success: false,
+          message: 'Không tìm thấy audit log'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: log
+      });
+    } catch (error) {
+      console.error('❌ [ADMIN] Get audit log by ID error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi lấy chi tiết audit log',
+        error: error.message
+      });
+    }
+  }
+
+  /**
+   * GET /api/admin/audit-logs/export
+   * Export audit logs as CSV
+   */
+  async exportAuditLogs(req, res) {
+    try {
+      const { action, startDate, endDate } = req.query;
+      
+      const query = {};
+      if (action) query.action = action;
+      if (startDate || endDate) {
+        query.timestamp = {};
+        if (startDate) query.timestamp.$gte = new Date(startDate);
+        if (endDate) query.timestamp.$lte = new Date(endDate);
+      }
+
+      const logs = await AuditLog.find(query)
+        .populate('user', 'firstName lastName email role')
+        .sort({ timestamp: -1 });
+
+      // Convert to CSV
+      let csv = 'Date,User,Email,Action,Module,Status,Metadata\n';
+      
+      logs.forEach(log => {
+        const date = new Date(log.timestamp).toLocaleString('vi-VN');
+        const user = log.user ? `${log.user.firstName} ${log.user.lastName}` : 'Unknown';
+        const email = log.user?.email || '';
+        const action = log.action || '';
+        const module = log.module || '';
+        const status = log.status || '';
+        const metadata = JSON.stringify(log.metadata || {}).replace(/"/g, '""');
+        
+        csv += `"${date}","${user}","${email}","${action}","${module}","${status}","${metadata}"\n`;
+      });
+
+      res.setHeader('Content-Disposition', 'attachment; filename=audit-logs.csv');
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.send(csv);
+    } catch (error) {
+      console.error('❌ [ADMIN] Export audit logs error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Lỗi khi export audit logs',
+        error: error.message
+      });
+    }
+  }
 }
 
 module.exports = new AdminController();

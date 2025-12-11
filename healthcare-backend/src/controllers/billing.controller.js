@@ -29,13 +29,13 @@ const createBill = async (req, res, next) => {
       user: req.user,
       metadata: {
         billId: bill._id,
-        billNumber: bill.billNumber,
+        billNumber: bill.billId,
         patientId: patientId,
-        amount: bill.finalAmount
+        amount: bill.grandTotal
       }
     });
 
-    console.log(`✅ Bill created: ${bill.billNumber} for patient ${patientId}`);
+    console.log(`✅ Bill created: ${bill.billId} for patient ${patientId}`);
 
     res.status(201).json({
       success: true,
@@ -325,6 +325,102 @@ const getRevenueStats = async (req, res, next) => {
   }
 };
 
+/**
+ * 🎯 LẤY TẤT CẢ HÓA ĐƠN
+ */
+const getAllBills = async (req, res, next) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 10,
+      status,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    console.log('💰 [BILLING] Getting all bills');
+
+    const bills = await billingService.getAllBills({
+      page: parseInt(page),
+      limit: parseInt(limit),
+      status,
+      sortBy,
+      sortOrder
+    });
+
+    res.json({
+      success: true,
+      data: bills.bills,
+      pagination: bills.pagination
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 🎯 HỒI TIỀN (REFUND)
+ */
+const refundPayment = async (req, res, next) => {
+  try {
+    const { paymentId } = req.params;
+    const refundData = req.body;
+
+    console.log('💰 [BILLING] Processing refund for payment:', paymentId);
+
+    const refund = await billingService.refundPayment(
+      paymentId, 
+      refundData,
+      req.user._id
+    );
+
+    await manualAuditLog({
+      action: AUDIT_ACTIONS.BILL_REFUND,
+      user: req.user,
+      metadata: {
+        paymentId: paymentId,
+        refundAmount: refundData.amount,
+        reason: refundData.reason
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'Xử lý hồi tiền thành công',
+      data: refund
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 🎯 LẤY CÁC HÓA ĐƠN CHƯA THANH TOÁN
+ */
+const getOutstandingBills = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+
+    console.log('💰 [BILLING] Getting outstanding bills');
+
+    const bills = await billingService.getOutstandingBills({
+      page: parseInt(page),
+      limit: parseInt(limit)
+    });
+
+    res.json({
+      success: true,
+      data: bills.bills,
+      pagination: bills.pagination
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createBill,
   getBill,
@@ -333,5 +429,8 @@ module.exports = {
   processPayment,
   getPaymentHistory,
   voidBill,
-  getRevenueStats
+  getRevenueStats,
+  getAllBills,
+  refundPayment,
+  getOutstandingBills
 };

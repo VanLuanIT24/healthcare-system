@@ -1,0 +1,164 @@
+/* Prescription Styles */
+.prescription-list-container,
+.prescription-form-container,
+.prescription-detail-container {
+  padding: 0;
+}
+
+.medication-list {
+  margin-top: 24px;
+}
+
+.medication-item {
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  border-left: 4px solid #1890ff;
+}
+
+.medication-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.medication-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.medication-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  color: #595959;
+  font-size: 14px;
+}
+
+.medication-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.medication-detail-label {
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+.medication-detail-value {
+  font-weight: 500;
+}
+
+.medication-form-item {
+  padding: 16px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.medication-form-remove {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.drug-interaction-warning {
+  margin-top: 16px;
+  padding: 12px;
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 8px;
+}
+
+.prescription-print-preview {
+  padding: 40px;
+  background: white;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  margin: 24px 0;
+}
+
+.prescription-header {
+  text-align: center;
+  border-bottom: 2px solid #262626;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.prescription-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.prescription-info-section {
+  margin-bottom: 24px;
+}
+
+.prescription-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.prescription-medication-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+}
+
+.prescription-medication-table th,
+.prescription-medication-table td {
+  padding: 12px;
+  text-align: left;
+  border: 1px solid #d9d9d9;
+}
+
+.prescription-medication-table th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+.prescription-footer {
+  margin-top: 48px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.prescription-signature {
+  text-align: center;
+}
+
+.prescription-signature-line {
+  width: 200px;
+  border-top: 1px solid #262626;
+  margin: 48px auto 8px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .prescription-print-preview {
+    border: none;
+    padding: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .medication-details {
+    grid-template-columns: 1fr;
+  }
+
+  .prescription-footer {
+    flex-direction: column;
+    gap: 32px;
+  }
+}

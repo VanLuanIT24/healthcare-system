@@ -350,14 +350,14 @@ const patientValidation = {
         'any.required': 'Operation là bắt buộc'
       }),
     allergyData: Joi.object({
-      allergyId: Joi.string().when('operation', {
+      allergyId: Joi.string().when('...operation', {
         is: Joi.valid('UPDATE', 'DEACTIVATE'),
         then: Joi.required().messages({
           'any.required': 'allergyId là bắt buộc cho UPDATE và DEACTIVATE'
         }),
         otherwise: Joi.forbidden()
       }),
-      allergen: Joi.string().when('operation', {
+      allergen: Joi.string().when('...operation', {
         is: 'ADD',
         then: Joi.required().messages({
           'any.required': 'allergen là bắt buộc cho ADD'
@@ -384,14 +384,14 @@ const patientValidation = {
         'any.required': 'Operation là bắt buộc'
       }),
     historyData: Joi.object({
-      historyId: Joi.string().when('operation', {
+      historyId: Joi.string().when('...operation', {
         is: Joi.valid('UPDATE', 'REMOVE'),
         then: Joi.required().messages({
           'any.required': 'historyId là bắt buộc cho UPDATE và REMOVE'
         }),
         otherwise: Joi.forbidden()
       }),
-      condition: Joi.string().when('operation', {
+      condition: Joi.string().when('...operation', {
         is: 'ADD',
         then: Joi.required().messages({
           'any.required': 'condition là bắt buộc cho ADD'

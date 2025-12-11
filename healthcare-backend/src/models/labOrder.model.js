@@ -38,7 +38,7 @@ const labOrderSchema = new mongoose.Schema({
     testId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'LabTest',
-      required: true
+      required: false  // Optional to support ad-hoc tests
     },
     testCode: String,
     testName: {
@@ -145,13 +145,11 @@ const labOrderSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes
+// ✅ FIX: Compound indexes chỉ - loại bỏ orderId index trùng (unique đã có)
 labOrderSchema.index({ patientId: 1, orderDate: -1 });
-labOrderSchema.index({ doctorId: 1 });
-labOrderSchema.index({ orderId: 1 });
-labOrderSchema.index({ status: 1 });
+labOrderSchema.index({ doctorId: 1, orderDate: -1 });
+labOrderSchema.index({ status: 1, priority: 1 });
 labOrderSchema.index({ 'tests.status': 1 });
-labOrderSchema.index({ priority: 1 });
 
 // Virtuals
 labOrderSchema.virtual('completedTests').get(function() {

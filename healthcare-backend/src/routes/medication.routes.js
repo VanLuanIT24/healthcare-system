@@ -18,13 +18,25 @@ const medicationValidation = require('../validations/medication.validation');
 router.use(authenticate);
 
 /**
+ * GET /api/medications/inventory
+ * Lấy báo cáo tồn kho
+ * Quyền: ADMIN, PHARMACIST
+ */
+router.get(
+  '/inventory',
+  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PHARMACIST'),
+  validateQuery(medicationValidation.getInventory),
+  MedicationController.getMedicationInventory
+);
+
+/**
  * GET /api/medications/stats
  * Lấy thống kê kho thuốc
  * Quyền: ADMIN, DOCTOR, PHARMACIST
  */
 router.get(
   '/stats',
-  requireRole(['SUPER_ADMIN', 'ADMIN', 'DOCTOR', 'PHARMACIST']),
+  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'DOCTOR', 'PHARMACIST'),
   MedicationController.getMedicationStats
 );
 
@@ -35,7 +47,7 @@ router.get(
  */
 router.get(
   '/low-stock',
-  requireRole(['SUPER_ADMIN', 'ADMIN', 'PHARMACIST']),
+  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PHARMACIST'),
   validateQuery(medicationValidation.getLowStock),
   MedicationController.getLowStockMedications
 );
@@ -47,7 +59,7 @@ router.get(
  */
 router.get(
   '/search',
-  requireRole(['SUPER_ADMIN', 'ADMIN', 'DOCTOR', 'NURSE', 'PHARMACIST']),
+  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'DOCTOR', 'NURSE', 'PHARMACIST'),
   validateQuery(medicationValidation.searchMedications),
   MedicationController.searchMedications
 );
@@ -59,7 +71,7 @@ router.get(
  */
 router.get(
   '/',
-  requireRole(['SUPER_ADMIN', 'ADMIN', 'DOCTOR', 'NURSE', 'PHARMACIST']),
+  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'DOCTOR', 'NURSE', 'PHARMACIST', 'BILLING_STAFF'),
   validateQuery(medicationValidation.getMedications),
   MedicationController.getMedications
 );
@@ -71,7 +83,7 @@ router.get(
  */
 router.get(
   '/:id',
-  requireRole(['SUPER_ADMIN', 'ADMIN', 'DOCTOR', 'NURSE', 'PHARMACIST']),
+  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'DOCTOR', 'NURSE', 'PHARMACIST'),
   validateParams(medicationValidation.medicationId),
   MedicationController.getMedicationById
 );
@@ -83,7 +95,7 @@ router.get(
  */
 router.post(
   '/',
-  requireRole(['SUPER_ADMIN', 'ADMIN', 'PHARMACIST']),
+  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PHARMACIST'),
   validateBody(medicationValidation.createMedication),
   MedicationController.createMedication
 );
@@ -95,7 +107,7 @@ router.post(
  */
 router.put(
   '/:id',
-  requireRole(['SUPER_ADMIN', 'ADMIN', 'PHARMACIST']),
+  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PHARMACIST'),
   validateParams(medicationValidation.medicationId),
   validateBody(medicationValidation.updateMedication),
   MedicationController.updateMedication
@@ -108,7 +120,7 @@ router.put(
  */
 router.post(
   '/:id/stock',
-  requireRole(['SUPER_ADMIN', 'ADMIN', 'PHARMACIST']),
+  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PHARMACIST'),
   validateParams(medicationValidation.medicationId),
   validateBody(medicationValidation.updateStock),
   MedicationController.updateStock
@@ -121,7 +133,7 @@ router.post(
  */
 router.delete(
   '/:id',
-  requireRole(['SUPER_ADMIN', 'ADMIN']),
+  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN'),
   validateParams(medicationValidation.medicationId),
   MedicationController.deleteMedication
 );

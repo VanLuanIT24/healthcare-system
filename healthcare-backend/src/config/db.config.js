@@ -1,6 +1,7 @@
 // src/config/db.config.js
 const mongoose = require('mongoose');
-const appConfig = require('./app.config');
+// ✅ FIX: Import config object trực tiếp để tránh circular dependency
+const { config: appConfig } = require('./app.config');
 
 async function connectDatabase(retryCount = 0) {
   const MAX_RETRIES = 5;
@@ -18,6 +19,16 @@ async function connectDatabase(retryCount = 0) {
     });
 
     console.log('✅ Kết nối MongoDB thành công');
+    
+    // Run migrations after successful connection
+    if (retryCount === 0) { // Only on first successful connection
+      try {
+        const { fixOldIndexes } = require('../utils/migrations');
+        await fixOldIndexes();
+      } catch (migErr) {
+        console.error('⚠️ Migration error (non-critical):', migErr.message);
+      }
+    }
   } catch (err) {
     console.error(`❌ Kết nối MongoDB thất bại (${retryCount + 1}/${MAX_RETRIES}):`, err.message);
 

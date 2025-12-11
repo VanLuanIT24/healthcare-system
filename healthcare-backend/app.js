@@ -25,6 +25,14 @@ const laboratoryRoutes = require('./src/routes/laboratory.routes');
 const medicationRoutes = require('./src/routes/medication.routes'); // 🆕 MEDICATION ROUTES
 const reportRoutes = require('./src/routes/report.routes'); // 🆕 REPORT ROUTES
 const publicRoutes = require('./src/routes/public.routes'); // 🆕 PUBLIC ROUTES
+const billingRoutes = require('./src/routes/billing.routes'); // 🆕 BILLING ROUTES
+
+// 🆕 EXTENDED ROUTES - Additional API endpoints
+const adminExtendedRoutes = require('./src/routes/admin.extended.routes');
+const clinicalExtendedRoutes = require('./src/routes/clinical.extended.routes');
+const patientExtendedRoutes = require('./src/routes/patient.extended.routes');
+const laboratoryExtendedRoutes = require('./src/routes/laboratory.extended.routes');
+const reportExtendedRoutes = require('./src/routes/report.extended.routes');
 
 /**
  * ỨNG DỤNG EXPRESS CHÍNH - ĐÃ CẬP NHẬT
@@ -188,10 +196,26 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/medical-records', medicalRecordRoutes);
 app.use('/api/clinical', clinicalRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/patient', require('./src/routes/patientPortal.routes')); // 🆕 PATIENT PORTAL (không có 's')
+app.use('/api/medical', require('./src/routes/medical.routes')); // 🆕 MEDICAL STAFF ROUTES
+app.use('/api/prescriptions', prescriptionRoutes);
+app.use('/api/laboratory', laboratoryRoutes);
+app.use('/api/medications', medicationRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/billing', billingRoutes);
+
+// 🆕 EXTENDED API ROUTES
+app.use('/api/admin', adminExtendedRoutes);
+app.use('/api', clinicalExtendedRoutes);
+app.use('/api', patientExtendedRoutes);
+app.use('/api', laboratoryExtendedRoutes);
+app.use('/api', reportExtendedRoutes);
+app.use('/api/services', require('./src/routes/services.routes')); // 🆕 SERVICES/BILLING ROUTES
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/laboratory', laboratoryRoutes);
 app.use('/api/medications', medicationRoutes); // 🆕 MEDICATION API
 app.use('/api/reports', reportRoutes); // 🆕 REPORT API
+app.use('/api/billing', billingRoutes); // 🆕 BILLING API
 
 // 🔍 DEBUG ENDPOINT (chỉ trong development) - CẢI THIỆN
 if (appConfig.isDev) {
@@ -327,7 +351,7 @@ app.use((error, req, res, next) => {
   }
 
   // 🎯 LỖI RBAC & PERMISSION
-  if (error.code && error.code.startsWith('AUTH_')) {
+  if (error.code && typeof error.code === 'string' && error.code.startsWith('AUTH_')) {
     return res.status(error.statusCode || 403).json({
       success: false,
       error: error.message,

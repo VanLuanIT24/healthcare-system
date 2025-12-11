@@ -24,16 +24,98 @@ const medicalRecordValidation = require('../validations/medicalRecord.validation
 // APPLY AUTH MIDDLEWARE CHO TẤT CẢ ROUTES
 router.use(authenticate);
 
-// TẠO LỊCH HẸN
-router.post(
-  '/',
-  requireRole(ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_CREATE),
-  validateBody(appointmentValidation.createAppointment),
-  appointmentController.createAppointment
+// ✅ FIX: ĐẶT CÁC SPECIFIC ROUTES TRƯỚC DYNAMIC ROUTES
+
+// 🎯 TÌM KIẾM LỊCH HẸN NÂNG CAO - PHẢI TRƯỚC /:appointmentId
+router.get(
+  '/search/advanced',
+  requireRole(ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
+  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
+  validateQuery(appointmentValidation.searchAppointments),
+  appointmentController.searchAppointments
 );
 
-// LẤY LỊCH HẸN CỦA BỆNH NHÂN
+// 🎯 TÌM KIẾM HỒ SƠ THEO CHẨN ĐOÁN - PHẢI TRƯỚC /:appointmentId
+router.get(
+  '/search/diagnosis',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
+  validateQuery(medicalRecordValidation.searchByDiagnosis),
+  medicalRecordController.searchMedicalRecordsByDiagnosis
+);
+
+// 🎯 THỐNG KÊ HỒ SƠ BỆNH ÁN - PHẢI TRƯỚC /:appointmentId
+router.get(
+  '/stats/overview',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
+  requirePermission(PERMISSIONS.VIEW_REPORTS),
+  validateQuery(medicalRecordValidation.getStats),
+  medicalRecordController.getMedicalRecordsStats
+);
+
+// 🎯 TỰ ĐỘNG GỬI NHẮC NHỞ - PHẢI TRƯỚC /:appointmentId
+router.post(
+  '/reminders/send-scheduled',
+  requireRole(ROLES.HOSPITAL_ADMIN, ROLES.SUPER_ADMIN),
+  requirePermission(PERMISSIONS.SYSTEM_CONFIG),
+  appointmentController.sendScheduledReminders
+);
+
+// 🎯 LẤY LỊCH LÀM VIỆC - PHẢI TRƯỚC /:appointmentId
+router.get(
+  '/schedules/doctor/:doctorId',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.APPOINTMENT_VIEW_SCHEDULE),
+  validateQuery(appointmentValidation.getDoctorSchedule),
+  appointmentController.getDoctorSchedule
+);
+
+// 🎯 CẬP NHẬT LỊCH LÀM VIỆC - PHẢI TRƯỚC /:appointmentId
+router.put(
+  '/schedules/:scheduleId',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
+  requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
+  validateBody(appointmentValidation.updateSchedule),
+  appointmentController.updateSchedule
+);
+
+// 🎯 TẠO LỊCH LÀM VIỆC - PHẢI TRƯỚC /:appointmentId
+router.post(
+  '/schedules',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
+  requirePermission(PERMISSIONS.APPOINTMENT_CREATE),
+  validateBody(appointmentValidation.createSchedule),
+  appointmentController.createSchedule
+);
+
+// 🎯 LẤY LỊCH HẸN THEO DEPARTMENT - PHẢI TRƯỚC /:appointmentId
+router.get(
+  '/department/:departmentId',
+  requireRole(ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN, ROLES.DOCTOR),
+  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
+  validateQuery(appointmentValidation.getDoctorSchedule),
+  appointmentController.getDepartmentAppointments
+);
+
+// 🎯 LẤY CÁC SLOT THỜI GIAN KHẢ DỤNG - PHẢI TRƯỚC /:appointmentId
+router.get(
+  '/available-slots',
+  requireRole(ROLES.RECEPTIONIST, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
+  validateQuery(appointmentValidation.getAvailableSlots),
+  appointmentController.getAvailableSlots
+);
+
+// 🎯 THỐNG KÊ LỊCH HẸN - PHẢI TRƯỚC /:appointmentId
+router.get(
+  '/stats',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
+  requirePermission(PERMISSIONS.VIEW_REPORTS),
+  validateQuery(appointmentValidation.getAppointmentStats),
+  appointmentController.getAppointmentStats
+);
+
+// 🎯 LẤY LỊCH HẸN CỦA BỆNH NHÂN - PHẢI TRƯỚC /:appointmentId
 router.get(
   '/patient/:patientId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
@@ -43,7 +125,44 @@ router.get(
   appointmentController.getPatientAppointments
 );
 
-// LẤY LỊCH HẸN CỦA BÁC SĨ
+// 🎯 LẤY LỊCH SỬ PHẪU THUẬT - PHẢI TRƯỚC /:appointmentId
+router.get(
+  '/patient/:patientId/surgical-history',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
+  requirePatientDataAccess('patientId'),
+  medicalRecordController.getSurgicalHistory
+);
+
+// 🎯 LẤY TIỀN SỬ SẢN KHOA - PHẢI TRƯỚC /:appointmentId
+router.get(
+  '/patient/:patientId/obstetric-history',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
+  requirePatientDataAccess('patientId'),
+  medicalRecordController.getObstetricHistory
+);
+
+// 🎯 THÊM THÔNG TIN PHẪU THUẬT - PHẢI TRƯỚC /:appointmentId
+router.post(
+  '/patient/:patientId/surgical-history',
+  requireRole(ROLES.DOCTOR),
+  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  requirePatientDataAccess('patientId'),
+  validateBody(medicalRecordValidation.addSurgicalHistory),
+  medicalRecordController.addSurgicalHistory
+);
+
+// 🎯 GHI NHẬN PHÁT HIỆN LÂM SÀNG - PHẢI TRƯỚC /:appointmentId
+router.post(
+  '/clinical-findings',
+  requireRole(ROLES.DOCTOR),
+  requirePermission(PERMISSIONS.CREATE_MEDICAL_RECORDS),
+  validateBody(medicalRecordValidation.recordClinicalFindings),
+  medicalRecordController.recordClinicalFindings
+);
+
+// 🎯 LẤY LỊCH HẸN CỦA BÁC SĨ - PHẢI TRƯỚC /:appointmentId
 router.get(
   '/doctor/:doctorId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
@@ -52,12 +171,29 @@ router.get(
   appointmentController.getDoctorAppointments
 );
 
-// LẤY THÔNG TIN LỊCH HẸN CHI TIẾT
+// TẠO LỊCH HẸN
+router.post(
+  '/',
+  requireRole(ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.APPOINTMENT_CREATE),
+  validateBody(appointmentValidation.createAppointment),
+  appointmentController.createAppointment
+);
+
+// LẤY TẤT CẢ LỊCH HẸN
+router.get(
+  '/',
+  requireRole(ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.SUPER_ADMIN),
+  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
+  appointmentController.getAllAppointments
+);
+
+// ✅ LẤY LỊCH HẸN THEO ID (DYNAMIC ROUTE - ĐẶT CUỐI CÙNG)
 router.get(
   '/:appointmentId',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
+  requireRole(ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
-  appointmentController.getAppointment
+  appointmentController.getAppointmentById
 );
 
 // 🎯 CẬP NHẬT LỊCH HẸN
@@ -69,31 +205,30 @@ router.put(
   appointmentController.updateAppointment
 );
 
-// 🎯 HỦY LỊCH HẸN
+// 🎯 CHECK-IN LỊCH HẸN
+router.patch(
+  '/:appointmentId/check-in',
+  requireRole(ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
+  appointmentController.checkInAppointment
+);
+
+// 🎯 HOÀN THÀNH LỊCH HẸN
+router.patch(
+  '/:appointmentId/complete',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
+  validateBody(appointmentValidation.completeAppointment),
+  appointmentController.completeAppointment
+);
+
+// 🎯 HỦY LỊCH HẹN
 router.post(
   '/:appointmentId/cancel',
   requireRole(ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
   requirePermission(PERMISSIONS.APPOINTMENT_CANCEL),
   validateBody(appointmentValidation.cancelAppointment),
   appointmentController.cancelAppointment
-);
-
-// 🎯 TẠO LỊCH LÀM VIỆC
-router.post(
-  '/schedules',
-  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
-  requirePermission(PERMISSIONS.APPOINTMENT_CREATE),
-  validateBody(appointmentValidation.createSchedule),
-  appointmentController.createSchedule
-);
-
-// 🎯 LẤY LỊCH LÀM VIỆC
-router.get(
-  '/schedules/doctor/:doctorId',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW_SCHEDULE),
-  validateQuery(appointmentValidation.getDoctorSchedule),
-  appointmentController.getDoctorSchedule
 );
 
 // 🎯 ĐẶT LẠI LỊCH HẸN
@@ -105,33 +240,6 @@ router.post(
   appointmentController.rescheduleAppointment
 );
 
-// 🎯 TÌM KIẾM LỊCH HẸN NÂNG CAO
-router.get(
-  '/search/advanced',
-  requireRole(ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
-  validateQuery(appointmentValidation.searchAppointments),
-  appointmentController.searchAppointments
-);
-
-// 🎯 LẤY LỊCH HẸN THEO DEPARTMENT
-router.get(
-  '/department/:departmentId',
-  requireRole(ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN, ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
-  validateQuery(appointmentValidation.getDoctorSchedule),
-  appointmentController.getDepartmentAppointments
-);
-
-// 🎯 CẬP NHẬT LỊCH LÀM VIỆC
-router.put(
-  '/schedules/:scheduleId',
-  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
-  requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
-  validateBody(appointmentValidation.updateSchedule),
-  appointmentController.updateSchedule
-);
-
 // 🎯 GỬI THÔNG BÁO NHẮC LỊCH HẸN
 router.post(
   '/:appointmentId/remind',
@@ -139,69 +247,6 @@ router.post(
   requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
   validateBody(appointmentValidation.sendReminder),
   appointmentController.sendAppointmentReminder
-);
-
-// 🎯 TỰ ĐỘNG GỬI NHẮC NHỞ (ADMIN ONLY)
-router.post(
-  '/reminders/send-scheduled',
-  requireRole(ROLES.HOSPITAL_ADMIN, ROLES.SUPER_ADMIN),
-  requirePermission(PERMISSIONS.SYSTEM_CONFIG),
-  appointmentController.sendScheduledReminders
-);
-
-// 🎯 LẤY LỊCH SỬ PHẪU THUẬT - ĐÃ SỬA LỖI
-router.get(
-  '/patient/:patientId/surgical-history',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
-  medicalRecordController.getSurgicalHistory  // ✅ ĐÃ ĐƯỢC IMPORT
-);
-
-// 🎯 LẤY TIỀN SỬ SẢN KHOA - ĐÃ SỬA LỖI
-router.get(
-  '/patient/:patientId/obstetric-history',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
-  medicalRecordController.getObstetricHistory  // ✅ ĐÃ ĐƯỢC IMPORT
-);
-
-// 🎯 THÊM THÔNG TIN PHẪU THUẬT - ĐÃ SỬA LỖI
-router.post(
-  '/patient/:patientId/surgical-history',
-  requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
-  validateBody(medicalRecordValidation.addSurgicalHistory),  // ✅ ĐÃ ĐƯỢC IMPORT
-  medicalRecordController.addSurgicalHistory  // ✅ ĐÃ ĐƯỢC IMPORT
-);
-
-// 🎯 GHI NHẬN PHÁT HIỆN LÂM SÀNG - ĐÃ SỬA LỖI
-router.post(
-  '/clinical-findings',
-  requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.CREATE_MEDICAL_RECORDS),
-  validateBody(medicalRecordValidation.recordClinicalFindings),  // ✅ ĐÃ ĐƯỢC IMPORT
-  medicalRecordController.recordClinicalFindings  // ✅ ĐÃ ĐƯỢC IMPORT
-);
-
-// 🎯 TÌM KIẾM HỒ SƠ THEO CHẨN ĐOÁN - ĐÃ SỬA LỖI
-router.get(
-  '/search/diagnosis',
-  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  validateQuery(medicalRecordValidation.searchByDiagnosis),  // ✅ ĐÃ ĐƯỢC IMPORT
-  medicalRecordController.searchMedicalRecordsByDiagnosis  // ✅ ĐÃ ĐƯỢC IMPORT
-);
-
-// 🎯 THỐNG KÊ HỒ SƠ BỆNH ÁN - ĐÃ SỬA LỖI
-router.get(
-  '/stats/overview',
-  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
-  requirePermission(PERMISSIONS.VIEW_REPORTS),
-  validateQuery(medicalRecordValidation.getStats),  // ✅ ĐÃ ĐƯỢC IMPORT
-  medicalRecordController.getMedicalRecordsStats  // ✅ ĐÃ ĐƯỢC IMPORT
 );
 
 module.exports = router;

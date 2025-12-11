@@ -131,14 +131,23 @@ const clinicalValidation = {
 
   // 🎯 TẠO KẾ HOẠCH ĐIỀU TRỊ
   createTreatmentPlan: Joi.object({
-    recommendations: Joi.string().max(2000).required()
-      .messages({
-        'string.empty': 'Khuyến nghị điều trị là bắt buộc',
-        'any.required': 'Vui lòng nhập khuyến nghị điều trị'
-      }),
+    diagnosisId: Joi.string().optional(),
+    consultationId: Joi.string().optional(),
+    planName: Joi.string().max(200).optional(),
+    goals: Joi.array().items(Joi.string()).optional(),
+    interventions: Joi.array().items(
+      Joi.object({
+        type: Joi.string().valid('MEDICATION', 'PROCEDURE', 'THERAPY', 'LIFESTYLE', 'MONITORING').required(),
+        description: Joi.string().max(500).required(),
+        frequency: Joi.string().max(100).optional(),
+        duration: Joi.string().max(100).optional(),
+        notes: Joi.string().max(500).optional()
+      })
+    ).optional(),
+    recommendations: Joi.string().max(2000).optional(),
     followUp: Joi.object({
       required: Joi.boolean().default(true),
-      date: Joi.date().iso().min('now').required(),
+      date: Joi.date().iso().min('now').optional(),
       notes: Joi.string().max(500).optional()
     }).optional(),
     referrals: Joi.array().items(
@@ -152,12 +161,14 @@ const clinicalValidation = {
 
   // 🎯 GHI NHẬN TIẾN TRIỂN
   recordProgressNote: Joi.object({
-    note: Joi.string().max(2000).required()
-      .messages({
-        'string.empty': 'Nội dung ghi chú là bắt buộc',
-        'any.required': 'Vui lòng nhập nội dung ghi chú'
-      }),
-    category: Joi.string().valid('IMPROVEMENT', 'NO_CHANGE', 'DETERIORATION', 'COMPLICATION').required(),
+    consultationId: Joi.string().optional(),
+    treatmentPlanId: Joi.string().optional(),
+    subjective: Joi.string().max(1000).optional(),
+    objective: Joi.string().max(1000).optional(),
+    assessment: Joi.string().max(1000).optional(),
+    plan: Joi.string().max(1000).optional(),
+    note: Joi.string().max(2000).optional(),
+    category: Joi.string().valid('IMPROVEMENT', 'NO_CHANGE', 'DETERIORATION', 'COMPLICATION').optional(),
     severity: Joi.string().valid('MILD', 'MODERATE', 'SEVERE').optional(),
     interventions: Joi.array().items(Joi.string()).optional(),
     nextSteps: Joi.string().max(500).optional()
@@ -182,12 +193,20 @@ const clinicalValidation = {
 
   // 🎯 GHI NHẬN CỦA ĐIỀU DƯỠNG
   recordNursingNote: Joi.object({
-    note: Joi.string().max(2000).required()
-      .messages({
-        'string.empty': 'Nội dung ghi chú là bắt buộc',
-        'any.required': 'Vui lòng nhập nội dung ghi chú'
-      }),
-    category: Joi.string().valid('VITAL_SIGNS', 'MEDICATION', 'HYGIENE', 'MOBILITY', 'NUTRITION', 'OTHER').required(),
+    consultationId: Joi.string().optional(),
+    noteType: Joi.string().valid('ASSESSMENT', 'INTERVENTION', 'PROGRESS', 'VITAL_SIGNS', 'MEDICATION', 'HYGIENE', 'MOBILITY', 'NUTRITION', 'OTHER').optional(),
+    note: Joi.string().max(2000).optional(),
+    category: Joi.string().valid('VITAL_SIGNS', 'MEDICATION', 'HYGIENE', 'MOBILITY', 'NUTRITION', 'OTHER').optional(),
+    vitalSigns: Joi.object({
+      bloodPressure: Joi.object({
+        systolic: Joi.number().optional(),
+        diastolic: Joi.number().optional()
+      }).optional(),
+      heartRate: Joi.number().optional(),
+      temperature: Joi.number().optional(),
+      respiratoryRate: Joi.number().optional(),
+      oxygenSaturation: Joi.number().optional()
+    }).optional(),
     observations: Joi.string().max(1000).optional(),
     interventions: Joi.array().items(Joi.string()).optional(),
     patientResponse: Joi.string().max(500).optional()
@@ -195,9 +214,15 @@ const clinicalValidation = {
 
   // 🎯 GHI TÓM TẮT XUẤT VIỆN
   recordDischargeSummary: Joi.object({
-    conditionAtDischarge: Joi.string().valid('RECOVERED', 'IMPROVED', 'UNCHANGED', 'WORSE', 'DECEASED').required(),
-    dischargeDiagnosis: Joi.string().max(500).required(),
-    treatmentReceived: Joi.string().max(1000).required(),
+    consultationId: Joi.string().optional(),
+    admissionDate: Joi.date().iso().optional(),
+    dischargeDate: Joi.date().iso().optional(),
+    finalDiagnosis: Joi.string().max(500).optional(),
+    treatmentProvided: Joi.string().max(1000).optional(),
+    condition: Joi.string().valid('RECOVERED', 'IMPROVED', 'UNCHANGED', 'WORSE', 'DECEASED').optional(),
+    conditionAtDischarge: Joi.string().valid('RECOVERED', 'IMPROVED', 'UNCHANGED', 'WORSE', 'DECEASED').optional(),
+    dischargeDiagnosis: Joi.string().max(500).optional(),
+    treatmentReceived: Joi.string().max(1000).optional(),
     medicationsAtDischarge: Joi.array().items(Joi.string()).optional(),
     followUpInstructions: Joi.string().max(1000).optional(),
     restrictions: Joi.string().max(500).optional(),
