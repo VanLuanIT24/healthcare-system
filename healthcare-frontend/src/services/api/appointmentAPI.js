@@ -59,16 +59,6 @@ const appointmentAPI = {
   getAppointmentStats: async (params) => {
     return await axios.get('/api/appointments/stats', { params });
   },
-
-  getTodayAppointments: async () => {
-  return await axios.get('/api/appointments/today');
-},
-
-getUpcomingAppointments: async (days = 7) => {
-  return await axios.get('/api/appointments/upcoming', { 
-    params: { days } 
-  });
-},
 };
 
 export default appointmentAPI;

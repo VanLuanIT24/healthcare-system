@@ -31,7 +31,7 @@ import {
 } from 'antd';
 import moment from 'moment';
 import { useContext, useEffect, useState } from 'react';
-import { AuthContext } from '../../context/AuthContext';
+import { AuthContext } from '../../contexts/AuthContext.jsx';
 import authAPI from '../../services/api/authAPI';
 import userAPI from '../../services/api/userAPI';
 import './UserProfile.css';
