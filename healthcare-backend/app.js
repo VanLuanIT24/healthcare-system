@@ -64,8 +64,14 @@ app.use(helmet({
 }));
 
 // 🌐 CORS CONFIGURATION - CẬP NHẬT CHO FRONTEND
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  process.env.FRONTEND_URL || 'https://healthcare-system.vercel.app'
+];
+
 app.use(cors({
-  origin: appConfig.cors.origin || ['http://localhost:3000', 'http://localhost:5173'],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
