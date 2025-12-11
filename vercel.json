@@ -1,7 +1,4 @@
 {
   "buildCommand": "cd healthcare-frontend && npm run build",
-  "outputDirectory": "healthcare-frontend/dist",
-  "env": {
-    "VITE_API_URL": "@vite_api_url"
-  }
+  "outputDirectory": "healthcare-frontend/dist"
 }
