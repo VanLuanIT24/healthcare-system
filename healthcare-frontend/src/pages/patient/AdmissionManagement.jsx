@@ -1,6 +1,5 @@
 // 🏥 Admission Management - Quản lý nhập/xuất viện
 import {
-    BedOutlined,
     LogoutOutlined,
     UserAddOutlined
 } from '@ant-design/icons';

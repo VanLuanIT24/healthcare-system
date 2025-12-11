@@ -3,8 +3,8 @@ import { Avatar, Badge, Button, Calendar, Card, Col, Empty, Modal, Row, Space, S
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
 import { useEffect, useState } from 'react';
-import { appointmentAPI } from '../../services/api/appointmentAPI';
-import { userAPI } from '../../services/api/userAPI';
+import appointmentAPI from '../../services/api/appointmentAPI';
+import userAPI from '../../services/api/userAPI';
 import './TimeSlotSelection.css';
 
 dayjs.extend(isBetween);
