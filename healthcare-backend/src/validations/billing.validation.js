@@ -2,17 +2,26 @@
 const Joi = require('joi');
 const { commonSchemas } = require('../middlewares/validation.middleware');
 
-// 🎯 SCHEMAS CHO BILLING
+// 🎯 ENUM CONSTANTS (Đồng bộ với model)
+const BILL_STATUS = ['DRAFT', 'ISSUED', 'PARTIAL', 'PAID', 'OVERDUE', 'WRITTEN_OFF', 'VOIDED'];
+const BILL_TYPE = ['CONSULTATION', 'LABORATORY', 'PHARMACY', 'PROCEDURE', 'HOSPITALIZATION', 'OTHER'];
+const PAYMENT_METHODS = ['CASH', 'CREDIT_CARD', 'DEBIT_CARD', 'BANK_TRANSFER', 'INSURANCE', 'MOBILE_PAYMENT', 'OTHER'];
+
+// 🎯 SCHEMAS CHO BILLING (ĐÃ SỬA ĐỂ KHỚP VỚI MODEL)
 const billingSchemas = {
-  // 🎯 TẠO HÓA ĐƠN
+  // 🎯 TẠO HÓA ĐƠN - SỬA items → services
   createBill: Joi.object({
-    items: Joi.array().items(
+    services: Joi.array().items(  // ĐỔI TÊN từ items → services
       Joi.object({
-        description: Joi.string().min(2).max(200).required()
+        serviceName: Joi.string().min(2).max(200).required()
           .messages({
-            'string.empty': 'Mô tả dịch vụ không được để trống',
-            'string.min': 'Mô tả dịch vụ phải có ít nhất 2 ký tự',
-            'string.max': 'Mô tả dịch vụ không được vượt quá 200 ký tự'
+            'string.empty': 'Tên dịch vụ không được để trống',
+            'string.min': 'Tên dịch vụ phải có ít nhất 2 ký tự',
+            'string.max': 'Tên dịch vụ không được vượt quá 200 ký tự'
+          }),
+        description: Joi.string().max(500).optional()
+          .messages({
+            'string.max': 'Mô tả dịch vụ không được vượt quá 500 ký tự'
           }),
         quantity: Joi.number().min(1).max(1000).required()
           .messages({
@@ -26,16 +35,16 @@ const billingSchemas = {
             'number.min': 'Đơn giá không được âm',
             'number.max': 'Đơn giá quá lớn'
           }),
-        category: Joi.string().valid(
-          'CONSULTATION', 
-          'MEDICATION', 
-          'LAB_TEST', 
-          'PROCEDURE', 
-          'HOSPITALIZATION',
-          'OTHER'
-        ).required()
+        discount: Joi.number().min(0).max(1000000000).default(0)
           .messages({
-            'any.only': 'Danh mục dịch vụ không hợp lệ'
+            'number.base': 'Giảm giá phải là số',
+            'number.min': 'Giảm giá không được âm'
+          }),
+        taxRate: Joi.number().min(0).max(100).default(0)
+          .messages({
+            'number.base': 'Thuế suất phải là số',
+            'number.min': 'Thuế suất không được âm',
+            'number.max': 'Thuế suất không được vượt quá 100%'
           })
       })
     ).min(1).max(50)
@@ -43,12 +52,25 @@ const billingSchemas = {
         'array.min': 'Phải có ít nhất 1 dịch vụ',
         'array.max': 'Không được vượt quá 50 dịch vụ'
       }),
-    taxRate: Joi.number().min(0).max(100).default(0)
+    
+    // Thêm billType để khớp model
+    billType: Joi.string().valid(...BILL_TYPE).required()
       .messages({
-        'number.base': 'Thuế suất phải là số',
-        'number.min': 'Thuế suất không được âm',
-        'number.max': 'Thuế suất không được vượt quá 100%'
+        'any.only': 'Loại hóa đơn không hợp lệ',
+        'any.required': 'Loại hóa đơn là bắt buộc'
       }),
+    
+    // Thông tin bảo hiểm (nếu có)
+    insurance: Joi.object({
+      provider: Joi.string().max(100).optional(),
+      policyNumber: Joi.string().max(50).optional(),
+      coverageAmount: Joi.number().min(0).optional(),
+      deductible: Joi.number().min(0).optional(),
+      coPayment: Joi.number().min(0).max(100).optional()
+    }).optional(),
+    
+    // Thông tin chung
+    taxRate: Joi.number().min(0).max(100).default(0),
     dueDate: Joi.date().min('now').optional()
       .messages({
         'date.base': 'Ngày đến hạn phải là ngày hợp lệ',
@@ -57,32 +79,41 @@ const billingSchemas = {
     notes: Joi.string().max(1000).optional()
       .messages({
         'string.max': 'Ghi chú không được vượt quá 1000 ký tự'
-      })
+      }),
+    terms: Joi.string().max(500).optional()
   }),
 
   // 🎯 CẬP NHẬT HÓA ĐƠN
   updateBill: Joi.object({
-    items: Joi.array().items(
+    services: Joi.array().items(
       Joi.object({
-        description: Joi.string().min(2).max(200).required(),
-        quantity: Joi.number().min(1).max(1000).required(),
-        unitPrice: Joi.number().min(0).max(1000000000).required(),
-        category: Joi.string().valid(
-          'CONSULTATION', 
-          'MEDICATION', 
-          'LAB_TEST', 
-          'PROCEDURE', 
-          'HOSPITALIZATION',
-          'OTHER'
-        ).required()
+        serviceName: Joi.string().min(2).max(200),
+        description: Joi.string().max(500),
+        quantity: Joi.number().min(1).max(1000),
+        unitPrice: Joi.number().min(0).max(1000000000),
+        discount: Joi.number().min(0).max(1000000000),
+        taxRate: Joi.number().min(0).max(100)
       })
-    ).min(1).max(50).optional(),
+    ).max(50).optional(),
+    
+    billType: Joi.string().valid(...BILL_TYPE).optional(),
+    
+    insurance: Joi.object({
+      provider: Joi.string().max(100),
+      policyNumber: Joi.string().max(50),
+      coverageAmount: Joi.number().min(0),
+      deductible: Joi.number().min(0),
+      coPayment: Joi.number().min(0).max(100)
+    }).optional(),
+    
     taxRate: Joi.number().min(0).max(100).optional(),
     dueDate: Joi.date().min('now').optional(),
-    notes: Joi.string().max(1000).optional()
+    notes: Joi.string().max(1000).optional(),
+    terms: Joi.string().max(500).optional(),
+    status: Joi.string().valid(...BILL_STATUS).optional()
   }),
 
-  // 🎯 THANH TOÁN
+  // 🎯 THANH TOÁN - Sửa để khớp với model payment
   processPayment: Joi.object({
     amount: Joi.number().min(0.01).max(1000000000).required()
       .messages({
@@ -90,25 +121,17 @@ const billingSchemas = {
         'number.min': 'Số tiền phải lớn hơn 0',
         'number.max': 'Số tiền quá lớn'
       }),
-    paymentMethod: Joi.string().valid(
-      'CASH', 
-      'CREDIT_CARD', 
-      'DEBIT_CARD', 
-      'BANK_TRANSFER', 
-      'INSURANCE',
-      'MOBILE_PAYMENT'
-    ).required()
+    method: Joi.string().valid(...PAYMENT_METHODS).required()  // Đổi paymentMethod → method
       .messages({
-        'any.only': 'Phương thức thanh toán không hợp lệ'
+        'any.only': 'Phương thức thanh toán không hợp lệ',
+        'any.required': 'Phương thức thanh toán là bắt buộc'
       }),
-    referenceNumber: Joi.string().max(100).optional()
+    reference: Joi.string().max(100).optional()  // Đổi referenceNumber → reference
       .messages({
         'string.max': 'Số tham chiếu không được vượt quá 100 ký tự'
       }),
-    notes: Joi.string().max(500).optional()
-      .messages({
-        'string.max': 'Ghi chú thanh toán không được vượt quá 500 ký tự'
-      })
+    notes: Joi.string().max(500).optional(),
+    status: Joi.string().valid('PENDING', 'COMPLETED', 'FAILED').default('COMPLETED')
   }),
 
   // 🎯 HỦY HÓA ĐƠN
@@ -121,29 +144,29 @@ const billingSchemas = {
       })
   }),
 
-  // 🎯 QUERY PARAMS CHO DANH SÁCH HÓA ĐƠN
+  // 🎯 QUERY PARAMS CHO DANH SÁCH HÓA ĐƠN - Sửa status enum
   billQuery: Joi.object({
-    status: Joi.string().valid('PENDING', 'PARTIAL', 'PAID', 'VOIDED').optional(),
+    status: Joi.string().valid(...BILL_STATUS).optional(),
+    billType: Joi.string().valid(...BILL_TYPE).optional(),
     startDate: Joi.date().optional(),
     endDate: Joi.date().optional(),
+    patientId: Joi.string().regex(/^[0-9a-fA-F]{24}$/).optional(),
     page: Joi.number().min(1).default(1),
-    limit: Joi.number().min(1).max(100).default(10)
+    limit: Joi.number().min(1).max(100).default(10),
+    sortBy: Joi.string().valid('issueDate', 'dueDate', 'grandTotal', 'createdAt').default('createdAt'),
+    sortOrder: Joi.string().valid('asc', 'desc').default('desc')
   }),
 
   // 🎯 QUERY PARAMS CHO LỊCH SỬ THANH TOÁN
   paymentQuery: Joi.object({
     startDate: Joi.date().optional(),
     endDate: Joi.date().optional(),
-    paymentMethod: Joi.string().valid(
-      'CASH', 
-      'CREDIT_CARD', 
-      'DEBIT_CARD', 
-      'BANK_TRANSFER', 
-      'INSURANCE',
-      'MOBILE_PAYMENT'
-    ).optional(),
+    method: Joi.string().valid(...PAYMENT_METHODS).optional(),  // Đổi paymentMethod → method
+    status: Joi.string().valid('PENDING', 'COMPLETED', 'FAILED', 'REFUNDED').optional(),
     page: Joi.number().min(1).default(1),
-    limit: Joi.number().min(1).max(100).default(10)
+    limit: Joi.number().min(1).max(100).default(10),
+    sortBy: Joi.string().valid('paymentDate', 'amount').default('paymentDate'),
+    sortOrder: Joi.string().valid('asc', 'desc').default('desc')
   }),
 
   // 🎯 REFUND PAYMENT SCHEMA
@@ -153,25 +176,13 @@ const billingSchemas = {
         'number.base': 'Số tiền hoàn phải là số',
         'number.positive': 'Số tiền hoàn phải lớn hơn 0'
       }),
-    reason: Joi.string().min(5).max(500)
+    reason: Joi.string().min(5).max(500).required()
       .messages({
         'string.min': 'Lý do hoàn phải có ít nhất 5 ký tự',
-        'string.max': 'Lý do hoàn không được vượt quá 500 ký tự'
-      })
-  }),
-
-  // 🎯 UPDATE BILL SCHEMA
-  updateBill: Joi.object({
-    items: Joi.array().items(
-      Joi.object({
-        description: Joi.string().min(2).max(200),
-        quantity: Joi.number().min(1),
-        unitPrice: Joi.number().min(0)
-      })
-    ),
-    taxRate: Joi.number().min(0).max(100),
-    notes: Joi.string().max(500),
-    dueDate: Joi.date()
+        'string.max': 'Lý do hoàn không được vượt quá 500 ký tự',
+        'string.required': 'Lý do hoàn là bắt buộc'
+      }),
+    notes: Joi.string().max(500).optional()
   }),
 
   // 🎯 ID VALIDATION
@@ -180,6 +191,28 @@ const billingSchemas = {
   }),
   patientId: Joi.object({
     patientId: commonSchemas.objectId.required()
+  }),
+  paymentId: Joi.object({
+    paymentId: commonSchemas.objectId.required()
+  }),
+
+  // 🎯 VALIDATION CHO INSURANCE
+  verifyInsurance: Joi.object({
+    provider: Joi.string().max(100).required(),
+    policyNumber: Joi.string().max(50).required(),
+    groupNumber: Joi.string().max(50).optional(),
+    effectiveDate: Joi.date().required(),
+    expirationDate: Joi.date().min(Joi.ref('effectiveDate')).required(),
+    coverageType: Joi.string().valid('BASIC', 'STANDARD', 'PREMIUM', 'FULL').required()
+  }),
+
+  // 🎯 VALIDATION CHO INSURANCE CLAIM
+  insuranceClaim: Joi.object({
+    claimAmount: Joi.number().min(0.01).max(1000000000).required(),
+    diagnosisCodes: Joi.array().items(Joi.string().max(20)).min(1).required(),
+    procedureCodes: Joi.array().items(Joi.string().max(20)).optional(),
+    supportingDocuments: Joi.array().items(Joi.string()).optional(),
+    notes: Joi.string().max(1000).optional()
   })
 };
 
@@ -191,10 +224,18 @@ const validateBilling = {
   refundPayment: (data) => billingSchemas.refundPayment.validate(data, { abortEarly: false }),
   voidBill: (data) => billingSchemas.voidBill.validate(data, { abortEarly: false }),
   billQuery: (data) => billingSchemas.billQuery.validate(data, { abortEarly: false }),
-  paymentQuery: (data) => billingSchemas.paymentQuery.validate(data, { abortEarly: false })
+  paymentQuery: (data) => billingSchemas.paymentQuery.validate(data, { abortEarly: false }),
+  verifyInsurance: (data) => billingSchemas.verifyInsurance.validate(data, { abortEarly: false }),
+  insuranceClaim: (data) => billingSchemas.insuranceClaim.validate(data, { abortEarly: false }),
+  billId: (data) => billingSchemas.billId.validate(data, { abortEarly: false }),
+  patientId: (data) => billingSchemas.patientId.validate(data, { abortEarly: false }),
+  paymentId: (data) => billingSchemas.paymentId.validate(data, { abortEarly: false })
 };
 
 module.exports = {
   billingSchemas,
-  validateBilling
+  validateBilling,
+  BILL_STATUS,
+  BILL_TYPE,
+  PAYMENT_METHODS
 };

@@ -118,43 +118,15 @@ const medicalSchemas = {
   }),
 };
 
-/**
- * 🎯 MIDDLEWARE VALIDATION CHÍNH (ĐÃ SỬA)
- */
+// Chỉ thay đổi phần log
 function validate(schema, source = 'body') {
   return (req, res, next) => {
     try {
       const data = req[source];
-      
-      console.log(`🔍 [VALIDATION-${source.toUpperCase()}] Validating:`, {
-        dataExists: !!data,
-        dataKeys: data ? Object.keys(data) : 'NO DATA',
-        dataSample: data ? 
-          (source === 'body' ? {
-            email: data.email,
-            firstName: data.firstName,
-            hasPassword: !!data.password
-          } : data) : 'NO DATA'
-      });
+      const hasFile = req.file || req.files;
 
-      // 🎯 KIỂM TRA DỮ LIỆU TỒN TẠI (chỉ cho body, skip nếu có file upload)
-      const hasFileUpload = req.file || req.files;
-      if (source === 'body' && (!data || Object.keys(data).length === 0) && !hasFileUpload) {
-        console.log('❌ [VALIDATION] Request body is empty or missing');
-        return res.status(400).json({
-          success: false,
-          message: 'Dữ liệu request không được để trống',
-          error: 'REQUEST_BODY_EMPTY'
-        });
-      }
-
-      // 🎯 CLEAN EMPTY STRINGS for query params (convert to undefined)
-      if (source === 'query' && data) {
-        Object.keys(data).forEach(key => {
-          if (data[key] === '') {
-            data[key] = undefined;
-          }
-        });
+      if (source === 'body' && !data && Object.keys(data || {}).length === 0 && !hasFile) {
+        return res.status(400).json({ success: false, message: 'Request body không được để trống' });
       }
 
       const { error, value } = schema.validate(data, {
@@ -164,38 +136,26 @@ function validate(schema, source = 'body') {
       });
 
       if (error) {
-        console.log(`❌ [VALIDATION-${source.toUpperCase()}] Validation errors:`, error.details);
-        
-        const errorDetails = error.details.map(detail => ({
-          field: detail.path.join('.'),
-          message: detail.message,
-          type: detail.type,
+        console.warn(`⚠️ [VALIDATION ERROR] ${source}:`, error.details);
+        const details = error.details.map(d => ({
+          field: d.path.join('.'),
+          message: d.message,
+          type: d.type,
+          context: d.context
         }));
 
-        const validationError = new AppError(
-          'Dữ liệu không hợp lệ',
-          422,
-          ERROR_CODES.VALIDATION_FAILED
-        );
-        validationError.details = errorDetails;
-        
+        const validationError = new AppError('Dữ liệu không hợp lệ', 422, ERROR_CODES.VALIDATION_FAILED);
+        validationError.details = details;
+        validationError.receivedData = data;
+        validationError.schemaPath = source;
         return next(validationError);
       }
 
-      // 🎯 GÁN DỮ LIỆU ĐÃ VALIDATE
       req[source] = value;
-      req.validatedData = value;
-      
-      console.log(`✅ [VALIDATION-${source.toUpperCase()}] Validation passed`);
       next();
-      
-    } catch (validationError) {
-      console.error(`❌ [VALIDATION-${source.toUpperCase()}] Middleware error:`, validationError);
-      return res.status(500).json({
-        success: false,
-        message: 'Lỗi xác thực dữ liệu',
-        error: 'VALIDATION_ERROR'
-      });
+    } catch (err) {
+      console.error(`❌ [VALIDATION EXCEPTION] ${source}:`, err);
+      next(err);
     }
   };
 }

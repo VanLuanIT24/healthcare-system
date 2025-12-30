@@ -2,92 +2,133 @@
 const userService = require('../services/user.service');
 const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
-const { uploadFile, deleteFile } = require('../utils/fileUpload');
+const { deleteFile } = require('../utils/fileUpload');
+const { ROLES, getCreatableRoles, getRolePermissions, getPermissionsByGroup, ROLE_HIERARCHY } = require('../constants/roles');
 const EmailService = require('../utils/email');
 
 class UserController {
-async createUser(req, res, next) {
-  try {
-    const userData = req.body;
-    const currentUser = req.user; // Đây là thông tin user đã authenticated
-    
-    console.log('🎯 [USER CONTROLLER] Creating user:', {
-      email: userData.email,
-      role: userData.role,
-      creator: currentUser.email,
-      creatorRole: currentUser.role,
-      creatorId: currentUser._id
-    });
-
-    // 🎯 TRUYỀN currentUser (KHÔNG PHẢI CHỈ _id)
-    const user = await userService.createUser(userData, currentUser);
-    
-    // 🎯 AUDIT LOG
-    await auditLog(AUDIT_ACTIONS.USER_CREATE, {
-      metadata: { 
-        createdUserId: user._id, 
-        role: user.role,
-        email: user.email,
-        createdBy: currentUser._id
-      }
-    })(req, res, () => {});
-    
-    res.status(201).json({
-      success: true,
-      message: 'Tạo user thành công',
-      data: user
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-  /**
-   * 🎯 LẤY USER THEO ID
-   */
-  async getUserById(req, res, next) {
-  try {
-    const params = req.params; // Lấy cả object params
-    const includeSensitive = req.user.role === 'SUPER_ADMIN';
-    
-    console.log('🎯 [USER CONTROLLER] Getting user by ID:', params);
-
-    const user = await userService.getUserById(params, includeSensitive);
-    
-    if (!user) {
-      throw new AppError('Không tìm thấy user', 404, ERROR_CODES.USER_NOT_FOUND);
-    }
-    
-    res.json({
-      success: true,
-      data: user
-    });
-  } catch (error) {
-    next(error);
-  }
-}
-
-  /**
-   * 🎯 CẬP NHẬT USER
-   */
-  async updateUser(req, res, next) {
+  async createUser(req, res, next) {
     try {
-      const { userId } = req.params;
-      const updateData = req.body;
-      const updaterId = req.user._id;
-      
-      console.log('🎯 [USER CONTROLLER] Updating user:', userId);
+      const userData = req.body;
+      const currentUser = req.user;
 
-      const user = await userService.updateUser(userId, updateData, updaterId);
-      
-      await auditLog(AUDIT_ACTIONS.USER_UPDATE, {
+      console.log('🎯 [USER CONTROLLER] Creating user:', {
+        email: userData.email,
+        role: userData.role,
+        creator: currentUser.email,
+        creatorRole: currentUser.role,
+        creatorId: currentUser._id
+      });
+
+      const user = await userService.createUser(userData, currentUser);
+
+      await auditLog(AUDIT_ACTIONS.USER_CREATE, {
         metadata: { 
-          updatedUserId: userId,
-          updatedFields: Object.keys(updateData),
-          updatedBy: updaterId
+          createdUserId: user._id, 
+          role: user.role,
+          email: user.email,
+          createdBy: currentUser._id
         }
       })(req, res, () => {});
-      
+
+      res.status(201).json({
+        success: true,
+        message: 'Tạo user thành công',
+        data: user
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Các hàm tạo theo role cụ thể (wrapper cho createUser với role fixed)
+  async createReceptionist(req, res, next) {
+    req.body.role = ROLES.RECEPTIONIST;
+    await this.createUser(req, res, next);
+  }
+
+  async createBillingStaff(req, res, next) {
+    req.body.role = ROLES.BILLING_STAFF;
+    await this.createUser(req, res, next);
+  }
+
+  async createLabTechnician(req, res, next) {
+    req.body.role = ROLES.LAB_TECHNICIAN;
+    await this.createUser(req, res, next);
+  }
+
+  async createPharmacist(req, res, next) {
+    req.body.role = ROLES.PHARMACIST;
+    await this.createUser(req, res, next);
+  }
+
+  async createNurse(req, res, next) {
+    req.body.role = ROLES.NURSE;
+    await this.createUser(req, res, next);
+  }
+
+  async createDoctor(req, res, next) {
+    req.body.role = ROLES.DOCTOR;
+    await this.createUser(req, res, next);
+  }
+
+  async createDepartmentHead(req, res, next) {
+    req.body.role = ROLES.DEPARTMENT_HEAD;
+    await this.createUser(req, res, next);
+  }
+
+  async createHospitalAdmin(req, res, next) {
+    req.body.role = ROLES.HOSPITAL_ADMIN;
+    await this.createUser(req, res, next);
+  }
+
+  async registerPatient(req, res, next) {
+    req.body.role = ROLES.PATIENT;
+    // Đối với self-register, currentUser là GUEST hoặc null, nhưng service sẽ handle
+    req.user = { role: ROLES.GUEST }; // Fake cho self-register
+    await this.createUser(req, res, next);
+  }
+
+  async getUserById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const includeSensitive = req.user.role === ROLES.SUPER_ADMIN || req.user.role === ROLES.HOSPITAL_ADMIN;
+
+      console.log('🎯 [USER CONTROLLER] Getting user by ID:', id);
+
+      const user = await userService.getUserById(id, includeSensitive);
+
+      if (!user) {
+        throw new AppError('Không tìm thấy user', 404, ERROR_CODES.USER_NOT_FOUND);
+      }
+
+      res.json({
+        success: true,
+        data: user
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateUser(req, res, next) {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      const updater = req.user;
+
+      console.log('🎯 [USER CONTROLLER] Updating user:', id);
+
+      const user = await userService.updateUser(id, updateData, updater);
+
+      await auditLog(AUDIT_ACTIONS.USER_UPDATE, {
+        metadata: { 
+          updatedUserId: id,
+          updatedFields: Object.keys(updateData),
+          updatedBy: updater._id
+        }
+      })(req, res, () => {});
+
       res.json({
         success: true,
         message: 'Cập nhật user thành công',
@@ -98,27 +139,24 @@ async createUser(req, res, next) {
     }
   }
 
-  /**
-   * 🎯 VÔ HIỆU HÓA USER
-   */
   async disableUser(req, res, next) {
     try {
-      const { userId } = req.params;
+      const { id } = req.params;
       const { reason } = req.body;
-      const disablerId = req.user._id;
-      
-      console.log('🎯 [USER CONTROLLER] Disabling user:', userId);
+      const disabler = req.user;
 
-      await userService.disableUser(userId, reason, disablerId);
-      
+      console.log('🎯 [USER CONTROLLER] Disabling user:', id);
+
+      await userService.disableUser(id, reason, disabler);
+
       await auditLog(AUDIT_ACTIONS.USER_DISABLE, {
         metadata: { 
-          disabledUserId: userId, 
+          disabledUserId: id, 
           reason,
-          disabledBy: disablerId
+          disabledBy: disabler._id
         }
       })(req, res, () => {});
-      
+
       res.json({
         success: true,
         message: 'Vô hiệu hóa user thành công'
@@ -128,50 +166,14 @@ async createUser(req, res, next) {
     }
   }
 
-  /**
-   * 🎯 DANH SÁCH USER
-   */
   async listUsers(req, res, next) {
     try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        role, 
-        search,
-        status,
-        sortBy = 'createdAt',
-        sortOrder = 'desc',
-        includeDeleted = false
-      } = req.query;
-      
-      console.log('🎯 [USER CONTROLLER] Listing users with filters:', {
-        page, limit, role, search, status
-      });
+      const query = req.query;
 
-      // Build filter object, ignoring empty strings
-      const filter = {};
-      if (status && status !== '') filter.status = status;
-      if (role && role !== '') filter.role = role;
-      if (search && search !== '') {
-        filter.$or = [
-          { 'personalInfo.firstName': { $regex: search, $options: 'i' } },
-          { 'personalInfo.lastName': { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } }
-        ];
-      }
-      if (includeDeleted === 'true') {
-        delete filter.status; // Include all status when viewing deleted
-      } else {
-        filter.isDeleted = false;
-      }
-      
-      const result = await userService.listUsers(filter, {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sortBy,
-        sortOrder
-      });
-      
+      console.log('🎯 [USER CONTROLLER] Listing users with filters:', query);
+
+      const result = await userService.listUsers(query);
+
       res.json({
         success: true,
         data: result.users,
@@ -182,17 +184,14 @@ async createUser(req, res, next) {
     }
   }
 
-  /**
-   * 🎯 LẤY THÔNG TIN PROFILE
-   */
   async getUserProfile(req, res, next) {
     try {
       const userId = req.user._id;
-      
+
       console.log('🎯 [USER CONTROLLER] Getting user profile:', userId);
 
       const user = await userService.getUserProfile(userId);
-      
+
       res.json({
         success: true,
         data: user
@@ -202,18 +201,15 @@ async createUser(req, res, next) {
     }
   }
 
-  /**
-   * 🎯 CẬP NHẬT PROFILE
-   */
   async updateUserProfile(req, res, next) {
     try {
       const userId = req.user._id;
       const updateData = req.body;
-      
+
       console.log('🎯 [USER CONTROLLER] Updating user profile:', userId);
 
       const user = await userService.updateUserProfile(userId, updateData);
-      
+
       await auditLog(AUDIT_ACTIONS.USER_UPDATE, {
         metadata: { 
           updatedUserId: userId, 
@@ -221,7 +217,7 @@ async createUser(req, res, next) {
           updatedFields: Object.keys(updateData)
         }
       })(req, res, () => {});
-      
+
       res.json({
         success: true,
         message: 'Cập nhật profile thành công',
@@ -232,51 +228,47 @@ async createUser(req, res, next) {
     }
   }
 
-async assignRole(req, res, next) {
-  try {
-    const { userId } = req.params;
-    const { role } = req.body;
-    const currentUser = req.user; // Lấy toàn bộ user object
-    
-    console.log('🎯 [USER CONTROLLER] Assigning role:', { 
-      userId, 
-      role,
-      currentUser: currentUser.email,
-      currentUserRole: currentUser.role
-    });
+  async assignRole(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { role } = req.body;
+      const currentUser = req.user;
 
-    // 🎯 TRUYỀN currentUser (KHÔNG PHẢI CHỈ _id)
-    const user = await userService.assignRole(userId, role, currentUser);
-    
-    await auditLog(AUDIT_ACTIONS.USER_UPDATE, {
-      metadata: { 
-        updatedUserId: userId, 
-        newRole: role,
-        assignedBy: currentUser._id
-      }
-    })(req, res, () => {});
-    
-    res.json({
-      success: true,
-      message: `Gán role ${role} thành công`,
-      data: user
-    });
-  } catch (error) {
-    next(error);
+      console.log('🎯 [USER CONTROLLER] Assigning role:', { 
+        userId: id, 
+        role,
+        currentUser: currentUser.email,
+        currentUserRole: currentUser.role
+      });
+
+      const user = await userService.assignRole(id, role, currentUser);
+
+      await auditLog(AUDIT_ACTIONS.USER_UPDATE, {
+        metadata: { 
+          updatedUserId: id, 
+          newRole: role,
+          assignedBy: currentUser._id
+        }
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: `Gán role ${role} thành công`,
+        data: user
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-}
 
-  /**
-   * 🎯 LẤY PERMISSIONS CỦA USER
-   */
   async getUserPermissions(req, res, next) {
     try {
-      const { userId } = req.params;
-      
-      console.log('🎯 [USER CONTROLLER] Getting user permissions:', userId);
+      const { id } = req.params;
 
-      const permissions = await userService.getUserPermissions(userId);
-      
+      console.log('🎯 [USER CONTROLLER] Getting user permissions:', id);
+
+      const permissions = await userService.getUserPermissions(id);
+
       res.json({
         success: true,
         data: permissions
@@ -286,47 +278,23 @@ async assignRole(req, res, next) {
     }
   }
 
-  /**
-   * 🎯 KIỂM TRA QUYỀN USER
-   */
-  async checkUserPermission(req, res, next) {
-    try {
-      const { userId } = req.params;
-      const { permission } = req.body;
-      
-      console.log('🎯 [USER CONTROLLER] Checking user permission:', { userId, permission });
-
-      const hasPermission = await userService.checkUserPermission(userId, permission);
-      
-      res.json({
-        success: true,
-        data: { hasPermission }
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 KÍCH HOẠT LẠI USER
-   */
   async enableUser(req, res, next) {
     try {
-      const { userId } = req.params;
-      const enablerId = req.user._id;
-      
-      console.log('🎯 [USER CONTROLLER] Enabling user:', userId);
-      
-      const user = await userService.enableUser(userId, enablerId);
-      
+      const { id } = req.params;
+      const enabler = req.user;
+
+      console.log('🎯 [USER CONTROLLER] Enabling user:', id);
+
+      const user = await userService.enableUser(id, enabler);
+
       await auditLog(AUDIT_ACTIONS.USER_ENABLE, {
         metadata: { 
-          enabledUserId: userId, 
-          enabledBy: enablerId,
+          enabledUserId: id, 
+          enabledBy: enabler._id,
           newStatus: 'ACTIVE'
         }
       })(req, res, () => {});
-      
+
       res.json({
         success: true,
         message: 'Kích hoạt user thành công',
@@ -337,28 +305,25 @@ async assignRole(req, res, next) {
     }
   }
 
-  /**
-   * 🎯 XÓA USER (SOFT DELETE)
-   */
   async deleteUser(req, res, next) {
     try {
-      const { userId } = req.params;
-      const { reason } = req.query;
-      const deleterId = req.user._id;
-      
-      console.log('🎯 [USER CONTROLLER] Deleting user:', userId);
+      const { id } = req.params;
+      const { reason } = req.body;
+      const deleter = req.user;
 
-      await userService.deleteUser(userId, reason, deleterId);
-      
+      console.log('🎯 [USER CONTROLLER] Deleting user:', id);
+
+      await userService.deleteUser(id, reason, deleter);
+
       await auditLog(AUDIT_ACTIONS.USER_DELETE, {
         metadata: { 
-          deletedUserId: userId, 
+          deletedUserId: id, 
           reason,
-          deletedBy: deleterId,
+          deletedBy: deleter._id,
           deletionType: 'SOFT_DELETE'
         }
       })(req, res, () => {});
-      
+
       res.json({
         success: true,
         message: 'Xóa user thành công'
@@ -368,58 +333,44 @@ async assignRole(req, res, next) {
     }
   }
 
-async restoreUser(req, res, next) {
-  try {
-    const { userId } = req.params;
-    const currentUser = req.user;
-    
-    console.log('🎯 [USER CONTROLLER] Restoring user:', {
-      userId,
-      currentUser: currentUser.email,
-      currentUserRole: currentUser.role
-    });
+  async restoreUser(req, res, next) {
+    try {
+      const { id } = req.params;
+      const currentUser = req.user;
 
-    // 🎯 TRUYỀN currentUser
-    const user = await userService.restoreUser(userId, currentUser);
-    
-    await auditLog(AUDIT_ACTIONS.USER_RESTORE, {
-      metadata: { 
-        restoredUserId: userId, 
-        restoredBy: currentUser._id
-      }
-    })(req, res, () => {});
-    
-    res.json({
-      success: true,
-      message: 'Khôi phục user thành công',
-      data: user
-    });
-  } catch (error) {
-    next(error);
+      console.log('🎯 [USER CONTROLLER] Restoring user:', {
+        userId: id,
+        currentUser: currentUser.email,
+        currentUserRole: currentUser.role
+      });
+
+      const user = await userService.restoreUser(id, currentUser);
+
+      await auditLog(AUDIT_ACTIONS.USER_RESTORE, {
+        metadata: { 
+          restoredUserId: id, 
+          restoredBy: currentUser._id
+        }
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: 'Khôi phục user thành công',
+        data: user
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-}
 
-  /**
-   * 🎯 LẤY DANH SÁCH USER ĐÃ XÓA
-   */
   async listDeletedUsers(req, res, next) {
     try {
-      const { 
-        page = 1, 
-        limit = 10,
-        sortBy = 'deletedAt',
-        sortOrder = 'desc'
-      } = req.query;
-      
+      const query = req.query;
+
       console.log('🎯 [USER CONTROLLER] Listing deleted users');
 
-      const result = await userService.listDeletedUsers({
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sortBy,
-        sortOrder
-      });
-      
+      const result = await userService.listDeletedUsers(query);
+
       res.json({
         success: true,
         data: result.users,
@@ -430,13 +381,10 @@ async restoreUser(req, res, next) {
     }
   }
 
-  /**
-   * 🎯 UPLOAD PROFILE PICTURE
-   */
   async uploadProfilePicture(req, res, next) {
     try {
       const userId = req.user._id;
-      
+
       if (!req.file) {
         throw new AppError('Không có file được tải lên', 400, ERROR_CODES.VALIDATION_FAILED);
       }
@@ -448,7 +396,7 @@ async restoreUser(req, res, next) {
       });
 
       const user = await userService.uploadProfilePicture(userId, req.file);
-      
+
       await auditLog(AUDIT_ACTIONS.USER_UPDATE, {
         metadata: { 
           updatedUserId: userId, 
@@ -456,7 +404,7 @@ async restoreUser(req, res, next) {
           filename: req.file.filename
         }
       })(req, res, () => {});
-      
+
       res.json({
         success: true,
         message: 'Tải lên ảnh đại diện thành công',
@@ -466,7 +414,6 @@ async restoreUser(req, res, next) {
         }
       });
     } catch (error) {
-      // Xóa file nếu có lỗi
       if (req.file) {
         await deleteFile(req.file.path);
       }
@@ -474,17 +421,14 @@ async restoreUser(req, res, next) {
     }
   }
 
-  /**
-   * 🎯 VERIFY EMAIL
-   */
   async verifyEmail(req, res, next) {
     try {
       const { token } = req.body;
-      
+
       console.log('🎯 [USER CONTROLLER] Verifying email with token');
 
       const user = await userService.verifyEmail(token);
-      
+
       await auditLog(AUDIT_ACTIONS.USER_UPDATE, {
         metadata: { 
           updatedUserId: user._id, 
@@ -492,7 +436,7 @@ async restoreUser(req, res, next) {
           verified: true
         }
       })(req, res, () => {});
-      
+
       res.json({
         success: true,
         message: 'Xác thực email thành công',
@@ -503,17 +447,14 @@ async restoreUser(req, res, next) {
     }
   }
 
-  /**
-   * 🎯 RESEND VERIFICATION EMAIL
-   */
   async resendVerificationEmail(req, res, next) {
     try {
       const userId = req.user._id;
-      
+
       console.log('🎯 [USER CONTROLLER] Resending verification email:', userId);
 
       const result = await userService.resendVerificationEmail(userId);
-      
+
       res.json({
         success: true,
         message: 'Đã gửi lại email xác thực',
@@ -524,15 +465,12 @@ async restoreUser(req, res, next) {
     }
   }
 
-  /**
-   * 🎯 GET USER STATISTICS
-   */
   async getUserStatistics(req, res, next) {
     try {
       console.log('🎯 [USER CONTROLLER] Getting user statistics');
 
       const stats = await userService.getUserStatistics();
-      
+
       res.json({
         success: true,
         data: stats
@@ -542,96 +480,135 @@ async restoreUser(req, res, next) {
     }
   }
 
-  /**
-   * 🎯 GET USER BY EMAIL (INTERNAL/ADMIN)
-   */
-  async getUserByEmail(req, res, next) {
+  async searchUsers(req, res, next) {
     try {
-      const { email } = req.params;
-      
-      console.log('🎯 [USER CONTROLLER] Getting user by email:', email);
+      const { q } = req.query;
 
-      const user = await userService.getUserByEmail(email);
-      
-      if (!user) {
-        throw new AppError('Không tìm thấy user với email này', 404, ERROR_CODES.USER_NOT_FOUND);
-      }
-      
+      console.log('🎯 [USER CONTROLLER] Searching users:', q);
+
+      const result = await userService.searchUsers(q);
+
       res.json({
         success: true,
-        data: user
+        data: result.users,
+        pagination: result.pagination
       });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
- * 🎯 SEARCH USERS
- */
-async searchUsers(req, res, next) {
-  try {
-    const { q } = req.query;
-    
-    console.log('🎯 [USER CONTROLLER] Searching users:', q);
+  async getUsersByRole(req, res, next) {
+    try {
+      const { role } = req.query; // Vì trong routes dùng query
 
-    const filter = {
-      $or: [
-        { 'personalInfo.firstName': { $regex: q, $options: 'i' } },
-        { 'personalInfo.lastName': { $regex: q, $options: 'i' } },
-        { email: { $regex: q, $options: 'i' } }
-      ],
-      isDeleted: false
-    };
+      console.log('🎯 [USER CONTROLLER] Getting users by role:', role);
 
-    const result = await userService.listUsers(filter, {
-      page: 1,
-      limit: 20,
-      sortBy: 'createdAt',
-      sortOrder: 'desc'
-    });
-    
-    res.json({
-      success: true,
-      data: result.users,
-      pagination: result.pagination
-    });
-  } catch (error) {
-    next(error);
+      const result = await userService.getUsersByRole(role);
+
+      res.json({
+        success: true,
+        data: result.users,
+        pagination: result.pagination
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-}
 
-/**
- * 🎯 GET USERS BY ROLE
- */
-async getUsersByRole(req, res, next) {
-  try {
-    const { role } = req.params;
-    
-    console.log('🎯 [USER CONTROLLER] Getting users by role:', role);
+  async getUsersByDepartment(req, res, next) {
+    try {
+      const { department } = req.query;
 
-    const filter = {
-      role: role,
-      isDeleted: false,
-      status: 'ACTIVE'
-    };
+      console.log('🎯 [USER CONTROLLER] Getting users by department:', department);
 
-    const result = await userService.listUsers(filter, {
-      page: 1,
-      limit: 50,
-      sortBy: 'personalInfo.lastName',
-      sortOrder: 'asc'
-    });
-    
-    res.json({
-      success: true,
-      data: result.users,
-      pagination: result.pagination
-    });
-  } catch (error) {
-    next(error);
+      const result = await userService.getUsersByDepartment(department);
+
+      res.json({
+        success: true,
+        data: result.users,
+        pagination: result.pagination
+      });
+    } catch (error) {
+      next(error);
+    }
   }
-}
+
+  // Hỗ trợ UI: Roles & Permissions
+  async getRoles(req, res, next) {
+    try {
+      res.json({
+        success: true,
+        data: ROLES
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getCreatableRoles(req, res, next) {
+    try {
+      const currentRole = req.user.role;
+      const creatable = getCreatableRoles(currentRole);
+      res.json({
+        success: true,
+        data: creatable
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getPermissionsByRole(req, res, next) {
+    try {
+      const { role } = req.params;
+      const permissions = getRolePermissions(role);
+      res.json({
+        success: true,
+        data: permissions
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getAllPermissions(req, res, next) {
+    try {
+      const grouped = getPermissionsByGroup();
+      res.json({
+        success: true,
+        data: grouped
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Thay đổi mật khẩu
+  async changePassword(req, res, next) {
+    try {
+      const userId = req.user._id;
+      const { oldPassword, newPassword } = req.body;
+
+      console.log('🎯 [USER CONTROLLER] Changing password for user:', userId);
+
+      await userService.changePassword(userId, oldPassword, newPassword);
+
+      await auditLog(AUDIT_ACTIONS.USER_UPDATE, {
+        metadata: { 
+          updatedUserId: userId, 
+          action: 'CHANGE_PASSWORD'
+        }
+      })(req, res, () => {});
+
+      res.json({
+        success: true,
+        message: 'Thay đổi mật khẩu thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new UserController();

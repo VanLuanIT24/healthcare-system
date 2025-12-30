@@ -11,8 +11,10 @@ const appointmentValidation = {
   createAppointment: Joi.object({
     patientId: commonSchemas.objectId.required(),
     doctorId: commonSchemas.objectId.required(),
+    specialty: Joi.string().required(),
     appointmentDate: Joi.date().iso().required(),
-    timeSlot: Joi.string().required(),
+    duration: Joi.number().integer().min(15).max(480).optional().default(30),
+    timeSlot: Joi.string().optional(),
     type: Joi.string().valid('CONSULTATION', 'FOLLOW_UP', 'CHECKUP', 'SURGERY', 'TEST', 'OTHER').required(),
     location: Joi.string().required(),
     mode: Joi.string().valid('IN_PERSON', 'TELEMEDICINE', 'PHONE').optional(),
@@ -46,6 +48,7 @@ const appointmentValidation = {
 
   // 🎯 LẤY LỊCH HẸN CỦA BỆNH NHÂN
   getPatientAppointments: Joi.object({
+    patientId: commonSchemas.objectId.required(),
     status: Joi.string().valid('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW').optional(),
     startDate: Joi.date().iso().optional(),
     endDate: Joi.date().iso().min(Joi.ref('startDate')).optional(),
@@ -55,6 +58,7 @@ const appointmentValidation = {
 
   // 🎯 LẤY LỊCH HẸN CỦA BÁC SĨ
   getDoctorAppointments: Joi.object({
+    doctorId: commonSchemas.objectId.required(),
     status: Joi.string().valid('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW').optional(),
     startDate: Joi.date().iso().optional(),
     endDate: Joi.date().iso().min(Joi.ref('startDate')).optional(),
@@ -77,6 +81,10 @@ const appointmentValidation = {
 
   // 🎯 LẤY LỊCH LÀM VIỆC CỦA BÁC SĨ
   getDoctorSchedule: Joi.object({
+    doctorId: Joi.alternatives().try(
+      commonSchemas.objectId,
+      Joi.string().valid('me')
+    ).optional(),
     date: Joi.date().iso().optional(),
     startDate: Joi.date().iso().optional(),
     endDate: Joi.date().iso().min(Joi.ref('startDate')).optional()
@@ -311,6 +319,80 @@ const appointmentValidation = {
     endDate: Joi.date().iso().min(Joi.ref('startDate')).optional(),
     status: Joi.string().valid('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW').optional()
   })
+,
+  // 🎯 YÊU CẦU HỦY LỊCH HẸN
+  cancelRequest: Joi.object({
+    reason: Joi.string().max(500).required()
+  }),
+
+  // 🎯 DUYỆT YÊU CẦU HỦY
+  approveCancelRequest: Joi.object({
+    approved: Joi.boolean().required(),
+    notes: Joi.string().max(500).optional()
+  }),
+
+  // 🎯 THÔNG TIN AUTDAL CẦN CHO EXPORT
+  exportAppointments: Joi.object({
+    startDate: Joi.date().iso().optional(),
+    endDate: Joi.date().iso().min(Joi.ref('startDate')).optional(),
+    doctorId: commonSchemas.objectId.optional(),
+    patientId: commonSchemas.objectId.optional()
+  }),
+
+  exportFormat: Joi.object({
+    format: Joi.string().valid('pdf', 'excel').required()
+  }),
+
+  // 🎯 NO-SHOW
+  markNoShow: Joi.object({
+    reason: Joi.string().max(500).optional()
+  }),
+
+  // 🎯 THAM SỐ ROUTE
+  appointmentIdParam: Joi.object({
+    id: commonSchemas.objectId.required()
+  }),
+
+  doctorIdParam: Joi.object({
+    doctorId: commonSchemas.objectId.required()
+  }),
+
+  patientIdParam: Joi.object({
+    patientId: commonSchemas.objectId.required()
+  }),
+
+  scheduleIdParam: Joi.object({
+    scheduleId: commonSchemas.objectId.required()
+  }),
+
+  // 🎯 LẤY LỊCH HẸN HÔM NAY
+  getTodayAppointments: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(50).default(10),
+    status: Joi.string().valid('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW').optional(),
+    doctorId: commonSchemas.objectId.optional(),
+    departmentId: commonSchemas.objectId.optional()
+  }).unknown(true),
+
+  // 🎯 LẤY LỊCH HẸN SẮP TỚI
+  getUpcomingAppointments: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(50).default(10),
+    days: Joi.number().integer().min(1).max(30).default(7),
+    status: Joi.string().valid('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW').optional(),
+    doctorId: commonSchemas.objectId.optional(),
+    departmentId: commonSchemas.objectId.optional()
+  }).unknown(true)
 };
 
-module.exports = appointmentValidation;
+// Aliases to align with route naming
+appointmentValidation.getAppointments = appointmentValidation.searchAppointments;
+appointmentValidation.getAppointmentById = appointmentValidation.appointmentIdParam;
+appointmentValidation.requestCancelAppointment = appointmentValidation.cancelRequest;
+appointmentValidation.noShowAppointment = appointmentValidation.markNoShow;
+appointmentValidation.createDoctorSchedule = appointmentValidation.createSchedule;
+appointmentValidation.updateDoctorSchedule = appointmentValidation.updateSchedule;
+appointmentValidation.deleteDoctorSchedule = appointmentValidation.scheduleIdParam;
+
+// Expose under `schemas` to match route imports
+module.exports = { schemas: appointmentValidation };

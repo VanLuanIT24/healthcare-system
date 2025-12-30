@@ -4,7 +4,7 @@
  */
 
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const moment = require('moment');
 
 // Import models
@@ -57,7 +57,7 @@ async function clearDatabase() {
 // Tạo Super Admin
 async function createSuperAdmin() {
   const hashedPassword = await bcrypt.hash('Admin@123', 10);
-  
+
   const superAdmin = new User({
     email: 'admin@hospital.com',
     password: hashedPassword,
@@ -426,7 +426,7 @@ async function createBills(patients, adminUser) {
   for (let i = 0; i < 80; i++) {
     const patient = patients[i % patients.length];
     const hasInsurance = patient.patient.insurance?.verificationStatus === 'VERIFIED';
-    
+
     const services = [
       {
         serviceCode: 'SVC001',

@@ -8,13 +8,13 @@
    ============================================ */
 
 :root {
-  /* Colors - Primary Gradient */
-  --color-primary: #667eea;
-  --color-primary-light: #764ba2;
-  --color-primary-dark: #4c63d2;
-  --color-primary-bg: #f0f4ff;
-  --color-gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --color-gradient-light: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  /* Colors - Primary Gradient - Modern Cyan/Teal */
+  --color-primary: #06b6d4;
+  --color-primary-light: #0891b2;
+  --color-primary-dark: #0e7490;
+  --color-primary-bg: #ecf9fc;
+  --color-gradient-primary: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  --color-gradient-light: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #7c3aed 100%);
 
   /* Colors - Success */
   --color-success: #52C41A;
@@ -45,12 +45,12 @@
   --color-gradient-info: linear-gradient(135deg, #13C2C2 0%, #36CFC9 100%);
 
   /* Background - Modern Glassmorphism */
-  --bg-default: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+  --bg-default: linear-gradient(135deg, #f0f9fb 0%, #e8f4f8 100%);
   --bg-paper: rgba(255, 255, 255, 0.95);
   --bg-sidebar: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
   --bg-header: rgba(255, 255, 255, 0.95);
-  --bg-hover: rgba(102, 126, 234, 0.05);
-  --bg-active: rgba(102, 126, 234, 0.1);
+  --bg-hover: rgba(6, 182, 212, 0.05);
+  --bg-active: rgba(6, 182, 212, 0.1);
   --bg-glass: rgba(255, 255, 255, 0.9);
 
   /* Text */
@@ -58,12 +58,12 @@
   --text-secondary: #6b7280;
   --text-disabled: #d1d5db;
   --text-inverse: #FFFFFF;
-  --text-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --text-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
 
   /* Border */
-  --border-color: rgba(102, 126, 234, 0.15);
-  --border-light: rgba(102, 126, 234, 0.08);
-  --border-dark: rgba(102, 126, 234, 0.25);
+  --border-color: rgba(6, 182, 212, 0.15);
+  --border-light: rgba(6, 182, 212, 0.08);
+  --border-dark: rgba(6, 182, 212, 0.25);
   --border-radius: 12px;
   --border-radius-lg: 20px;
   --border-radius-xl: 24px;
@@ -161,20 +161,20 @@ body::before {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
   border-radius: 10px;
   transition: all var(--transition-fast);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #f093fb 100%);
-  box-shadow: 0 0 10px rgba(102, 126, 234, 0.5);
+  background: linear-gradient(135deg, #0891b2 0%, #7c3aed 100%);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
 }
 
 /* Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #667eea rgba(102, 126, 234, 0.05);
+  scrollbar-color: #06b6d4 rgba(6, 182, 212, 0.05);
 }
 
 /* ============================================

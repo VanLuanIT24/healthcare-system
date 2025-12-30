@@ -1,141 +1,125 @@
-/**
- * MEDICATION ROUTES
- * Định tuyến API cho quản lý thuốc
- */
-
+// src/routes/medication.routes.js
 const express = require('express');
 const router = express.Router();
-
-const MedicationController = require('../controllers/medication.controller');
+const medicationController = require('../controllers/medication.controller');
+const { validate } = require('../middlewares/validation.middleware');
+const { schemas } = require('../validations/medication.validation');
 const { authenticate } = require('../middlewares/auth.middleware');
-const { validateQuery, validateBody, validateParams } = require('../middlewares/validation.middleware');
 const { requireRole, requirePermission } = require('../middlewares/rbac.middleware');
-const medicationValidation = require('../validations/medication.validation');
+const { ROLES, PERMISSIONS } = require('../constants/roles');
 
-/**
- * 🔒 TẤT CẢ ROUTES YÊU CẦU AUTHENTICATION
- */
 router.use(authenticate);
 
-/**
- * GET /api/medications/inventory
- * Lấy báo cáo tồn kho
- * Quyền: ADMIN, PHARMACIST
- */
+// ===== DANH MỤC THUỐC =====
 router.get(
-  '/inventory',
-  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PHARMACIST'),
-  validateQuery(medicationValidation.getInventory),
-  MedicationController.getMedicationInventory
+  '/',
+  requireRole(ROLES.DOCTOR, ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN, ROLES.NURSE),
+  requirePermission(PERMISSIONS.MEDICATION_VIEW),
+  validate(schemas.getMedications, 'query'),
+  medicationController.getMedications
 );
 
-/**
- * GET /api/medications/stats
- * Lấy thống kê kho thuốc
- * Quyền: ADMIN, DOCTOR, PHARMACIST
- */
-router.get(
-  '/stats',
-  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'DOCTOR', 'PHARMACIST'),
-  MedicationController.getMedicationStats
-);
-
-/**
- * GET /api/medications/low-stock
- * Lấy danh sách thuốc sắp hết
- * Quyền: ADMIN, PHARMACIST
- */
-router.get(
-  '/low-stock',
-  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PHARMACIST'),
-  validateQuery(medicationValidation.getLowStock),
-  MedicationController.getLowStockMedications
-);
-
-/**
- * GET /api/medications/search
- * Tìm kiếm thuốc (autocomplete)
- * Quyền: ADMIN, DOCTOR, NURSE, PHARMACIST
- */
 router.get(
   '/search',
-  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'DOCTOR', 'NURSE', 'PHARMACIST'),
-  validateQuery(medicationValidation.searchMedications),
-  MedicationController.searchMedications
+  requireRole(ROLES.DOCTOR, ROLES.PHARMACIST, ROLES.NURSE),
+  requirePermission(PERMISSIONS.MEDICATION_VIEW),
+  validate(schemas.searchMedications, 'query'),
+  medicationController.searchMedications
 );
 
-/**
- * GET /api/medications
- * Lấy danh sách thuốc với phân trang và lọc
- * Quyền: ADMIN, DOCTOR, NURSE, PHARMACIST
- */
-router.get(
-  '/',
-  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'DOCTOR', 'NURSE', 'PHARMACIST', 'BILLING_STAFF'),
-  validateQuery(medicationValidation.getMedications),
-  MedicationController.getMedications
-);
-
-/**
- * GET /api/medications/:id
- * Lấy thông tin chi tiết thuốc
- * Quyền: ADMIN, DOCTOR, NURSE, PHARMACIST
- */
 router.get(
   '/:id',
-  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'DOCTOR', 'NURSE', 'PHARMACIST'),
-  validateParams(medicationValidation.medicationId),
-  MedicationController.getMedicationById
+  requireRole(ROLES.DOCTOR, ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.MEDICATION_VIEW),
+  validate(schemas.medicationIdParam, 'params'),
+  medicationController.getMedicationById
 );
 
-/**
- * POST /api/medications
- * Tạo thuốc mới
- * Quyền: ADMIN, PHARMACIST
- */
 router.post(
   '/',
-  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PHARMACIST'),
-  validateBody(medicationValidation.createMedication),
-  MedicationController.createMedication
+  requireRole(ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.MEDICATION_CREATE),
+  validate(schemas.createMedication, 'body'),
+  medicationController.createMedication
 );
 
-/**
- * PUT /api/medications/:id
- * Cập nhật thông tin thuốc
- * Quyền: ADMIN, PHARMACIST
- */
 router.put(
   '/:id',
-  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PHARMACIST'),
-  validateParams(medicationValidation.medicationId),
-  validateBody(medicationValidation.updateMedication),
-  MedicationController.updateMedication
+  requireRole(ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.MEDICATION_UPDATE),
+  validate(schemas.medicationIdParam, 'params'),
+  validate(schemas.updateMedication, 'body'),
+  medicationController.updateMedication
 );
 
-/**
- * POST /api/medications/:id/stock
- * Cập nhật tồn kho (nhập/xuất)
- * Quyền: ADMIN, PHARMACIST
- */
+// ===== QUẢN LÝ TỒN KHO =====
 router.post(
-  '/:id/stock',
-  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN', 'PHARMACIST'),
-  validateParams(medicationValidation.medicationId),
-  validateBody(medicationValidation.updateStock),
-  MedicationController.updateStock
+  '/:id/inventory/adjust',
+  requireRole(ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.INVENTORY_ADJUST),
+  validate(schemas.medicationIdParam, 'params'),
+  validate(schemas.adjustStock, 'body'),
+  medicationController.adjustStock
 );
 
-/**
- * DELETE /api/medications/:id
- * Xóa thuốc (soft delete)
- * Quyền: ADMIN only
- */
-router.delete(
-  '/:id',
-  requireRole('SUPER_ADMIN', 'HOSPITAL_ADMIN'),
-  validateParams(medicationValidation.medicationId),
-  MedicationController.deleteMedication
+router.post(
+  '/:id/inventory/in',
+  requireRole(ROLES.PHARMACIST),
+  requirePermission(PERMISSIONS.INVENTORY_RESTOCK),
+  validate(schemas.medicationIdParam, 'params'),
+  validate(schemas.restockMedication, 'body'),
+  medicationController.restockMedication
+);
+
+router.post(
+  '/:id/inventory/out',
+  requireRole(ROLES.PHARMACIST),
+  requirePermission(PERMISSIONS.INVENTORY_WRITEOFF),
+  validate(schemas.medicationIdParam, 'params'),
+  validate(schemas.writeOffMedication, 'body'),
+  medicationController.writeOffMedication
+);
+
+// ===== CẢNH BÁO =====
+router.get(
+  '/alerts/low-stock',
+  requireRole(ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.INVENTORY_VIEW),
+  medicationController.getLowStock
+);
+
+router.get(
+  '/alerts/expiring',
+  requireRole(ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN),
+  validate(schemas.getExpiringSoon, 'query'),
+  medicationController.getExpiringSoon
+);
+
+router.get(
+  '/alerts/recalls',
+  requireRole(ROLES.PHARMACIST, ROLES.HOSPITAL_ADMIN),
+  medicationController.getRecalledMedications
+);
+
+// ===== THỐNG KÊ =====
+router.get(
+  '/inventory/value',
+  requireRole(ROLES.HOSPITAL_ADMIN, ROLES.PHARMACIST),
+  medicationController.getInventoryValue
+);
+
+router.get(
+  '/stats/usage',
+  requireRole(ROLES.HOSPITAL_ADMIN, ROLES.PHARMACIST),
+  validate(schemas.getMedicationUsageStats, 'query'),
+  medicationController.getMedicationUsageStats
+);
+
+router.get(
+  '/inventory/export/excel',
+  requireRole(ROLES.HOSPITAL_ADMIN, ROLES.PHARMACIST),
+  validate(schemas.exportInventoryExcel, 'query'),
+  medicationController.exportInventoryExcel
 );
 
 module.exports = router;

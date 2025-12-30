@@ -1,133 +1,161 @@
-// src/routes/billing.routes.js
+// routes/billing.routes.js
 const express = require('express');
 const router = express.Router();
-const {
-  createBill,
-  getBill,
-  updateBill,
-  getPatientBills,
-  processPayment,
-  getPaymentHistory,
-  refundPayment,
-  voidBill,
-  getRevenueStats,
-  getAllBills,
-  getOutstandingBills
-} = require('../controllers/billing.controller');
-const { authenticate } = require('../middlewares/auth.middleware');
-const { requirePermission } = require('../middlewares/rbac.middleware');
-const {
-  validateParams,
-  validateQuery,
-  validateBody
-} = require('../middlewares/validation.middleware');
-const { billingSchemas } = require('../validations/billing.validation');
+const billingController = require('../controllers/billing.controller');
+const { authenticate, requirePermission } = require('../middlewares/auth.middleware');
+const { validateBilling } = require('../validations/billing.validation');
+const { PERMISSIONS } = require('../constants/roles');
 
-// 🎯 ALL ROUTES REQUIRE AUTHENTICATION
 router.use(authenticate);
 
-// 🎯 SPECIFIC ROUTES BEFORE DYNAMIC /:id ROUTES (IMPORTANT!)
-
-// 💰 GET ALL BILLS - GET /api/billing
-router.get(
-  '/',
-  requirePermission('BILL.VIEW'),
-  validateQuery(billingSchemas.billQuery),
-  getAllBills
-);
-
-// 💰 GET REVENUE STATS - GET /api/billing/revenue-stats
-router.get(
-  '/revenue-stats',
-  requirePermission('BILL.VIEW_REPORTS'),
-  validateQuery(billingSchemas.billQuery),
-  getRevenueStats
-);
-
-// 💰 GET OUTSTANDING BILLS
-router.get(
-  '/outstanding',
-  requirePermission('BILL.VIEW_REPORTS'),
-  validateQuery(billingSchemas.billQuery),
-  getOutstandingBills
-);
-
-// 💰 CREATE BILL - POST /api/billing
+// Tạo hóa đơn mới
 router.post(
   '/',
-  requirePermission('BILL.CREATE'),
-  validateBody(billingSchemas.createBill),
-  createBill
+  requirePermission(PERMISSIONS['BILL.CREATE']),
+  (req, res, next) => {
+    const { error } = validateBilling.createBill(req.body);
+    if (error) return res.status(400).json({ success: false, error: error.details });
+    next();
+  },
+  billingController.createBill
 );
 
-// 💰 CREATE BILL FOR PATIENT - POST /api/billing/patient/:patientId
-router.post(
-  '/patient/:patientId',
-  requirePermission('BILL.CREATE'),
-  validateParams(billingSchemas.patientId),
-  validateBody(billingSchemas.createBill),
-  createBill
-);
-
-// 💰 GET PATIENT BILLS - GET /api/billing/patient/:patientId
-router.get(
-  '/patient/:patientId',
-  requirePermission('BILL.VIEW'),
-  validateParams(billingSchemas.patientId),
-  validateQuery(billingSchemas.billQuery),
-  getPatientBills
-);
-
-// 💰 GET BILL BY ID - GET /api/billing/:billId
+// Lấy thông tin hóa đơn theo ID
 router.get(
   '/:billId',
-  requirePermission('BILL.VIEW'),
-  validateParams(billingSchemas.billId),
-  getBill
+  requirePermission(PERMISSIONS['BILL.VIEW']),
+  billingController.getBill
 );
 
-// 💰 UPDATE BILL - PUT /api/billing/:billId
+// Lấy danh sách hóa đơn
+router.get(
+  '/',
+  requirePermission(PERMISSIONS['BILL.VIEW']),
+  (req, res, next) => {
+    const { error } = validateBilling.billQuery(req.query);
+    if (error) return res.status(400).json({ success: false, error: error.details });
+    next();
+  },
+  billingController.getBills
+);
+
+// Cập nhật hóa đơn
 router.put(
   '/:billId',
-  requirePermission('BILL.UPDATE'),
-  validateParams(billingSchemas.billId),
-  validateBody(billingSchemas.updateBill),
-  updateBill
+  requirePermission(PERMISSIONS['BILL.UPDATE']),
+  (req, res, next) => {
+    const { error } = validateBilling.updateBill(req.body);
+    if (error) return res.status(400).json({ success: false, error: error.details });
+    next();
+  },
+  billingController.updateBill
 );
 
-// 💰 VOID BILL - PATCH /api/billing/:billId/void
+// Hủy hóa đơn
 router.patch(
   '/:billId/void',
-  requirePermission('BILL.UPDATE'),
-  validateParams(billingSchemas.billId),
-  voidBill
+  requirePermission(PERMISSIONS['BILL.UPDATE']),
+  (req, res, next) => {
+    const { error } = validateBilling.voidBill(req.body);
+    if (error) return res.status(400).json({ success: false, error: error.details });
+    next();
+  },
+  billingController.voidBill
 );
 
-// 💰 PROCESS PAYMENT - POST /api/billing/:billId/payment
+// Xử lý thanh toán
 router.post(
   '/:billId/payment',
-  requirePermission('BILL.PROCESS_PAYMENTS'),
-  validateParams(billingSchemas.billId),
-  validateBody(billingSchemas.processPayment),
-  processPayment
+  requirePermission(PERMISSIONS['BILL.PROCESS_PAYMENTS']),
+  (req, res, next) => {
+    const { error } = validateBilling.processPayment(req.body);
+    if (error) return res.status(400).json({ success: false, error: error.details });
+    next();
+  },
+  billingController.processPayment
 );
 
-// 💰 GET PAYMENT HISTORY - GET /api/billing/:billId/payment-history
+// Lấy lịch sử thanh toán
 router.get(
   '/:billId/payment-history',
-  requirePermission('BILL.VIEW'),
-  validateParams(billingSchemas.billId),
-  validateQuery(billingSchemas.paymentQuery),
-  getPaymentHistory
+  requirePermission(PERMISSIONS['BILL.VIEW']),
+  billingController.getPaymentHistory
 );
 
-// 💰 REFUND PAYMENT - POST /api/billing/payments/:paymentId/refund
+// Hoàn tiền
 router.post(
   '/payments/:paymentId/refund',
-  requirePermission('BILL.PROCESS_PAYMENTS'),
-  validateParams({ paymentId: billingSchemas.billId }),
-  validateBody(billingSchemas.refundPayment),
-  refundPayment
+  requirePermission(PERMISSIONS['BILL.PROCESS_PAYMENTS']),
+  (req, res, next) => {
+    const { error } = validateBilling.refundPayment(req.body);
+    if (error) return res.status(400).json({ success: false, error: error.details });
+    next();
+  },
+  billingController.refundPayment
+);
+
+// Lấy hóa đơn của bệnh nhân
+router.get(
+  '/patient/:patientId',
+  requirePermission(PERMISSIONS['BILL.VIEW']),
+  (req, res, next) => {
+    const { error } = validateBilling.billQuery(req.query);
+    if (error) return res.status(400).json({ success: false, error: error.details });
+    next();
+  },
+  billingController.getPatientBills
+);
+
+// Xác minh bảo hiểm
+router.post(
+  '/patient/:patientId/insurance/verify',
+  requirePermission(PERMISSIONS['BILL.UPDATE']),
+  (req, res, next) => {
+    const { error } = validateBilling.verifyInsurance(req.body);
+    if (error) return res.status(400).json({ success: false, error: error.details });
+    next();
+  },
+  billingController.verifyInsurance
+);
+
+// Gửi yêu cầu bảo hiểm
+router.post(
+  '/:billId/insurance-claim',
+  requirePermission(PERMISSIONS['BILL.PROCESS_PAYMENTS']),
+  (req, res, next) => {
+    const { error } = validateBilling.insuranceClaim(req.body);
+    if (error) return res.status(400).json({ success: false, error: error.details });
+    next();
+  },
+  billingController.submitInsuranceClaim
+);
+
+// Lấy hóa đơn chưa thanh toán
+router.get(
+  '/outstanding',
+  requirePermission(PERMISSIONS['BILL.VIEW']),
+  billingController.getOutstandingBills
+);
+
+// Lấy thống kê doanh thu
+router.get(
+  '/stats/revenue',
+  requirePermission(PERMISSIONS['BILL.VIEW']),
+  billingController.getRevenueStats
+);
+
+// Xuất hóa đơn PDF
+router.get(
+  '/:billId/invoice/pdf',
+  requirePermission(PERMISSIONS['BILL.VIEW']),
+  billingController.generateInvoicePDF
+);
+
+// Xuất biên lai PDF
+router.get(
+  '/payments/:paymentId/receipt/pdf',
+  requirePermission(PERMISSIONS['BILL.VIEW']),
+  billingController.generateReceiptPDF
 );
 
 module.exports = router;

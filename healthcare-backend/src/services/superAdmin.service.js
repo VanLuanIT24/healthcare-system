@@ -1,5 +1,5 @@
 // src/services/superAdmin.service.js
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { appConfig } = require('../config');
 const User = require('../models/user.model');
 const AuditLog = require('../models/auditLog.model');
@@ -40,7 +40,7 @@ class SuperAdminService {
       role: ROLES.SUPER_ADMIN,
       isActive: true,
       loginAttempts: 0,
-      
+
       // Thông tin cá nhân theo schema thực tế
       personalInfo: {
         firstName: firstName,
@@ -49,12 +49,12 @@ class SuperAdminService {
         dateOfBirth: new Date('1980-01-01'),
         phone: appConfig.superAdmin.phone || '+84123456789'
       },
-      
+
       // Thông tin chuyên môn
       professionalInfo: {
         qualifications: []
       },
-      
+
       // Cài đặt
       settings: {
         notifications: {
@@ -65,9 +65,9 @@ class SuperAdminService {
         language: 'vi',
         theme: 'light'
       },
-      
+
       documents: [],
-      
+
       // Thông tin hệ thống
       systemInfo: {
         isSuperAdmin: true,
@@ -110,7 +110,7 @@ class SuperAdminService {
 
     // Cập nhật mật khẩu nếu có thay đổi
     const isPasswordMatch = await bcrypt.compare(password, existingAdmin.passwordHash);
-    
+
     if (!isPasswordMatch) {
       existingAdmin.passwordHash = await bcrypt.hash(password, appConfig.security.saltRounds);
       existingAdmin.password = password;
@@ -135,7 +135,7 @@ class SuperAdminService {
     });
 
     console.log('✅ Đã cập nhật thông tin Super Admin');
-    
+
     // Trả về object với các trường cần thiết cho CLI
     return {
       ...existingAdmin.toObject(),
@@ -153,7 +153,7 @@ class SuperAdminService {
       const superAdminConfig = this.getSuperAdminConfig();
 
       // Kiểm tra Super Admin đã tồn tại chưa
-      const existingSuperAdmin = await User.findOne({ 
+      const existingSuperAdmin = await User.findOne({
         role: ROLES.SUPER_ADMIN,
         email: superAdminConfig.email
       });
@@ -165,7 +165,7 @@ class SuperAdminService {
 
       // Tạo mới Super Admin
       return await this.createNewSuperAdmin();
-      
+
     } catch (error) {
       console.error('❌ Lỗi khởi tạo Super Admin:', error);
       throw error;
@@ -178,15 +178,15 @@ class SuperAdminService {
   async getSuperAdminStatus() {
     try {
       const superAdminConfig = this.getSuperAdminConfig();
-      
-      const superAdmin = await User.findOne({ 
+
+      const superAdmin = await User.findOne({
         role: ROLES.SUPER_ADMIN,
         email: superAdminConfig.email
       });
 
       if (!superAdmin) {
-        return { 
-          exists: false, 
+        return {
+          exists: false,
           status: 'NOT_FOUND',
           configExists: true
         };
@@ -222,11 +222,11 @@ class SuperAdminService {
     }
 
     console.log('🔄 Đang reset Super Admin...');
-    
+
     const superAdminConfig = this.getSuperAdminConfig();
 
     // Xóa Super Admin hiện tại
-    await User.deleteOne({ 
+    await User.deleteOne({
       role: ROLES.SUPER_ADMIN,
       email: superAdminConfig.email
     });

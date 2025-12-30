@@ -23,6 +23,8 @@ async function authenticate(req, res, next) {
 
     // 🎯 KIỂM TRA AUTHORIZATION HEADER
     const authHeader = req.headers.authorization;
+    console.log(`🔐 [AUTH] ${req.method} ${req.path} - Authorization header: ${authHeader ? '✓' : '✗'}`);
+
     if (!authHeader) {
       throw new AppError('Authorization header là bắt buộc', 401, ERROR_CODES.AUTH_INVALID_TOKEN);
     }
@@ -37,12 +39,12 @@ async function authenticate(req, res, next) {
 
     // 🎯 XÁC THỰC TOKEN
     const payload = verifyAccessToken(token);
-    
+
     // 🎯 TẢI THÔNG TIN NGƯỜI DÙNG TỪ DATABASE
     const user = await User.findById(payload.sub)
       .select('-passwordHash -refreshTokens')
       .lean();
-    
+
     if (!user) {
       throw new AppError('Người dùng không tồn tại', 401, ERROR_CODES.AUTH_INVALID_TOKEN);
     }
@@ -53,15 +55,21 @@ async function authenticate(req, res, next) {
       throw new AppError(errorMessage, 403, ERROR_CODES.AUTH_ACCOUNT_LOCKED);
     }
 
+    // 🎯 NORMALIZE ROLE (Ensure UPPERCASE match with constants)
+    const normalizedRole = user.role ? user.role.toUpperCase() : 'GUEST';
+
     // 🎯 LẤY DANH SÁCH PERMISSIONS THEO ROLE
-    const userPermissions = ROLE_PERMISSIONS[user.role] || [];
+    const userPermissions = ROLE_PERMISSIONS[normalizedRole] || [];
+    if (!ROLE_PERMISSIONS[normalizedRole]) {
+      console.warn(`⚠️ [RBAC] Role not defined in constants: ${normalizedRole} (Original: ${user.role})`);
+    }
 
     // 🎯 GẮN THÔNG TIN USER ĐẦY ĐỦ VÀO REQUEST
     req.user = {
       _id: user._id,
       sub: user._id,
       email: user.email,
-      role: user.role,
+      role: normalizedRole,
       name: user.name,
       department: user.department,
       status: user.status,
@@ -80,7 +88,7 @@ async function authenticate(req, res, next) {
     if (error instanceof AppError) {
       return next(error);
     }
-    
+
     // 🎯 LỖI TỪ JWT HOẶC DATABASE
     const authError = new AppError(
       error.message || 'Token không hợp lệ',
@@ -96,14 +104,27 @@ async function authenticate(req, res, next) {
  */
 function requirePermission(permission) {
   return (req, res, next) => {
+    // ✅ Check if permission is defined
+    if (!permission) {
+      console.error(`❌ [CONFIG ERROR] requirePermission called with undefined permission!`);
+      return next(new AppError('Lỗi cấu hình: permission undefined', 500));
+    }
+
     if (!req.user) {
       return next(new AppError('Yêu cầu xác thực', 401, ERROR_CODES.AUTH_INVALID_TOKEN));
     }
 
+    // 🎯 SUPER_ADMIN luôn được phép (bypass permission check)
+    if (req.user.role === ROLES.SUPER_ADMIN) {
+      console.log(`✅ [RBAC] SUPER_ADMIN bypass - allowing access to ${permission}`);
+      return next();
+    }
+
     if (!hasPermission(req.user.role, permission)) {
+      console.warn(`❌ [RBAC] Permission denied: ${req.user.role} tried to access ${permission}`);
       return next(new AppError(
-        'Không có quyền thực hiện hành động này', 
-        403, 
+        'Không có quyền thực hiện hành động này',
+        403,
         ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
       ));
     }
@@ -117,7 +138,7 @@ function requirePermission(permission) {
  */
 function requireRole(roles) {
   const roleArray = Array.isArray(roles) ? roles : [roles];
-  
+
   return (req, res, next) => {
     if (!req.user) {
       return next(new AppError('Yêu cầu xác thực', 401, ERROR_CODES.AUTH_INVALID_TOKEN));
@@ -125,8 +146,8 @@ function requireRole(roles) {
 
     if (!roleArray.includes(req.user.role)) {
       return next(new AppError(
-        'Không có quyền truy cập tài nguyên này', 
-        403, 
+        'Không có quyền truy cập tài nguyên này',
+        403,
         ERROR_CODES.AUTH_INSUFFICIENT_PERMISSIONS
       ));
     }
@@ -145,10 +166,10 @@ function requirePatientAccess(patientIdField = 'patientId') {
     }
 
     const patientId = req.params[patientIdField] || req.body[patientIdField] || req.query[patientIdField];
-    
+
     // 🎯 BÁC SĨ, Y TÁ, QUẢN TRỊ ĐƯỢC TRUY CẬP TẤT CẢ
     const canAccessAll = ['DOCTOR', 'NURSE', 'HOSPITAL_ADMIN', 'SUPER_ADMIN', 'DEPARTMENT_HEAD'].includes(req.user.role);
-    
+
     // 🎯 BỆNH NHÂN CHỈ ĐƯỢC TRUY CẬP DỮ LIỆU CỦA CHÍNH MÌNH
     if (req.user.role === 'PATIENT' && patientId !== req.user._id.toString()) {
       return next(new AppError(
@@ -183,7 +204,7 @@ function allowEmergencyAccess() {
 
     // 🎯 KIỂM TRA HEADER KHẨN CẤP
     const isEmergency = req.headers['x-emergency-access'] === 'true';
-    
+
     if (isEmergency && !hasPermission(req.user.role, 'EMERGENCY.ACCESS')) {
       return next(new AppError(
         'Không có quyền truy cập khẩn cấp',
@@ -209,14 +230,20 @@ function getAccountStatusMessage(status) {
     PENDING: 'Tài khoản đang chờ phê duyệt',
     EXPIRED: 'Tài khoản đã hết hạn',
   };
-  
+
   return messages[status] || 'Tài khoản không hoạt động';
 }
 
+// Friendly aliases for existing middleware names to match route imports
+const authMiddleware = authenticate;
+const roleMiddleware = requireRole;
+
 module.exports = {
   authenticate,
+  authMiddleware,
   requirePermission,
   requireRole,
+  roleMiddleware,
   requirePatientAccess,
   allowEmergencyAccess,
 };

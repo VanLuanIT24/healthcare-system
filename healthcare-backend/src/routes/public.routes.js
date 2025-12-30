@@ -107,6 +107,8 @@ router.get('/doctors', async (req, res) => {
       specialty, 
       department, 
       search,
+      experienceMin,
+      experienceMax,
       page = 1, 
       limit = 10 
     } = req.query;
@@ -125,6 +127,17 @@ router.get('/doctors', async (req, res) => {
     // Filter by department
     if (department) {
       query['professionalInfo.department'] = new RegExp(department, 'i');
+    }
+
+    // Filter by experience (years)
+    if (experienceMin || experienceMax) {
+      query['professionalInfo.yearsOfExperience'] = {};
+      if (experienceMin) {
+        query['professionalInfo.yearsOfExperience'].$gte = parseInt(experienceMin);
+      }
+      if (experienceMax) {
+        query['professionalInfo.yearsOfExperience'].$lte = parseInt(experienceMax);
+      }
     }
 
     // Search by name
@@ -146,12 +159,16 @@ router.get('/doctors', async (req, res) => {
       .sort({ 'professionalInfo.yearsOfExperience': -1, createdAt: -1 });
 
     const doctorsList = doctors.map(doctor => ({
+      _id: doctor._id,
       id: doctor._id,
       name: doctor.fullName,
       email: doctor.email,
+      personalInfo: doctor.personalInfo,
+      professionalInfo: doctor.professionalInfo,
       specialty: doctor.professionalInfo?.specialization || 'Bác sĩ đa khoa',
       degree: doctor.professionalInfo?.qualifications?.[0] || 'Bác sĩ Y khoa',
       experience: doctor.professionalInfo?.yearsOfExperience || 0,
+      departmentId: doctor.professionalInfo?.department,
       department: doctor.professionalInfo?.department || 'Khoa Tổng hợp',
       image: doctor.personalInfo?.profilePicture || null,
       phone: doctor.personalInfo?.phone
@@ -182,16 +199,40 @@ router.get('/doctors', async (req, res) => {
 // 🎯 SPECIALTIES LIST - GET /api/public/specialties
 router.get('/specialties', async (req, res) => {
   try {
-    const specialties = await User.distinct('professionalInfo.specialization', {
+    console.log('🔍 [API] GET /api/public/specialties called');
+    
+    let specialties = await User.distinct('professionalInfo.specialization', {
       role: ROLES.DOCTOR,
       isDeleted: false,
       status: 'ACTIVE',
       'professionalInfo.specialization': { $exists: true, $ne: null, $ne: '' }
     });
 
+    console.log('📊 Specialties from DB:', specialties);
+
+    // Fallback: provide default specialties if none found
+    const fallbackSpecialties = [
+      'Bác sĩ đa khoa',
+      'Tim mạch',
+      'Ngoại khoa',
+      'Nhi khoa',
+      'Sản phụ khoa',
+      'Tâm thần',
+      'Nha khoa',
+      'Y học thể dục'
+    ];
+
+    if (!specialties || specialties.length === 0) {
+      console.warn('⚠️ No specialties found from doctors, using fallback list');
+      specialties = fallbackSpecialties;
+    }
+
+    const filtered = specialties.filter(s => s);
+    console.log('✅ Specialties will return:', filtered);
+
     res.json({
       success: true,
-      data: specialties.filter(s => s) // Remove empty values
+      data: filtered
     });
   } catch (error) {
     console.error('❌ Error fetching specialties:', error);
@@ -206,16 +247,23 @@ router.get('/specialties', async (req, res) => {
 // 🎯 DEPARTMENTS LIST - GET /api/public/departments
 router.get('/departments', async (req, res) => {
   try {
-    const departments = await User.distinct('professionalInfo.department', {
-      role: ROLES.DOCTOR,
-      isDeleted: false,
+    console.log('🔍 [API] GET /api/public/departments called');
+    
+    // Get departments from Department model instead of doctor's professionalInfo
+    const Department = require('../models/department.model');
+    
+    const departments = await Department.find({
       status: 'ACTIVE',
-      'professionalInfo.department': { $exists: true, $ne: null, $ne: '' }
-    });
+      isDeleted: { $ne: true }
+    })
+    .select('_id name code description')
+    .sort({ name: 1 });
+
+    console.log('📊 Departments from DB:', departments.length);
 
     res.json({
       success: true,
-      data: departments.filter(d => d) // Remove empty values
+      data: departments
     });
   } catch (error) {
     console.error('❌ Error fetching departments:', error);

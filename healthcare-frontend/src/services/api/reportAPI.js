@@ -1,86 +1,29 @@
-// 📊 Reports & Analytics API
 import axios from '../axios';
 
+// Report API client
 const reportAPI = {
-  // Clinical Reports
-  getClinicalReport: async (params) => {
-    return await axios.get('/reports/clinical', { params });
-  },
+  // ===== BÁOO CÁO LÂM SÀNG =====
+  getClinicalReport: async (params = {}) => 
+    axios.get('/api/reports/clinical', { params }),
+  
+  // ===== BÁOO CÁO TÀI CHÍNH =====
+  getFinancialReport: async (params = {}) => 
+    axios.get('/api/reports/financial', { params }),
+  
+  // ===== BÁOO CÁO DƯỢC =====
+  getPharmacyReport: async (params = {}) => 
+    axios.get('/api/reports/pharmacy', { params }),
+  
+  // ===== BÁOO CÁO NHÂN SỰ =====
+  getHRReport: async (params = {}) => 
+    axios.get('/api/reports/hr', { params }),
 
-  getPatientCensusReport: async (params) => {
-    return await axios.get('/reports/clinical/patient-census', { params });
-  },
-
-  getDiagnosisStatistics: async (params) => {
-    return await axios.get('/reports/clinical/diagnosis-stats', { params });
-  },
-
-  getTreatmentOutcomes: async (params) => {
-    return await axios.get('/reports/clinical/treatment-outcomes', { params });
-  },
-
-  getReadmissionRates: async (params) => {
-    return await axios.get('/reports/clinical/readmission-rates', { params });
-  },
-
-  // Financial Reports
-  getFinancialReport: async (params) => {
-    return await axios.get('/reports/financial', { params });
-  },
-
-  getRevenueByDepartment: async (params) => {
-    return await axios.get('/reports/financial/revenue-by-department', { params });
-  },
-
-  getARAgingReport: async (params) => {
-    return await axios.get('/reports/financial/ar-aging', { params });
-  },
-
-  getInsuranceVsSelfPay: async (params) => {
-    return await axios.get('/reports/financial/insurance-vs-selfpay', { params });
-  },
-
-  // Pharmacy Reports
-  getPharmacyReport: async (params) => {
-    return await axios.get('/reports/pharmacy', { params });
-  },
-
-  getMedicationUsageReport: async (params) => {
-    return await axios.get('/reports/pharmacy/medication-usage', { params });
-  },
-
-  getInventoryValueReport: async () => {
-    return await axios.get('/reports/pharmacy/inventory-value');
-  },
-
-  // HR Reports
-  getHRReport: async (params) => {
-    return await axios.get('/reports/hr', { params });
-  },
-
-  // Admin Reports
-  getSystemUsageReport: async (params) => {
-    return await axios.get('/reports/system-usage', { params });
-  },
-
-  getUserActivityReport: async (params) => {
-    return await axios.get('/reports/user-activity', { params });
-  },
-
-  // Export reports
-  exportReportToPDF: async (reportType, params) => {
-    return await axios.get(`/reports/${reportType}/export/pdf`, {
-      params,
-      responseType: 'blob',
-    });
-  },
-
-  exportReportToExcel: async (reportType, params) => {
-    return await axios.get(`/reports/${reportType}/export/excel`, {
-      params,
-      responseType: 'blob',
-    });
-  },
+  // ===== EXPORTED METHODS (LEGACY) =====
+  getPatientReport: (params) => axios.get('/reports/patients', { params }),
+  getAppointmentReport: (params) => axios.get('/reports/appointments', { params }),
+  getRevenueReport: (params) => axios.get('/reports/revenue', { params }),
+  exportReport: (type, params) => axios.get(`/reports/export/${type}`, { params, responseType: 'blob' }),
 };
 
 export default reportAPI;
+

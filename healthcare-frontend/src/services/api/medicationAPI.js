@@ -1,108 +1,43 @@
-// 💊 Medication Management API
+// src/api/medicationAPI.js - API Quản lý Thuốc (Phiên bản đầy đủ 2025 - Liên kết: Dispense → Adjust stock → Alerts)
 import axios from '../axios';
 
+// ===== DANH MỤC THUỐC =====
+export const getMedications = async (params = {}) => axios.get('/api/medications', { params });
+export const getMedicationById = async (id) => axios.get(`/api/medications/${id}`);
+export const searchMedications = async (query, params = {}) => axios.get('/api/medications/search', { params: { q: query, ...params } });
+export const createMedication = async (data) => axios.post('/api/medications', data);
+export const updateMedication = async (id, data) => axios.put(`/api/medications/${id}`, data);
+
+// ===== QUẢN LÝ TỒN KHO =====
+export const adjustStock = async (id, data) => axios.post(`/api/medications/${id}/inventory/adjust`, data);
+export const restockMedication = async (id, batchData) => axios.post(`/api/medications/${id}/inventory/in`, batchData);
+export const writeOffMedication = async (id, data) => axios.post(`/api/medications/${id}/inventory/out`, data);
+
+// ===== CẢNH BÁO =====
+export const getLowStock = async () => axios.get('/api/medications/alerts/low-stock');
+export const getExpiringSoon = async (days = 60) => axios.get('/api/medications/alerts/expiring', { params: { days } });
+export const getRecalledMedications = async () => axios.get('/api/medications/alerts/recalls');
+
+// ===== THỐNG KÊ =====
+export const getInventoryValue = async () => axios.get('/api/medications/inventory/value');
+export const getMedicationUsageStats = async (params = {}) => axios.get('/api/medications/stats/usage', { params });
+export const exportInventoryExcel = async (params = {}) => axios.get('/api/medications/inventory/export/excel', { params, responseType: 'blob' });
+
 const medicationAPI = {
-  // Get all medications with filters
-  getMedications: async (params) => {
-    return await axios.get('/medications', { params });
-  },
-
-  // Get medication by ID
-  getMedicationById: async (id) => {
-    return await axios.get(`/medications/${id}`);
-  },
-
-  // Get medication statistics
-  getMedicationStats: async () => {
-    return await axios.get('/medications/stats');
-  },
-
-  // Create new medication
-  createMedication: async (medicationData) => {
-    return await axios.post('/medications', medicationData);
-  },
-
-  // Update medication
-  updateMedication: async (id, medicationData) => {
-    return await axios.put(`/medications/${id}`, medicationData);
-  },
-
-  // Update medication stock
-  updateMedicationStock: async (id, stockData) => {
-    return await axios.post(`/medications/${id}/stock`, stockData);
-  },
-
-  // Delete medication (soft delete)
-  deleteMedication: async (id) => {
-    return await axios.delete(`/medications/${id}`);
-  },
-
-  // Get low stock medications
-  getLowStockMedications: async (params) => {
-    return await axios.get('/medications/low-stock', { params });
-  },
-
-  // Search medications
-  searchMedications: async (query, limit = 20) => {
-    return await axios.get('/medications/search', { 
-      params: { q: query, limit } 
-    });
-  },
-
-  // Restock medication (convenience method)
-  restockMedication: async (id, stockData) => {
-    return await axios.post(`/medications/${id}/stock`, {
-      ...stockData,
-      type: 'IN'
-    });
-  },
-
-  // Dispense medication (convenience method)
-  dispenseMedication: async (id, stockData) => {
-    return await axios.post(`/medications/${id}/stock`, {
-      ...stockData,
-      type: 'OUT'
-    });
-  },
-
-  // Get medication inventory report
-  getMedicationInventory: async (params) => {
-    return await axios.get('/medications', { 
-      params: { ...params, status: 'ACTIVE' } 
-    });
-  },
-
-  // Get expiring medications
-  getExpiringMedications: async (days = 30) => {
-    return await axios.get('/medications', { 
-      params: { 
-        expiringWithin: days,
-        status: 'ACTIVE' 
-      } 
-    });
-  },
-
-  // Get medication categories
-  getMedicationCategories: async () => {
-    // This could be enhanced with backend endpoint
-    return {
-      data: {
-        categories: [
-          'ANTIBIOTIC',
-          'ANALGESIC',
-          'ANTIHYPERTENSIVE',
-          'ANTIDIABETIC',
-          'ANTACID',
-          'ANTIHISTAMINE',
-          'ANTIVIRAL',
-          'VACCINE',
-          'VITAMIN',
-          'SUPPLEMENT',
-          'OTHER'
-        ]
-      }
-    };
-  },
+    getMedications,
+    getMedicationById,
+    searchMedications,
+    createMedication,
+    updateMedication,
+    adjustStock,
+    restockMedication,
+    writeOffMedication,
+    getLowStock,
+    getExpiringSoon,
+    getRecalledMedications,
+    getInventoryValue,
+    getMedicationUsageStats,
+    exportInventoryExcel
 };
 
 export default medicationAPI;

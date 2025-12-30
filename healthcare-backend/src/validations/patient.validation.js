@@ -205,6 +205,49 @@ const patientValidation = {
     }).optional()
   }),
 
+  // ===== PARAM SCHEMAS =====
+  patientIdParams: Joi.object({
+    patientId: commonSchemas.objectId.required()
+  }),
+  allergyParams: Joi.object({
+    patientId: commonSchemas.objectId.required(),
+    allergyId: commonSchemas.objectId.required()
+  }),
+  familyHistoryParams: Joi.object({
+    patientId: commonSchemas.objectId.required(),
+    historyId: commonSchemas.objectId.required()
+  }),
+  emergencyContactParams: Joi.object({
+    patientId: commonSchemas.objectId.required(),
+    contactId: commonSchemas.objectId.required()
+  }),
+  deleteDocument: Joi.object({
+    patientId: commonSchemas.objectId.required(),
+    documentId: commonSchemas.objectId.required()
+  }),
+
+  // ===== QUERY SCHEMAS =====
+  getPatients: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(10)
+  }).unknown(true),
+  searchPatients: Joi.object({}).unknown(true),
+  advancedSearch: Joi.object({}).unknown(true),
+  getLinkedData: Joi.object({}).unknown(true),
+
+  // ===== BODY SCHEMAS =====
+  updatePatient: Joi.object({}).unknown(true),
+  admitPatient: Joi.object({}).unknown(true),
+  dischargePatient: Joi.object({}).unknown(true),
+  uploadDocument: Joi.object({}).unknown(true),
+  updateInsurance: Joi.object({}).unknown(true),
+  addAllergy: Joi.object({}).unknown(true),
+  updateAllergy: Joi.object({}).unknown(true),
+  addFamilyHistory: Joi.object({}).unknown(true),
+  updateFamilyHistory: Joi.object({}).unknown(true),
+  addEmergencyContact: Joi.object({}).unknown(true),
+  updateEmergencyContact: Joi.object({}).unknown(true),
+  addConsent: Joi.object({}).unknown(true),
   // 🎯 TÌM KIẾM BỆNH NHÂN
   searchPatients: Joi.object({
     keyword: Joi.string().max(100).allow('', null).optional()
@@ -478,7 +521,67 @@ const patientValidation = {
       treatmentPlan: Joi.string().max(1000).optional(),
       notes: Joi.string().max(1000).optional()
     }).required()
+  }),
+
+  // 🎯 TÌM KIẾM NÂNG CAO
+  advancedSearch: Joi.object({
+    keyword: Joi.string().allow('', null).max(100).optional(),
+    admissionStatus: Joi.string().valid('ADMITTED', 'DISCHARGED', 'TRANSFERRED').optional(),
+    riskLevel: Joi.string().valid('LOW', 'MEDIUM', 'HIGH', 'CRITICAL').optional(),
+    department: Joi.string().optional(),
+    attendingDoctor: commonSchemas.objectId.optional(),
+    createdFrom: Joi.date().optional(),
+    createdTo: Joi.date().optional(),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(10),
+    sortBy: Joi.string().valid('createdAt', 'updatedAt', 'patientId', 'riskLevel').default('createdAt'),
+    sortOrder: Joi.string().valid('asc', 'desc').default('desc')
+  }),
+
+  // 🎯 NGƯỜI LIÊN HỆ KHẨN CẤP
+  emergencyContact: Joi.object({
+    name: Joi.string().min(2).max(100).required(),
+    phone: commonSchemas.phone.required(),
+    relationship: Joi.string().valid('SPOUSE', 'PARENT', 'CHILD', 'SIBLING', 'FRIEND', 'OTHER').required(),
+    priority: Joi.string().valid('HIGH', 'MEDIUM', 'LOW').default('MEDIUM'),
+    isPrimary: Joi.boolean().default(false)
+  }),
+
+  // 🎯 CONSENT
+  consent: Joi.object({
+    title: Joi.string().min(3).max(150).required(),
+    version: Joi.string().max(20).optional(),
+    granted: Joi.boolean().default(false),
+    notes: Joi.string().max(1000).optional()
+  }),
+
+  // 🎯 TÀI LIỆU BỆNH NHÂN
+  documentMeta: Joi.object({
+    title: Joi.string().max(200).required(),
+    description: Joi.string().max(500).optional(),
+    visibility: Joi.string().valid('PRIVATE', 'SHARED', 'PUBLIC').default('PRIVATE')
+  }),
+
+  // 🎯 DỊ ỨNG THÊM BẢN GHI
+  allergyRecord: Joi.object({
+    allergen: Joi.string().max(100).required(),
+    severity: Joi.string().valid('MILD', 'MODERATE', 'SEVERE', 'LIFE_THREATENING').required(),
+    reaction: Joi.string().max(500).required(),
+    onsetDate: Joi.date().max('now').optional(),
+    treatment: Joi.string().max(500).optional(),
+    notes: Joi.string().max(1000).optional()
+  }),
+
+  // 🎯 TIỀN SỬ GIA ĐÌNH THÊM BẢN GHI
+  familyHistoryRecord: Joi.object({
+    condition: Joi.string().required(),
+    relation: Joi.string().valid('MOTHER', 'FATHER', 'SISTER', 'BROTHER', 'GRANDMOTHER', 'GRANDFATHER', 'AUNT', 'UNCLE', 'OTHER').required(),
+    ageAtDiagnosis: Joi.number().min(0).max(120).optional(),
+    notes: Joi.string().max(500).optional(),
+    isGenetic: Joi.boolean().default(false),
+    severity: Joi.string().valid('MILD', 'MODERATE', 'SEVERE').optional()
   })
 };
 
-module.exports = patientValidation;
+// Expose under `schemas` to align with route imports
+module.exports = { schemas: patientValidation };

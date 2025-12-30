@@ -1,0 +1,324 @@
+[
+  {
+    "email": "phuonghan10042004@gmail.com",
+    "password": "SecurePassword123!@#",
+    "role": "SUPER_ADMIN",
+    "status": "ACTIVE",
+    "isActive": true,
+    "isDeleted": false,
+    "isEmailVerified": true,
+    "personalInfo": {
+      "firstName": "Phương",
+      "lastName": "Hàn",
+      "dateOfBirth": "2004-04-10",
+      "gender": "FEMALE",
+      "phone": "+84912345678",
+      "address": {
+        "street": "123 Nguyễn Huệ",
+        "city": "Ho Chi Minh",
+        "state": "HCMC",
+        "zipCode": "700000",
+        "country": "Vietnam"
+      },
+      "emergencyContact": {
+        "name": "Hàn Mẹ",
+        "relationship": "Mother",
+        "phone": "+84912345679"
+      },
+      "profilePicture": "/uploads/profiles/phuonghan.jpg"
+    },
+    "professionalInfo": {
+      "licenseNumber": "LN-SUPER-001",
+      "specialization": "System Administration",
+      "department": "IT Department",
+      "qualifications": ["BS in Computer Science", "Certified System Administrator"],
+      "yearsOfExperience": 8,
+      "hireDate": "2017-01-15",
+      "position": "Super Administrator"
+    },
+    "documents": [
+      {
+        "name": "Bachelor Degree",
+        "fileUrl": "/documents/phuonghan_degree.pdf",
+        "fileType": "pdf",
+        "description": "Computer Science Degree from University"
+      },
+      {
+        "name": "System Admin Certification",
+        "fileUrl": "/documents/phuonghan_certification.pdf",
+        "fileType": "pdf",
+        "description": "System Administrator Certification"
+      }
+    ],
+    "settings": {
+      "language": "vi",
+      "notifications": {
+        "email": true,
+        "sms": true,
+        "push": true
+      },
+      "theme": "dark",
+      "timezone": "Asia/Ho_Chi_Minh"
+    }
+  },
+  {
+    "email": "luanvo.100404@gmail.com",
+    "password": "SecurePassword456!@#",
+    "role": "HOSPITAL_ADMIN",
+    "status": "ACTIVE",
+    "isActive": true,
+    "isDeleted": false,
+    "isEmailVerified": true,
+    "personalInfo": {
+      "firstName": "Luân",
+      "lastName": "Võ",
+      "dateOfBirth": "2004-04-10",
+      "gender": "MALE",
+      "phone": "+84912345680",
+      "address": {
+        "street": "456 Lê Lợi",
+        "city": "Ho Chi Minh",
+        "state": "HCMC",
+        "zipCode": "700001",
+        "country": "Vietnam"
+      },
+      "emergencyContact": {
+        "name": "Võ Cha",
+        "relationship": "Father",
+        "phone": "+84912345681"
+      },
+      "profilePicture": "/uploads/profiles/luanvo1.jpg"
+    },
+    "professionalInfo": {
+      "licenseNumber": "LN-ADMIN-001",
+      "specialization": "Healthcare Administration",
+      "department": "Administration",
+      "qualifications": ["MBA in Healthcare Management", "Hospital Manager Certification"],
+      "yearsOfExperience": 6,
+      "hireDate": "2019-03-20",
+      "position": "Hospital Administrator"
+    },
+    "documents": [
+      {
+        "name": "MBA Certificate",
+        "fileUrl": "/documents/luanvo1_mba.pdf",
+        "fileType": "pdf",
+        "description": "MBA in Healthcare Management"
+      },
+      {
+        "name": "Hospital Manager License",
+        "fileUrl": "/documents/luanvo1_manager_license.pdf",
+        "fileType": "pdf",
+        "description": "Hospital Manager License"
+      }
+    ],
+    "settings": {
+      "language": "vi",
+      "notifications": {
+        "email": true,
+        "sms": true,
+        "push": true
+      },
+      "theme": "light",
+      "timezone": "Asia/Ho_Chi_Minh"
+    }
+  },
+  {
+    "email": "luanvo.10042004@gmail.com",
+    "password": "SecurePassword789!@#",
+    "role": "DOCTOR",
+    "status": "ACTIVE",
+    "isActive": true,
+    "isDeleted": false,
+    "isEmailVerified": true,
+    "personalInfo": {
+      "firstName": "Luân",
+      "lastName": "Võ",
+      "dateOfBirth": "2004-04-10",
+      "gender": "MALE",
+      "phone": "+84912345682",
+      "address": {
+        "street": "789 Nguyễn Trãi",
+        "city": "Ha Noi",
+        "state": "HN",
+        "zipCode": "100000",
+        "country": "Vietnam"
+      },
+      "emergencyContact": {
+        "name": "Võ Mẹ",
+        "relationship": "Mother",
+        "phone": "+84912345683"
+      },
+      "profilePicture": "/uploads/profiles/luanvo2.jpg"
+    },
+    "professionalInfo": {
+      "licenseNumber": "MD-2022-00150",
+      "specialization": "General Practice",
+      "department": "General Medicine",
+      "qualifications": ["MD - Doctor of Medicine", "General Practice Certificate", "PALS Certified"],
+      "yearsOfExperience": 3,
+      "hireDate": "2022-06-01",
+      "position": "General Practitioner"
+    },
+    "documents": [
+      {
+        "name": "Medical Degree",
+        "fileUrl": "/documents/luanvo2_md_degree.pdf",
+        "fileType": "pdf",
+        "description": "MD from Medical University"
+      },
+      {
+        "name": "Medical License",
+        "fileUrl": "/documents/luanvo2_medical_license.pdf",
+        "fileType": "pdf",
+        "description": "Medical Practice License - Valid until 2026"
+      },
+      {
+        "name": "PALS Certificate",
+        "fileUrl": "/documents/luanvo2_pals.pdf",
+        "fileType": "pdf",
+        "description": "Pediatric Advanced Life Support Certification"
+      }
+    ],
+    "settings": {
+      "language": "vi",
+      "notifications": {
+        "email": true,
+        "sms": false,
+        "push": true
+      },
+      "theme": "light",
+      "timezone": "Asia/Ho_Chi_Minh"
+    }
+  },
+  {
+    "email": "luan99461@donga.edu.vn",
+    "password": "SecurePassword012!@#",
+    "role": "RECEPTIONIST",
+    "status": "ACTIVE",
+    "isActive": true,
+    "isDeleted": false,
+    "isEmailVerified": true,
+    "personalInfo": {
+      "firstName": "Luân",
+      "lastName": "Nguyễn",
+      "dateOfBirth": "2004-04-10",
+      "gender": "FEMALE",
+      "phone": "+84912345684",
+      "address": {
+        "street": "321 Phan Huy Ích",
+        "city": "Ho Chi Minh",
+        "state": "HCMC",
+        "zipCode": "700002",
+        "country": "Vietnam"
+      },
+      "emergencyContact": {
+        "name": "Nguyễn Bà",
+        "relationship": "Grandmother",
+        "phone": "+84912345685"
+      },
+      "profilePicture": "/uploads/profiles/luan_receptionist.jpg"
+    },
+    "professionalInfo": {
+      "licenseNumber": "RCP-2024-00089",
+      "specialization": "Patient Services",
+      "department": "Front Desk",
+      "qualifications": ["High School Diploma", "Patient Reception Training", "Customer Service Excellence Certification"],
+      "yearsOfExperience": 2,
+      "hireDate": "2023-09-10",
+      "position": "Receptionist"
+    },
+    "documents": [
+      {
+        "name": "Reception Training Certificate",
+        "fileUrl": "/documents/luan_reception_training.pdf",
+        "fileType": "pdf",
+        "description": "Professional Patient Reception Training"
+      },
+      {
+        "name": "Customer Service Certificate",
+        "fileUrl": "/documents/luan_customer_service.pdf",
+        "fileType": "pdf",
+        "description": "Customer Service Excellence Certification"
+      }
+    ],
+    "settings": {
+      "language": "vi",
+      "notifications": {
+        "email": true,
+        "sms": true,
+        "push": false
+      },
+      "theme": "light",
+      "timezone": "Asia/Ho_Chi_Minh"
+    }
+  },
+  {
+    "email": "dexung.10042004@gmail.com",
+    "password": "SecurePassword345!@#",
+    "role": "BILLING_STAFF",
+    "status": "ACTIVE",
+    "isActive": true,
+    "isDeleted": false,
+    "isEmailVerified": true,
+    "personalInfo": {
+      "firstName": "Đề",
+      "lastName": "Xung",
+      "dateOfBirth": "2004-04-10",
+      "gender": "MALE",
+      "phone": "+84912345686",
+      "address": {
+        "street": "654 Trần Hưng Đạo",
+        "city": "Da Nang",
+        "state": "DN",
+        "zipCode": "550000",
+        "country": "Vietnam"
+      },
+      "emergencyContact": {
+        "name": "Xung Cha",
+        "relationship": "Father",
+        "phone": "+84912345687"
+      },
+      "profilePicture": "/uploads/profiles/dexung.jpg"
+    },
+    "professionalInfo": {
+      "licenseNumber": "BIL-2024-00156",
+      "specialization": "Healthcare Finance",
+      "department": "Billing Department",
+      "qualifications": ["Accounting Diploma", "Healthcare Billing Certification", "Medical Coding Specialist"],
+      "yearsOfExperience": 4,
+      "hireDate": "2021-02-15",
+      "position": "Billing Specialist"
+    },
+    "documents": [
+      {
+        "name": "Accounting Diploma",
+        "fileUrl": "/documents/dexung_accounting_diploma.pdf",
+        "fileType": "pdf",
+        "description": "Accounting Diploma"
+      },
+      {
+        "name": "Healthcare Billing Certification",
+        "fileUrl": "/documents/dexung_billing_cert.pdf",
+        "fileType": "pdf",
+        "description": "Healthcare Billing Specialist Certification"
+      },
+      {
+        "name": "Medical Coding Certificate",
+        "fileUrl": "/documents/dexung_medical_coding.pdf",
+        "fileType": "pdf",
+        "description": "Medical Coding Specialist Certificate"
+      }
+    ],
+    "settings": {
+      "language": "vi",
+      "notifications": {
+        "email": true,
+        "sms": true,
+        "push": true
+      },
+      "theme": "light",
+      "timezone": "Asia/Ho_Chi_Minh"
+    }
+  }
+]

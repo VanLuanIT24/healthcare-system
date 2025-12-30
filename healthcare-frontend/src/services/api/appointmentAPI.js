@@ -1,74 +1,46 @@
-// src/api/appointmentAPI.js
+// src/api/appointmentAPI.js - API Quản lý Lịch hẹn (Cập nhật 2025 - Thêm approveCancelRequest cho giám sát)
 import axios from '../axios';
 
 const appointmentAPI = {
-  // ✅ FIX: Sử dụng đúng base path
-  createAppointment: async (appointmentData) => {
-    return await axios.post('/api/appointments', appointmentData);
-  },
+  // ===== TẠO & CRUD LỊCH HẸN =====
+  createAppointment: async (appointmentData) => axios.post('/api/appointments', appointmentData),
+  getAppointments: async (params = {}) => axios.get('/api/appointments', { params }),
+  getAppointmentById: async (id) => axios.get(`/api/appointments/${id}`),
+  updateAppointment: async (id, data) => axios.put(`/api/appointments/${id}`, data),
+  cancelAppointment: async (id, reason = '') => axios.patch(`/api/appointments/${id}/cancel`, { reason }),
+  requestCancelAppointment: async (id, reason = '') => axios.post(`/api/appointments/${id}/cancel-request`, { reason }),
+  approveCancelRequest: async (id, approved = true, note = '') => axios.patch(`/api/appointments/${id}/cancel-request/approve`, { approved, note }),
+  rescheduleAppointment: async (id, newTime) => axios.patch(`/api/appointments/${id}/reschedule`, newTime),
 
-  getAppointments: async (params) => {
-    return await axios.get('/api/appointments', { params });
-  },
+  // ===== TRẠNG THÁI LỊCH HẸN =====
+  checkInAppointment: async (id) => axios.patch(`/api/appointments/${id}/check-in`),
+  completeAppointment: async (id, notes = {}) => axios.patch(`/api/appointments/${id}/complete`, notes),
+  noShowAppointment: async (id, reason = '') => axios.patch(`/api/appointments/${id}/no-show`, { reason }),
 
-  getAppointmentById: async (id) => {
-    return await axios.get(`/api/appointments/${id}`);
-  },
+  // ===== LỌC THEO NGƯỜI DÙNG =====
+  getDoctorAppointments: async (doctorId, params = {}) => axios.get(`/api/appointments/doctor/${doctorId}`, { params }),
+  getPatientAppointments: async (patientId, params = {}) => axios.get(`/api/appointments/patient/${patientId}`, { params }),
+  getTodayAppointments: async (params = {}) => axios.get('/api/appointments/today', { params }),
+  getUpcomingAppointments: async (params = {}) => axios.get('/api/appointments/upcoming', { params }),
 
-  updateAppointment: async (id, appointmentData) => {
-    return await axios.put(`/api/appointments/${id}`, appointmentData);
-  },
+  // ===== KHUNG GIỜ TRỐNG & LỊCH LÀM VIỆC =====
+  getAvailableSlots: async (params = {}) => axios.get('/api/appointments/available-slots', { params }),
+  getDoctorSchedule: async (doctorId, params = {}) => axios.get(`/api/appointments/schedules/doctor/${doctorId}`, { params }),
+  createDoctorSchedule: async (data) => axios.post('/api/appointments/schedules', data),
+  updateDoctorSchedule: async (scheduleId, data) => axios.put(`/api/appointments/schedules/${scheduleId}`, data),
+  deleteDoctorSchedule: async (scheduleId) => axios.delete(`/api/appointments/schedules/${scheduleId}`),
 
-  // ✅ FIX: Sử dụng POST thay vì PATCH
-  cancelAppointment: async (id, data) => {
-    return await axios.post(`/api/appointments/${id}/cancel`, data);
-  },
+  // ===== NHẮC HẸN & THÔNG BÁO =====
+  sendReminder: async (appointmentId) => axios.post(`/api/appointments/${appointmentId}/reminder`),
+  sendBulkReminders: async () => axios.post('/api/appointments/reminders/send-bulk'),
 
-  // ✅ FIX: Sử dụng POST thay vì PATCH
-  rescheduleAppointment: async (id, data) => {
-    return await axios.post(`/api/appointments/${id}/reschedule`, data);
-  },
+  // ===== THỐNG KÊ & BÁO CÁO =====
+  getAppointmentStats: async (params = {}) => axios.get('/api/appointments/stats', { params }),
+  exportAppointmentsPDF: async (params = {}) => axios.get('/api/appointments/export/pdf', { params, responseType: 'blob' }),
+  exportAppointmentsExcel: async (params = {}) => axios.get('/api/appointments/export/excel', { params, responseType: 'blob' }),
 
-  // ✅ FIX: Sử dụng PATCH đúng
-  checkInAppointment: async (id) => {
-    return await axios.patch(`/api/appointments/${id}/check-in`);
-  },
-
-  completeAppointment: async (id) => {
-    return await axios.patch(`/api/appointments/${id}/complete`);
-  },
-
-  getDoctorAppointments: async (doctorId, params) => {
-    return await axios.get(`/api/appointments/doctor/${doctorId}`, { params });
-  },
-
-  getAvailableSlots: async (doctorId, date) => {
-    return await axios.get('/api/appointments/available-slots', {
-      params: { doctorId, date },
-    });
-  },
-
-  getTodayAppointments: async () => {
-    return await axios.get('/api/appointments/today');
-  },
-
-  getUpcomingAppointments: async (params) => {
-    return await axios.get('/api/appointments/upcoming', { params });
-  },
-
-  getAppointmentStats: async (params) => {
-    return await axios.get('/api/appointments/stats', { params });
-  },
-
-  getTodayAppointments: async () => {
-  return await axios.get('/api/appointments/today');
-},
-
-getUpcomingAppointments: async (days = 7) => {
-  return await axios.get('/api/appointments/upcoming', { 
-    params: { days } 
-  });
-},
+  // ===== AUDIT LOG =====
+  getAppointmentAccessLogs: async (appointmentId) => axios.get(`/api/appointments/${appointmentId}/access-logs`),
 };
 
 export default appointmentAPI;

@@ -1,95 +1,32 @@
-// 🔬 Laboratory API
+// src/api/laboratoryAPI.js - API Xét nghiệm (Phiên bản đầy đủ 2025 - Liên kết: Create order từ clinical → Record result → Approve → Notify patient)
 import axios from '../axios';
 
 const laboratoryAPI = {
-  // Lab Orders
-  orderLabTest: async (patientId, orderData) => {
-    return await axios.post(`/laboratory/patients/${patientId}/lab-orders`, orderData);
-  },
+  // ===== YÊU CẦU XÉT NGHIỆM =====
+  createLabOrder: async (data) => axios.post('/api/laboratory/orders', data),
+  getLabOrder: async (id) => axios.get(`/api/laboratory/orders/${id}`),
+  getLabOrders: async (params = {}) => axios.get('/api/laboratory/orders', { params }),
+  updateLabOrder: async (id, data) => axios.put(`/api/laboratory/orders/${id}`, data),
+  cancelLabOrder: async (id, reason = '') => axios.patch(`/api/laboratory/orders/${id}/cancel`, { reason }),
 
-  createLabOrder: async (orderData) => {
-    return await axios.post('/lab/orders', orderData);
-  },
+  // ===== KẾT QUẢ XÉT NGHIỆM =====
+  recordLabResult: async (orderId, results) => axios.post(`/api/laboratory/orders/${orderId}/results`, results),
+  updateLabResult: async (orderId, testId, result) => axios.patch(`/api/laboratory/orders/${orderId}/results/${testId}`, result),
+  approveLabResult: async (orderId, testId) => axios.patch(`/api/laboratory/orders/${orderId}/results/${testId}/approve`),
 
-  getLabOrder: async (id) => {
-    return await axios.get(`/laboratory/lab-orders/${id}`);
-  },
+  // ===== QUY TRÌNH =====
+  markSampleCollected: async (orderId) => axios.patch(`/api/laboratory/orders/${orderId}/sample-collected`),
+  markTestCompleted: async (orderId, testId) => axios.patch(`/api/laboratory/orders/${orderId}/tests/${testId}/complete`),
 
-  getLabOrders: async (params) => {
-    return await axios.get('/laboratory/lab-orders', { params });
-  },
+  // ===== DANH MỤC =====
+  getLabTests: async (params = {}) => axios.get('/api/laboratory/tests', { params }),
+  searchLabTests: async (query) => axios.get('/api/laboratory/tests/search', { params: { q: query } }),
 
-  updateLabOrder: async (id, orderData) => {
-    return await axios.put(`/laboratory/lab-orders/${id}`, orderData);
-  },
-
-  cancelLabOrder: async (id) => {
-    return await axios.delete(`/laboratory/lab-orders/${id}/cancel`);
-  },
-
-  // Lab Results
-  recordLabResult: async (orderId, resultData) => {
-    return await axios.post(`/laboratory/lab-orders/${orderId}/results`, resultData);
-  },
-
-  getLabResult: async (resultId) => {
-    return await axios.get(`/laboratory/lab-results/${resultId}`);
-  },
-
-  updateLabResult: async (orderId, testId, resultData) => {
-    return await axios.patch(`/laboratory/lab-orders/${orderId}/results/${testId}`, resultData);
-  },
-
-  approveLabResult: async (orderId, testId) => {
-    return await axios.post(`/laboratory/lab-orders/${orderId}/tests/${testId}/approve`);
-  },
-
-  // Test workflow status updates
-  markSampleCollected: async (orderId, testId) => {
-    return await axios.post(`/laboratory/lab-orders/${orderId}/tests/${testId}/collect`);
-  },
-
-  markTestInProgress: async (orderId, testId) => {
-    return await axios.post(`/laboratory/lab-orders/${orderId}/tests/${testId}/start`);
-  },
-
-  // Lab Tests Catalog
-  getLabTests: async (params) => {
-    return await axios.get('/lab/tests', { params });
-  },
-
-  getLabTestById: async (id) => {
-    return await axios.get(`/lab/tests/${id}`);
-  },
-
-  searchLabTests: async (query) => {
-    return await axios.get('/lab/tests/search', { params: { q: query } });
-  },
-
-  // Lab Statistics
-  getLabStats: async (params) => {
-    return await axios.get('/lab/stats', { params });
-  },
-
-  // Pending collections
-  getPendingCollections: async () => {
-    return await axios.get('/lab/orders/pending-collection');
-  },
-
-  // In progress tests
-  getInProgressTests: async () => {
-    return await axios.get('/lab/orders/in-progress');
-  },
-
-  // Awaiting review
-  getAwaitingReview: async () => {
-    return await axios.get('/lab/results/awaiting-review');
-  },
-
-  // Specimen tracking
-  updateSpecimenStatus: async (orderId, status) => {
-    return await axios.patch(`/lab/orders/${orderId}/specimen-status`, { status });
-  },
+  // ===== THEO DÕI & THỐNG KÊ =====
+  getPendingOrders: async () => axios.get('/api/laboratory/orders/pending'),
+  getCriticalResults: async () => axios.get('/api/laboratory/results/critical'),
+  getLabStats: async (params = {}) => axios.get('/api/laboratory/stats', { params }),
+  exportLabResultsPDF: async (orderId) => axios.get(`/api/laboratory/orders/${orderId}/report/pdf`, { responseType: 'blob' }),
 };
 
 export default laboratoryAPI;

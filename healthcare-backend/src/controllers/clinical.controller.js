@@ -1,581 +1,251 @@
+// src/controllers/clinical.controller.js
 const clinicalService = require('../services/clinical.service');
 const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
 
-/**
- * 🩺 CLINICAL CONTROLLER
- * Xử lý request/response cho khám chữa bệnh
- */
-
 class ClinicalController {
-  
-  /**
-   * 🎯 TẠO PHIÊN KHÁM BỆNH/TƯ VẤN
-   */
   async createConsultation(req, res, next) {
     try {
-      const { patientId, doctorId } = req.params;
-      const consultationData = req.body;
-      
-      console.log('🩺 [CLINICAL] Creating consultation for patient:', patientId);
-
-      const consultation = await clinicalService.createConsultation(
-        patientId, 
-        doctorId,
-        consultationData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_CREATE, {
-        resource: 'Consultation',
-        resourceId: consultation._id,
-        metadata: { 
-          consultationId: consultation.consultationId,
-          patientId: consultation.patientId._id,
-          doctorId: consultation.doctorId._id
-        }
-      })(req, res, () => {});
-
-      res.status(201).json({
-        success: true,
-        message: 'Tạo phiên khám thành công',
-        data: consultation
-      });
-
+      const { patientId } = req.params;
+      const data = req.body;
+      const doctorId = req.user._id; // Assume current user is doctor
+      const consultation = await clinicalService.createConsultation(patientId, doctorId, data, req.user._id);
+      await auditLog(AUDIT_ACTIONS.CONSULTATION_CREATE, { resourceId: consultation._id })(req, res, () => {});
+      res.status(201).json({ success: true, data: consultation });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY THÔNG TIN PHIÊN KHÁM
-   */
   async getConsultation(req, res, next) {
     try {
-      const { consultationId } = req.params;
-      
-      console.log('🔍 [CLINICAL] Getting consultation:', consultationId);
-
-      const consultation = await clinicalService.getConsultation(consultationId);
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_VIEW, {
-        resource: 'Consultation',
-        resourceId: consultationId,
-        metadata: { patientId: consultation.patientId._id }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Lấy thông tin phiên khám thành công',
-        data: consultation
-      });
-
+      const { id } = req.params;
+      const consultation = await clinicalService.getConsultation(id);
+      await auditLog(AUDIT_ACTIONS.CONSULTATION_VIEW, { resourceId: id })(req, res, () => {});
+      res.json({ success: true, data: consultation });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 CẬP NHẬT THÔNG TIN PHIÊN KHÁM
-   */
   async updateConsultation(req, res, next) {
     try {
-      const { consultationId } = req.params;
-      const updateData = req.body;
-      
-      console.log('✏️ [CLINICAL] Updating consultation:', consultationId);
-
-      const updatedConsultation = await clinicalService.updateConsultation(
-        consultationId, 
-        updateData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_UPDATE, {
-        resource: 'Consultation',
-        resourceId: consultationId,
-        metadata: { 
-          updatedBy: req.user._id,
-          updatedFields: Object.keys(updateData)
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Cập nhật phiên khám thành công',
-        data: updatedConsultation
-      });
-
+      const { id } = req.params;
+      const data = req.body;
+      const updated = await clinicalService.updateConsultation(id, data, req.user._id);
+      await auditLog(AUDIT_ACTIONS.CONSULTATION_UPDATE, { resourceId: id })(req, res, () => {});
+      res.json({ success: true, data: updated });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 THÊM CHẨN ĐOÁN VÀO PHIÊN KHÁM
-   */
-  async addDiagnosis(req, res, next) {
+  async completeConsultation(req, res, next) {
     try {
-      const { consultationId } = req.params;
-      const diagnosisData = req.body;
-      
-      console.log('🩺 [CLINICAL] Adding diagnosis to consultation:', consultationId);
-
-      const diagnosis = await clinicalService.addDiagnosis(
-        consultationId, 
-        diagnosisData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_UPDATE, {
-        resource: 'Diagnosis',
-        resourceId: diagnosis._id,
-        metadata: { 
-          consultationId,
-          diagnosisName: diagnosis.diagnosisName,
-          diagnosedBy: req.user._id
-        }
-      })(req, res, () => {});
-
-      res.status(201).json({
-        success: true,
-        message: 'Thêm chẩn đoán thành công',
-        data: diagnosis
-      });
-
+      const { id } = req.params;
+      const completed = await clinicalService.completeConsultation(id, req.user._id);
+      await auditLog(AUDIT_ACTIONS.CONSULTATION_COMPLETE, { resourceId: id })(req, res, () => {});
+      res.json({ success: true, data: completed });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY DANH SÁCH CHẨN ĐOÁN CỦA BỆNH NHÂN
-   */
-  async getPatientDiagnoses(req, res, next) {
+  async approveConsultation(req, res, next) {
     try {
-      const { patientId } = req.params;
-      const filters = req.query;
-      
-      console.log('📋 [CLINICAL] Getting diagnoses for patient:', patientId);
-
-      const result = await clinicalService.getPatientDiagnoses(patientId, filters);
-
-      res.json({
-        success: true,
-        message: 'Lấy danh sách chẩn đoán thành công',
-        data: result
-      });
-
+      const { id } = req.params;
+      const approved = await clinicalService.approveConsultation(id, req.user._id);
+      await auditLog(AUDIT_ACTIONS.CONSULTATION_APPROVE, { resourceId: id })(req, res, () => {});
+      res.json({ success: true, data: approved });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 GHI NHẬN TRIỆU CHỨNG BỆNH NHÂN
-   */
   async recordSymptoms(req, res, next) {
     try {
       const { consultationId } = req.params;
       const { symptoms } = req.body;
-      
-      console.log('🤒 [CLINICAL] Recording symptoms for consultation:', consultationId);
-
-      const result = await clinicalService.recordSymptoms(
-        consultationId, 
-        symptoms,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_UPDATE, {
-        resource: 'Consultation',
-        resourceId: consultationId,
-        category: 'SYMPTOMS_RECORDING',
-        metadata: { 
-          symptomsCount: symptoms.length,
-          recordedBy: req.user._id
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Ghi nhận triệu chứng thành công',
-        data: result
-      });
-
+      const recorded = await clinicalService.recordSymptoms(consultationId, symptoms, req.user._id);
+      await auditLog(AUDIT_ACTIONS.SYMPTOMS_RECORD, { resourceId: consultationId })(req, res, () => {});
+      res.json({ success: true, data: recorded });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 GHI KẾT QUẢ KHÁM THỰC THỂ
-   */
   async recordPhysicalExam(req, res, next) {
     try {
       const { consultationId } = req.params;
-      const examData = req.body;
-      
-      console.log('👨‍⚕️ [CLINICAL] Recording physical exam for consultation:', consultationId);
-
-      const result = await clinicalService.recordPhysicalExam(
-        consultationId, 
-        examData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_UPDATE, {
-        resource: 'Consultation',
-        resourceId: consultationId,
-        category: 'PHYSICAL_EXAM',
-        metadata: { recordedBy: req.user._id }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Ghi kết quả khám thực thể thành công',
-        data: result
-      });
-
+      const exam = req.body;
+      const recorded = await clinicalService.recordPhysicalExam(consultationId, exam, req.user._id);
+      await auditLog(AUDIT_ACTIONS.PHYSICAL_EXAM_RECORD, { resourceId: consultationId })(req, res, () => {});
+      res.json({ success: true, data: recorded });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 ĐÁNH DẤU HOÀN THÀNH PHIÊN KHÁM
-   */
-  async completeConsultation(req, res, next) {
+  async addDiagnosis(req, res, next) {
     try {
       const { consultationId } = req.params;
-      
-      console.log('✅ [CLINICAL] Completing consultation:', consultationId);
-
-      const result = await clinicalService.completeConsultation(
-        consultationId, 
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_UPDATE, {
-        resource: 'Consultation',
-        resourceId: consultationId,
-        category: 'CONSULTATION_COMPLETION',
-        metadata: { completedBy: req.user._id }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Hoàn thành phiên khám thành công',
-        data: result
-      });
-
+      const diagnosis = req.body;
+      const added = await clinicalService.addDiagnosis(consultationId, diagnosis, req.user._id);
+      await auditLog(AUDIT_ACTIONS.DIAGNOSIS_ADD, { resourceId: consultationId })(req, res, () => {});
+      res.json({ success: true, data: added });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 CẬP NHẬT THÔNG TIN CHẨN ĐOÁN
-   */
-  async updateDiagnosis(req, res, next) {
+  async getPatientConsultations(req, res, next) {
     try {
-      const { diagnosisId } = req.params;
-      const updateData = req.body;
-      
-      console.log('✏️ [CLINICAL] Updating diagnosis:', diagnosisId);
-
-      const result = await clinicalService.updateDiagnosis(
-        diagnosisId, 
-        updateData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_UPDATE, {
-        resource: 'Diagnosis',
-        resourceId: diagnosisId,
-        metadata: { 
-          updatedBy: req.user._id,
-          updatedFields: Object.keys(updateData)
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Cập nhật chẩn đoán thành công',
-        data: result
-      });
-
+      const { patientId } = req.params;
+      const params = req.query;
+      const consultations = await clinicalService.getPatientConsultations(patientId, params);
+      res.json({ success: true, data: consultations });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 TẠO KẾ HOẠCH ĐIỀU TRỊ
-   */
+  async searchICD10(req, res, next) {
+    try {
+      const { q } = req.query;
+      const results = await clinicalService.searchICD10(q);
+      res.json({ success: true, data: results });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getPatientDiagnoses(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const params = req.query;
+      const diagnoses = await clinicalService.getPatientDiagnoses(patientId, params);
+      res.json({ success: true, data: diagnoses });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async createTreatmentPlan(req, res, next) {
     try {
       const { patientId } = req.params;
-      const planData = req.body;
-      
-      console.log('📋 [CLINICAL] Creating treatment plan for patient:', patientId);
-
-      const result = await clinicalService.createTreatmentPlan(
-        patientId, 
-        planData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_CREATE, {
-        resource: 'TreatmentPlan',
-        category: 'TREATMENT_PLAN_CREATION',
-        metadata: { 
-          patientId,
-          createdBy: req.user._id
-        }
-      })(req, res, () => {});
-
-      res.status(201).json({
-        success: true,
-        message: 'Tạo kế hoạch điều trị thành công',
-        data: result
-      });
-
+      const plan = req.body;
+      const created = await clinicalService.createTreatmentPlan(patientId, plan, req.user._id);
+      await auditLog(AUDIT_ACTIONS.TREATMENT_PLAN_CREATE, { resourceId: created._id })(req, res, () => {});
+      res.status(201).json({ success: true, data: created });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY THÔNG TIN KẾ HOẠCH ĐIỀU TRỊ
-   */
-  async getTreatmentPlan(req, res, next) {
-    try {
-      const { planId } = req.params;
-      
-      console.log('📋 [CLINICAL] Getting treatment plan:', planId);
-
-      const result = await clinicalService.getTreatmentPlan(planId);
-
-      res.json({
-        success: true,
-        message: 'Lấy thông tin kế hoạch điều trị thành công',
-        data: result
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 GHI NHẬN TIẾN TRIỂN CỦA BỆNH NHÂN
-   */
   async recordProgressNote(req, res, next) {
     try {
       const { patientId } = req.params;
-      const noteData = req.body;
-      
-      console.log('📝 [CLINICAL] Recording progress note for patient:', patientId);
-
-      const result = await clinicalService.recordProgressNote(
-        patientId, 
-        noteData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_UPDATE, {
-        resource: 'MedicalRecord',
-        category: 'PROGRESS_NOTE',
-        metadata: { 
-          patientId,
-          recordedBy: req.user._id
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Ghi nhận tiến triển thành công',
-        data: result
-      });
-
+      const note = req.body;
+      const recorded = await clinicalService.recordProgressNote(patientId, note, req.user._id);
+      await auditLog(AUDIT_ACTIONS.PROGRESS_NOTE_RECORD, { resourceId: patientId })(req, res, () => {});
+      res.json({ success: true, data: recorded });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 CẬP NHẬT KẾ HOẠCH ĐIỀU TRỊ
-   */
-  async updateTreatmentPlan(req, res, next) {
-    try {
-      const { planId } = req.params;
-      const updateData = req.body;
-      
-      console.log('✏️ [CLINICAL] Updating treatment plan:', planId);
-
-      const result = await clinicalService.updateTreatmentPlan(
-        planId, 
-        updateData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_UPDATE, {
-        resource: 'TreatmentPlan',
-        resourceId: planId,
-        metadata: { 
-          updatedBy: req.user._id,
-          updatedFields: Object.keys(updateData)
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Cập nhật kế hoạch điều trị thành công',
-        data: result
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 ĐÁNH DẤU HOÀN THÀNH ĐIỀU TRỊ
-   */
-  async completeTreatmentPlan(req, res, next) {
-    try {
-      const { planId } = req.params;
-      
-      console.log('✅ [CLINICAL] Completing treatment plan:', planId);
-
-      const result = await clinicalService.completeTreatmentPlan(
-        planId, 
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_UPDATE, {
-        resource: 'TreatmentPlan',
-        resourceId: planId,
-        category: 'TREATMENT_COMPLETION',
-        metadata: { completedBy: req.user._id }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Hoàn thành điều trị thành công',
-        data: result
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 LẤY TẤT CẢ NHẬN XÉT TIẾN TRIỂN
-   */
-  async getProgressNotes(req, res, next) {
-    try {
-      const { patientId } = req.params;
-      const filters = req.query;
-      
-      console.log('📋 [CLINICAL] Getting progress notes for patient:', patientId);
-
-      const result = await clinicalService.getProgressNotes(patientId, filters);
-
-      res.json({
-        success: true,
-        message: 'Lấy nhận xét tiến triển thành công',
-        data: result
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 GHI NHẬN CỦA ĐIỀU DƯỠNG
-   */
   async recordNursingNote(req, res, next) {
     try {
       const { patientId } = req.params;
-      const noteData = req.body;
-      
-      console.log('👩‍⚕️ [CLINICAL] Recording nursing note for patient:', patientId);
-
-      const result = await clinicalService.recordNursingNote(
-        patientId, 
-        noteData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_UPDATE, {
-        resource: 'MedicalRecord',
-        category: 'NURSING_NOTE',
-        metadata: { 
-          patientId,
-          recordedBy: req.user._id
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Ghi nhận của điều dưỡng thành công',
-        data: result
-      });
-
+      const note = req.body;
+      const recorded = await clinicalService.recordNursingNote(patientId, note, req.user._id);
+      await auditLog(AUDIT_ACTIONS.NURSING_NOTE_RECORD, { resourceId: patientId })(req, res, () => {});
+      res.json({ success: true, data: recorded });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 GHI TÓM TẮT TÌNH TRẠNG KHI XUẤT VIỆN
-   */
-  async recordDischargeSummary(req, res, next) {
+  async getMedicalRecord(req, res, next) {
     try {
       const { patientId } = req.params;
-      const summaryData = req.body;
-      
-      console.log('🏥 [CLINICAL] Recording discharge summary for patient:', patientId);
+      const record = await clinicalService.getMedicalRecord(patientId);
+      res.json({ success: true, data: record });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-      const result = await clinicalService.recordDischargeSummary(
-        patientId, 
-        summaryData,
-        req.user._id
-      );
+  async exportMedicalRecordPDF(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const pdfBuffer = await clinicalService.exportMedicalRecordPDF(patientId);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.send(pdfBuffer);
+    } catch (error) {
+      next(error);
+    }
+  }
 
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.MEDICAL_RECORD_UPDATE, {
-        resource: 'MedicalRecord',
-        category: 'DISCHARGE_SUMMARY',
-        metadata: { 
-          patientId,
-          dischargedBy: req.user._id
-        }
-      })(req, res, () => {});
+  async recordVitalSigns(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const vitals = req.body;
+      const recorded = await clinicalService.recordVitalSigns(patientId, vitals, req.user._id);
+      await auditLog(AUDIT_ACTIONS.VITAL_SIGNS_RECORD, { resourceId: patientId })(req, res, () => {});
+      res.json({ success: true, data: recorded });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-      res.json({
-        success: true,
-        message: 'Ghi tóm tắt xuất viện thành công',
-        data: result
-      });
+  async getVitalSignsHistory(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const params = req.query;
+      const history = await clinicalService.getVitalSignsHistory(patientId, params);
+      res.json({ success: true, data: history });
+    } catch (error) {
+      next(error);
+    }
+  }
 
+  async getVitalSignsTrend(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const { type, days } = req.query;
+      const trend = await clinicalService.getVitalSignsTrend(patientId, type, days);
+      res.json({ success: true, data: trend });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getClinicalTemplates(req, res, next) {
+    try {
+      const { specialty } = req.query;
+      const templates = await clinicalService.getClinicalTemplates(specialty);
+      res.json({ success: true, data: templates });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async saveClinicalTemplate(req, res, next) {
+    try {
+      const template = req.body;
+      const saved = await clinicalService.saveClinicalTemplate(template, req.user._id);
+      res.json({ success: true, data: saved });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getConsultationAccessLogs(req, res, next) {
+    try {
+      const { consultationId } = req.params;
+      const logs = await clinicalService.getConsultationAccessLogs(consultationId);
+      res.json({ success: true, data: logs });
     } catch (error) {
       next(error);
     }

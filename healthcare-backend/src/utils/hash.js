@@ -3,85 +3,45 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { appConfig } = require('../config');
 
-/**
- * 🛡️ TIỆN ÍCH MÃ HÓA VÀ BẢO MẬT
- * - Mã hóa mật khẩu với bcrypt
- * - Tạo token ngẫu nhiên
- * - Hash dữ liệu cơ bản
- */
-
 const SALT_ROUNDS = appConfig.security.saltRounds || 12;
+const isDev = process.env.NODE_ENV !== 'production';
 
-/**
- * 🎯 MÃ HÓA MẬT KHẨU
- */
 async function hashPassword(plainPassword) {
   if (!plainPassword || plainPassword.length < 8) {
     throw new Error('Mật khẩu phải có ít nhất 8 ký tự');
   }
 
-  try {
-    const hashed = await bcrypt.hash(plainPassword, SALT_ROUNDS);
-    
-    // Validate kết quả
-    if (!hashed || hashed.length < 60) {
-      throw new Error('Lỗi mã hóa mật khẩu');
-    }
-    
-    return hashed;
-  } catch (error) {
-    console.error('❌ Lỗi mã hóa mật khẩu:', error.message);
-    throw new Error('Không thể mã hóa mật khẩu');
+  const hashed = await bcrypt.hash(plainPassword, SALT_ROUNDS);
+  if (!hashed || hashed.length < 60) {
+    throw new Error('Lỗi mã hóa mật khẩu');
   }
+  return hashed;
 }
 
-/**
- * 🎯 SO SÁNH MẬT KHẨU - ĐÃ THÊM DEBUG
- */
 async function comparePassword(plainPassword, hashedPassword) {
-  console.log('🔑 [HASH DEBUG] Starting password comparison');
-  console.log('🔑 [HASH DEBUG] Input:', {
-    plainPassword: plainPassword ? `${plainPassword.substring(0, 3)}...` : 'NULL',
-    plainLength: plainPassword ? plainPassword.length : 0,
-    hashPrefix: hashedPassword ? `${hashedPassword.substring(0, 20)}...` : 'NULL',
-    hashLength: hashedPassword ? hashedPassword.length : 0
-  });
-
-  if (!plainPassword || !hashedPassword) {
-    console.log('❌ [HASH DEBUG] Missing password or hash');
-    return false;
+  if (isDev) {
+    console.log('🔑 [HASH DEBUG] Comparing password...');
   }
 
-  // Kiểm tra định dạng hash
-  if (!hashedPassword.startsWith('$2a$') && !hashedPassword.startsWith('$2b$')) {
-    console.log('❌ [HASH DEBUG] Invalid hash format');
-    return false;
-  }
+  if (!plainPassword || !hashedPassword) return false;
+  if (!hashedPassword.startsWith('$2a$') && !hashedPassword.startsWith('$2b$')) return false;
 
   try {
     const result = await bcrypt.compare(plainPassword, hashedPassword);
-    console.log('✅ [HASH DEBUG] Password comparison result:', result);
+    if (isDev) console.log('✅ [HASH DEBUG] Result:', result);
     return result;
   } catch (error) {
-    console.error('❌ [HASH DEBUG] Compare password error:', error.message);
+    if (isDev) console.error('❌ [HASH DEBUG] Error:', error.message);
     return false;
   }
 }
 
-/**
- * 🎯 KIỂM TRA ĐỘ MẠNH MẬT KHẨU
- */
 function validatePasswordStrength(password) {
   if (!password) {
-    return {
-      isValid: false,
-      score: 0,
-      errors: ['Mật khẩu không được để trống'],
-      suggestions: ['Nhập mật khẩu']
-    };
+    return { isValid: false, score: 0, errors: ['Mật khẩu không được để trống'] };
   }
 
-  const requirements = {
+  const checks = {
     minLength: password.length >= 8,
     hasUpperCase: /[A-Z]/.test(password),
     hasLowerCase: /[a-z]/.test(password),
@@ -89,82 +49,32 @@ function validatePasswordStrength(password) {
   };
 
   const errors = [];
+  if (!checks.minLength) errors.push('Mật khẩu phải có ít nhất 8 ký tự');
+  if (!checks.hasUpperCase) errors.push('Mật khẩu phải có ít nhất 1 chữ hoa');
+  if (!checks.hasLowerCase) errors.push('Mật khẩu phải có ít nhất 1 chữ thường');
+  if (!checks.hasNumbers) errors.push('Mật khẩu phải có ít nhất 1 số');
 
-  if (!requirements.minLength) {
-    errors.push('Mật khẩu phải có ít nhất 8 ký tự');
-  }
-  if (!requirements.hasUpperCase) {
-    errors.push('Mật khẩu phải có ít nhất 1 chữ hoa');
-  }
-  if (!requirements.hasLowerCase) {
-    errors.push('Mật khẩu phải có ít nhất 1 chữ thường');
-  }
-  if (!requirements.hasNumbers) {
-    errors.push('Mật khẩu phải có ít nhất 1 số');
-  }
-
-  const score = Object.values(requirements).filter(Boolean).length;
-  const isStrong = errors.length === 0;
+  const score = Object.values(checks).filter(Boolean).length;
 
   return {
-    isValid: isStrong,
-    score: score,
+    isValid: errors.length === 0,
+    score,
     maxScore: 4,
-    errors: errors,
-    suggestions: isStrong ? [] : [
-      'Thêm ký tự đặc biệt (!@#$%^&*)',
-      'Sử dụng kết hợp chữ hoa và thường',
-      'Thêm số vào mật khẩu'
-    ]
+    errors,
   };
 }
 
-/**
- * 🎯 TẠO TOKEN NGẪU NHIÊN DẠNG HEX
- */
 function randomTokenHex(size = 32) {
-  if (size < 16) {
-    throw new Error('Kích thước token phải ít nhất 16 bytes');
-  }
-
-  try {
-    return crypto.randomBytes(size).toString('hex');
-  } catch (error) {
-    console.error('❌ Lỗi tạo token:', error.message);
-    throw new Error('Không thể tạo token ngẫu nhiên');
-  }
+  return crypto.randomBytes(size).toString('hex');
 }
 
-/**
- * 🎯 TẠO TOKEN DẠNG BASE64 URL SAFE
- */
 function randomTokenBase64(size = 24) {
-  try {
-    return crypto.randomBytes(size).toString('base64url');
-  } catch (error) {
-    console.error('❌ Lỗi tạo base64 token:', error.message);
-    throw new Error('Không thể tạo token base64');
-  }
+  return crypto.randomBytes(size).toString('base64url');
 }
 
-/**
- * 🎯 MÃ HÓA DỮ LIỆU VỚI SHA256
- */
 function sha256(data) {
-  if (!data) {
-    throw new Error('Dữ liệu đầu vào không được để trống');
-  }
-
-  if (typeof data !== 'string') {
-    data = JSON.stringify(data);
-  }
-
-  try {
-    return crypto.createHash('sha256').update(data).digest('hex');
-  } catch (error) {
-    console.error('❌ Lỗi hash SHA256:', error.message);
-    throw new Error('Không thể mã hóa dữ liệu');
-  }
+  if (typeof data !== 'string') data = JSON.stringify(data);
+  return crypto.createHash('sha256').update(data).digest('hex');
 }
 
 module.exports = {

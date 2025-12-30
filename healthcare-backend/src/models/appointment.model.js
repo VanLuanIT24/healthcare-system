@@ -17,6 +17,12 @@ const appointmentSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+
+  // Chuyên khoa của bác sĩ (lưu tại thời điểm đặt lịch)
+  specialty: {
+    type: String,
+    required: true
+  },
   
   // Thông tin lịch hẹn
   appointmentDate: {
@@ -82,7 +88,38 @@ const appointmentSchema = new mongoose.Schema({
     reason: String,
     notes: String
   },
+
+  // Yêu cầu hủy của người dùng
+  cancelRequest: {
+    status: {
+      type: String,
+      enum: ['PENDING', 'APPROVED', 'DECLINED'],
+      default: null
+    },
+    requestedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    requestDate: Date,
+    reason: String,
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    reviewDate: Date,
+    reviewNotes: String
+  },
   
+  // Đánh dấu no-show
+  noShow: {
+    reason: String,
+    markedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    markedAt: Date
+  },
+
   // Ghi chú
   notes: String,
   preparationInstructions: String,

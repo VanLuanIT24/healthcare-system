@@ -1,35 +1,62 @@
+// controllers/laboratory.controller.js
 const laboratoryService = require('../services/laboratory.service');
 const { asyncHandler } = require('../middlewares/error.middleware');
 
 class LaboratoryController {
-  
-  // Chỉ định xét nghiệm cho bệnh nhân
-  orderLabTest = asyncHandler(async (req, res) => {
-    const { patientId } = req.params;
-    const testData = req.body;
+  // Tạo chỉ định xét nghiệm mới
+  createLabOrder = asyncHandler(async (req, res) => {
+    const data = req.body;
     const doctorId = req.user._id;
-
-    const labOrder = await laboratoryService.orderLabTest(
-      patientId, 
-      testData, 
-      doctorId
-    );
-
+    const labOrder = await laboratoryService.createLabOrder(data, doctorId);
     res.status(201).json({
       success: true,
-      message: 'Chỉ định xét nghiệm thành công',
+      message: 'Tạo chỉ định xét nghiệm thành công',
       data: labOrder
     });
   });
 
-  // Lấy thông tin chỉ định xét nghiệm
+  // Lấy thông tin chỉ định xét nghiệm theo ID
   getLabOrder = asyncHandler(async (req, res) => {
-    const { orderId } = req.params;
-
-    const labOrder = await laboratoryService.getLabOrder(orderId);
-
+    const { id } = req.params;
+    const labOrder = await laboratoryService.getLabOrder(id);
     res.json({
       success: true,
+      data: labOrder
+    });
+  });
+
+  // Lấy danh sách chỉ định xét nghiệm
+  getLabOrders = asyncHandler(async (req, res) => {
+    const params = req.query;
+    const labOrders = await laboratoryService.getLabOrders(params);
+    res.json({
+      success: true,
+      data: labOrders
+    });
+  });
+
+  // Cập nhật chỉ định xét nghiệm
+  updateLabOrder = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const data = req.body;
+    const userId = req.user._id;
+    const labOrder = await laboratoryService.updateLabOrder(id, data, userId);
+    res.json({
+      success: true,
+      message: 'Cập nhật chỉ định xét nghiệm thành công',
+      data: labOrder
+    });
+  });
+
+  // Hủy chỉ định xét nghiệm
+  cancelLabOrder = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const userId = req.user._id;
+    const labOrder = await laboratoryService.cancelLabOrder(id, reason, userId);
+    res.json({
+      success: true,
+      message: 'Hủy chỉ định xét nghiệm thành công',
       data: labOrder
     });
   });
@@ -37,15 +64,9 @@ class LaboratoryController {
   // Ghi kết quả xét nghiệm
   recordLabResult = asyncHandler(async (req, res) => {
     const { orderId } = req.params;
-    const resultData = req.body;
+    const results = req.body;
     const technicianId = req.user._id;
-
-    const labOrder = await laboratoryService.recordLabResult(
-      orderId,
-      resultData,
-      technicianId
-    );
-
+    const labOrder = await laboratoryService.recordLabResult(orderId, results, technicianId);
     res.json({
       success: true,
       message: 'Ghi kết quả xét nghiệm thành công',
@@ -53,101 +74,15 @@ class LaboratoryController {
     });
   });
 
-  // Lấy kết quả xét nghiệm theo ID
-  getLabResult = asyncHandler(async (req, res) => {
-    const { resultId } = req.params;
-
-    const result = await laboratoryService.getLabResult(resultId);
-
-    res.json({
-      success: true,
-      data: result
-    });
-  });
-
-  // Lấy tất cả kết quả XN của bệnh nhân
-  getPatientLabResults = asyncHandler(async (req, res) => {
-    const { patientId } = req.params;
-    const { page, limit, startDate, endDate, category } = req.query;
-
-    const result = await laboratoryService.getPatientLabResults(patientId, {
-      page, limit, startDate, endDate, category
-    });
-
-    res.json({
-      success: true,
-      data: result
-    });
-  });
-
-  // Lấy danh sách xét nghiệm đang chờ xử lý
-  getPendingTests = asyncHandler(async (req, res) => {
-    const { page, limit, department, priority } = req.query;
-
-    const result = await laboratoryService.getPendingTests({
-      page, limit, department, priority
-    });
-
-    res.json({
-      success: true,
-      data: result
-    });
-  });
-
-  // Cập nhật thông tin chỉ định XN
-  updateLabOrder = asyncHandler(async (req, res) => {
-    const { orderId } = req.params;
-    const updateData = req.body;
-    const userId = req.user._id;
-
-    const labOrder = await laboratoryService.updateLabOrder(
-      orderId, 
-      updateData, 
-      userId
-    );
-
-    res.json({
-      success: true,
-      message: 'Cập nhật chỉ định thành công',
-      data: labOrder
-    });
-  });
-
-  // Hủy chỉ định xét nghiệm
-  cancelLabOrder = asyncHandler(async (req, res) => {
-    const { orderId } = req.params;
-    const { reason } = req.body;
-    const userId = req.user._id;
-
-    const labOrder = await laboratoryService.cancelLabOrder(
-      orderId,
-      reason,
-      userId
-    );
-
-    res.json({
-      success: true,
-      message: 'Hủy chỉ định thành công',
-      data: labOrder
-    });
-  });
-
-  // Cập nhật kết quả xét nghiệm (sửa lỗi)
+  // Cập nhật kết quả xét nghiệm
   updateLabResult = asyncHandler(async (req, res) => {
     const { orderId, testId } = req.params;
-    const updateData = req.body;
+    const result = req.body;
     const userId = req.user._id;
-
-    const labOrder = await laboratoryService.updateLabResult(
-      orderId,
-      testId,
-      updateData,
-      userId
-    );
-
+    const labOrder = await laboratoryService.updateLabResult(orderId, testId, result, userId);
     res.json({
       success: true,
-      message: 'Cập nhật kết quả thành công',
+      message: 'Cập nhật kết quả xét nghiệm thành công',
       data: labOrder
     });
   });
@@ -156,132 +91,91 @@ class LaboratoryController {
   approveLabResult = asyncHandler(async (req, res) => {
     const { orderId, testId } = req.params;
     const approverId = req.user._id;
-
-    const labOrder = await laboratoryService.approveLabResult(
-      orderId,
-      testId,
-      approverId
-    );
-
+    const labOrder = await laboratoryService.approveLabResult(orderId, testId, approverId);
     res.json({
       success: true,
-      message: 'Duyệt kết quả thành công',
+      message: 'Duyệt kết quả xét nghiệm thành công',
       data: labOrder
     });
   });
 
-  // Lấy xét nghiệm đã hoàn thành trong khoảng thời gian
-  getCompletedTests = asyncHandler(async (req, res) => {
-    const { timeframe } = req.query;
-    const { page, limit, department } = req.query;
-
-    const result = await laboratoryService.getCompletedTests(timeframe, {
-      page, limit, department
-    });
-
-    res.json({
-      success: true,
-      data: result
-    });
-  });
-
-  // Đánh dấu test đang được thực hiện
-  markTestInProgress = asyncHandler(async (req, res) => {
-    const { orderId, testId } = req.params;
-    const technicianId = req.user._id;
-
-    const labOrder = await laboratoryService.markTestInProgress(
-      orderId,
-      testId,
-      technicianId
-    );
-
-    res.json({
-      success: true,
-      message: 'Đã bắt đầu thực hiện xét nghiệm',
-      data: labOrder
-    });
-  });
-
-  // Đánh dấu đã thu thập mẫu
+  // Đánh dấu mẫu đã được thu thập
   markSampleCollected = asyncHandler(async (req, res) => {
-    const { orderId, testId } = req.params;
-    const collectorId = req.user._id;
-
-    const labOrder = await laboratoryService.markSampleCollected(
-      orderId,
-      testId,
-      collectorId
-    );
-
-    res.json({
-      success: true,
-      message: 'Đã thu thập mẫu thành công',
-      data: labOrder
-    });
-  });
-
-  // Get orders for admin dashboard (simple version)
-  getOrders = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 50 } = req.query;
-    
-    const result = await laboratoryService.getPendingTests({
-      page,
-      limit
-    });
-
-    res.json({
-      success: true,
-      data: result.data || result,
-      pagination: result.pagination || {}
-    });
-  });
-
-  // Get stats for admin dashboard
-  getStats = asyncHandler(async (req, res) => {
-    const LabOrder = require('../models/labOrder.model');
-    const moment = require('moment');
-    
-    const today = moment().startOf('day').toDate();
-    const tomorrow = moment().endOf('day').toDate();
-
-    const [totalOrders, pendingOrders, completedOrders, todayOrders] = await Promise.all([
-      LabOrder.countDocuments(),
-      LabOrder.countDocuments({ status: 'PENDING' }),
-      LabOrder.countDocuments({ status: 'COMPLETED' }),
-      LabOrder.countDocuments({
-        orderDate: { $gte: today, $lte: tomorrow }
-      })
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        totalOrders,
-        pendingOrders,
-        completedOrders,
-        todayOrders
-      }
-    });
-  });
-
-  // Update result status (simple version)
-  updateResult = asyncHandler(async (req, res) => {
     const { orderId } = req.params;
-    const { status } = req.body;
-    const userId = req.user._id;
-
-    const labOrder = await laboratoryService.updateLabOrder(
-      orderId,
-      { status },
-      userId
-    );
-
+    const labOrder = await laboratoryService.markSampleCollected(orderId);
     res.json({
       success: true,
-      message: 'Cập nhật trạng thái thành công',
+      message: 'Đánh dấu mẫu đã được thu thập thành công',
       data: labOrder
     });
+  });
+
+  // Đánh dấu xét nghiệm hoàn thành
+  markTestCompleted = asyncHandler(async (req, res) => {
+    const { orderId, testId } = req.params;
+    const labOrder = await laboratoryService.markTestCompleted(orderId, testId);
+    res.json({
+      success: true,
+      message: 'Đánh dấu xét nghiệm hoàn thành thành công',
+      data: labOrder
+    });
+  });
+
+  // Lấy danh sách xét nghiệm
+  getLabTests = asyncHandler(async (req, res) => {
+    const params = req.query;
+    const labTests = await laboratoryService.getLabTests(params);
+    res.json({
+      success: true,
+      data: labTests
+    });
+  });
+
+  // Tìm kiếm xét nghiệm
+  searchLabTests = asyncHandler(async (req, res) => {
+    const { q } = req.query;
+    const labTests = await laboratoryService.searchLabTests(q);
+    res.json({
+      success: true,
+      data: labTests
+    });
+  });
+
+  // Lấy chỉ định đang chờ xử lý
+  getPendingOrders = asyncHandler(async (req, res) => {
+    const pendingOrders = await laboratoryService.getPendingOrders();
+    res.json({
+      success: true,
+      data: pendingOrders
+    });
+  });
+
+  // Lấy kết quả nghiêm trọng
+  getCriticalResults = asyncHandler(async (req, res) => {
+    const criticalResults = await laboratoryService.getCriticalResults();
+    res.json({
+      success: true,
+      data: criticalResults
+    });
+  });
+
+  // Lấy thống kê phòng xét nghiệm
+  getLabStats = asyncHandler(async (req, res) => {
+    const params = req.query;
+    const stats = await laboratoryService.getLabStats(params);
+    res.json({
+      success: true,
+      data: stats
+    });
+  });
+
+  // Xuất báo cáo PDF kết quả xét nghiệm
+  exportLabResultsPDF = asyncHandler(async (req, res) => {
+    const { orderId } = req.params;
+    const pdf = await laboratoryService.exportLabResultsPDF(orderId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=lab-report-${orderId}.pdf`);
+    res.send(pdf);
   });
 }
 

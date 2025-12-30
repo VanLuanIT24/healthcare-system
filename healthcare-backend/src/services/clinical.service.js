@@ -1,1176 +1,331 @@
+// src/services/clinical.service.js
+const mongoose = require('mongoose');
 const Consultation = require('../models/consultation.model');
 const Diagnosis = require('../models/diagnosis.model');
 const MedicalRecord = require('../models/medicalRecord.model');
 const User = require('../models/user.model');
+const AuditLog = require('../models/auditLog.model');
 const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 const { generateMedicalCode } = require('../utils/healthcare.utils');
+const PDFDocument = require('pdfkit');
 
-/**
- * 🩺 CLINICAL SERVICE - BUSINESS LOGIC CHO KHÁM CHỮA BỆNH
- */
+// Lazily create template model if file missing
+let Template;
+try {
+  // eslint-disable-next-line global-require
+  Template = require('../models/clinicalTemplate.model');
+} catch (err) {
+  const templateSchema = new mongoose.Schema({
+    name: String,
+    specialty: String,
+    content: mongoose.Schema.Types.Mixed,
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  }, { timestamps: true });
+  Template = mongoose.models.ClinicalTemplate || mongoose.model('ClinicalTemplate', templateSchema);
+}
 
 class ClinicalService {
-  
-  /**
-   * 🎯 TẠO PHIÊN KHÁM BỆNH/TƯ VẤN
-   */
-  async createConsultation(patientId, doctorId, consultationData, createdBy) {
+  async createConsultation(patientId, doctorId, data, createdBy) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
-      console.log('🩺 [CLINICAL] Creating consultation for patient:', patientId);
-
-      // 🎯 KIỂM TRA BỆNH NHÂN
-      const patient = await User.findOne({ 
-        _id: patientId, 
-        role: 'PATIENT',
-        status: 'ACTIVE'
-      });
-      
-      if (!patient) {
-        throw new AppError('Không tìm thấy bệnh nhân', 404, ERROR_CODES.PATIENT_NOT_FOUND);
-      }
-
-      // 🎯 KIỂM TRA BÁC SĨ
-      const doctor = await User.findOne({ 
-        _id: doctorId, 
-        role: 'DOCTOR',
-        status: 'ACTIVE'
-      });
-      
-      if (!doctor) {
-        throw new AppError('Không tìm thấy bác sĩ', 404, ERROR_CODES.DOCTOR_NOT_FOUND);
-      }
-
-      // 🎯 TẠO CONSULTATION ID
-      const consultationId = `CONS${generateMedicalCode(8)}`;
-
-      // 🎯 TẠO MEDICAL RECORD NẾU CHƯA CÓ
-      let medicalRecord = await MedicalRecord.findOne({
+      const medicalRecord = new MedicalRecord({
+        recordId: generateMedicalCode('MR'),
         patientId,
-        status: { $in: ['DRAFT', 'COMPLETED'] }
-      }).sort({ visitDate: -1 });
+        doctorId,
+        department: data.department || 'GENERAL',
+        visitType: data.visitType || 'OUTPATIENT',
+        chiefComplaint: data.chiefComplaint || data.reason || 'Khám bệnh',
+        historyOfPresentIllness: data.historyOfPresentIllness,
+        symptoms: data.symptoms || [],
+        treatmentPlan: data.treatmentPlan,
+        createdBy: createdBy || doctorId,
+        status: 'DRAFT'
+      });
+      await medicalRecord.save({ session });
 
-      if (!medicalRecord) {
-        const recordId = `MR${generateMedicalCode(8)}`;
-        medicalRecord = new MedicalRecord({
-          recordId,
-          patientId,
-          doctorId,
-          department: doctor.professionalInfo?.department || 'GENERAL',
-          visitType: 'OUTPATIENT',
-          visitDate: new Date(),
-          chiefComplaint: consultationData.reason || 'Khám tổng quát',
-          status: 'DRAFT',
-          createdBy
-        });
-        await medicalRecord.save();
-      }
-
-      // 🎯 TẠO PHIÊN KHÁM
       const consultation = new Consultation({
-        consultationId,
+        consultationId: generateMedicalCode('CONS'),
         medicalRecordId: medicalRecord._id,
         patientId,
         doctorId,
-        ...consultationData,
+        consultationDate: data.consultationDate || new Date(),
+        type: data.type || 'INITIAL',
+        mode: data.mode || 'IN_PERSON',
+        subjective: data.subjective,
+        objective: data.objective,
+        assessment: data.assessment,
+        plan: data.plan,
+        notes: data.notes,
         status: 'SCHEDULED'
       });
+      await consultation.save({ session });
 
-      await consultation.save();
-
-      // 🎯 POPULATE KẾT QUẢ
-      const result = await Consultation.findById(consultation._id)
-        .populate('patientId', 'personalInfo email phone')
-        .populate('doctorId', 'personalInfo email professionalInfo')
-        .populate('medicalRecordId');
-
-      console.log('✅ [CLINICAL] Consultation created successfully:', consultationId);
-      return result;
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Create consultation failed:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * 🎯 LẤY THÔNG TIN PHIÊN KHÁM
-   */
-  async getConsultation(consultationId) {
-    try {
-      console.log('🔍 [CLINICAL] Getting consultation:', consultationId);
-
-      const consultation = await Consultation.findOne({ consultationId })
-        .populate('patientId', 'personalInfo email phone dateOfBirth gender')
-        .populate('doctorId', 'personalInfo email professionalInfo specialization')
-        .populate('medicalRecordId');
-
-      if (!consultation) {
-        throw new AppError('Không tìm thấy phiên khám', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
-      }
-
+      await session.commitTransaction();
       return consultation;
-
     } catch (error) {
-      console.error('❌ [CLINICAL] Get consultation failed:', error.message);
+      await session.abortTransaction();
       throw error;
+    } finally {
+      session.endSession();
     }
   }
 
-  /**
-   * 🎯 CẬP NHẬT THÔNG TIN PHIÊN KHÁM
-   */
-  async updateConsultation(consultationId, updateData, updatedBy) {
-    try {
-      console.log('✏️ [CLINICAL] Updating consultation:', consultationId);
-
-      const consultation = await Consultation.findOne({ consultationId });
-      
-      if (!consultation) {
-        throw new AppError('Không tìm thấy phiên khám', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
-      }
-
-      // 🎯 KIỂM TRA QUYỀN CHỈNH SỬA
-      if (consultation.status === 'COMPLETED') {
-        throw new AppError('Không thể chỉnh sửa phiên khám đã hoàn thành', 400);
-      }
-
-      // 🎯 CẬP NHẬT THÔNG TIN
-      const allowedFields = [
-        'subjective', 'objective', 'assessment', 'plan',
-        'recommendations', 'notes', 'duration', 'outcome'
-      ];
-      
-      allowedFields.forEach(field => {
-        if (updateData[field] !== undefined) {
-          consultation[field] = updateData[field];
-        }
-      });
-
-      // 🎯 CẬP NHẬT MEDICAL RECORD LIÊN QUAN
-      if (consultation.medicalRecordId) {
-        const medicalRecord = await MedicalRecord.findById(consultation.medicalRecordId);
-        if (medicalRecord) {
-          if (updateData.subjective?.chiefComplaint) {
-            medicalRecord.chiefComplaint = updateData.subjective.chiefComplaint;
-          }
-          if (updateData.assessment?.clinicalImpressions) {
-            if (!medicalRecord.diagnoses) medicalRecord.diagnoses = [];
-            // Thêm chẩn đoán tạm thời
-            medicalRecord.diagnoses.push({
-              diagnosis: updateData.assessment.clinicalImpressions,
-              type: 'PROVISIONAL',
-              certainty: 'POSSIBLE'
-            });
-          }
-          await medicalRecord.save();
-        }
-      }
-
-      await consultation.save();
-
-      // 🎯 LẤY KẾT QUẢ MỚI NHẤT
-      const updatedConsultation = await Consultation.findOne({ consultationId })
-        .populate('patientId', 'personalInfo email phone')
-        .populate('doctorId', 'personalInfo email professionalInfo')
-        .populate('medicalRecordId');
-
-      console.log('✅ [CLINICAL] Consultation updated:', consultationId);
-      return updatedConsultation;
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Update consultation failed:', error.message);
-      throw error;
+  async getConsultation(id) {
+    const consultation = await Consultation.findById(id).populate('patientId doctorId medicalRecordId');
+    if (!consultation) {
+      throw new AppError('Không tìm thấy tư vấn', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
     }
+    return consultation;
   }
 
-  /**
-   * 🎯 THÊM CHẨN ĐOÁN VÀO PHIÊN KHÁM - CẢI TIẾN VỚI ICD-10 VALIDATION
-   */
-  async addDiagnosis(consultationId, diagnosisData, diagnosedBy) {
-    try {
-      console.log('🩺 [CLINICAL] Adding diagnosis to consultation:', consultationId);
-
-      const consultation = await Consultation.findOne({ consultationId });
-      
-      if (!consultation) {
-        throw new AppError('Không tìm thấy phiên khám', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
-      }
-
-      // ✅ VALIDATE ICD-10 CODE NẾU CÓ
-      if (diagnosisData.diagnosisCode) {
-        const isValidICD10 = this.validateICD10Code(diagnosisData.diagnosisCode);
-        if (!isValidICD10.valid) {
-          throw new AppError(
-            `Mã ICD-10 không hợp lệ: ${isValidICD10.message}`,
-            400,
-            ERROR_CODES.VALIDATION_ERROR
-          );
-        }
-        console.log('✅ [CLINICAL] ICD-10 validated:', diagnosisData.diagnosisCode, isValidICD10.description);
-      } else {
-        console.warn('⚠️ [CLINICAL] No ICD-10 code provided for diagnosis');
-      }
-
-      // 🎯 TẠO DIAGNOSIS ID
-      const diagnosisId = `D${generateMedicalCode(8)}`;
-
-      // 🎯 TẠO CHẨN ĐOÁN
-      const diagnosis = new Diagnosis({
-        diagnosisId,
-        medicalRecordId: consultation.medicalRecordId,
-        patientId: consultation.patientId,
-        doctorId: consultation.doctorId,
-        ...diagnosisData,
-        diagnosedBy
-      });
-
-      await diagnosis.save();
-
-      // 🎯 CẬP NHẬT MEDICAL RECORD VỚI AUDIT TRAIL
-      const medicalRecord = await MedicalRecord.findById(consultation.medicalRecordId);
-      if (medicalRecord) {
-        if (!medicalRecord.diagnoses) medicalRecord.diagnoses = [];
-        medicalRecord.diagnoses.push({
-          diagnosis: diagnosisData.diagnosisName,
-          code: diagnosisData.diagnosisCode,
-          type: diagnosisData.type || 'PRIMARY',
-          certainty: diagnosisData.certainty || 'PROBABLE'
-        });
-
-        // 🔒 GHI AUDIT TRAIL - KHÔNG CHO XÓA
-        if (!medicalRecord.auditTrail) medicalRecord.auditTrail = [];
-        medicalRecord.auditTrail.push({
-          action: 'DIAGNOSIS_ADDED',
-          performedBy: diagnosedBy,
-          timestamp: new Date(),
-          details: {
-            diagnosisId,
-            diagnosisName: diagnosisData.diagnosisName,
-            diagnosisCode: diagnosisData.diagnosisCode
-          }
-        });
-
-        medicalRecord.lastModifiedBy = diagnosedBy;
-        await medicalRecord.save();
-      }
-
-      // 🎯 POPULATE KẾT QUẢ
-      const result = await Diagnosis.findById(diagnosis._id)
-        .populate('patientId', 'personalInfo email phone')
-        .populate('doctorId', 'personalInfo email professionalInfo');
-
-      console.log('✅ [CLINICAL] Diagnosis added successfully:', diagnosisId);
-      return result;
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Add diagnosis failed:', error.message);
-      throw error;
-    }
+  async updateConsultation(id, data, updater) {
+    const updated = await Consultation.findByIdAndUpdate(
+      id,
+      { ...data, lastModifiedBy: updater },
+      { new: true }
+    );
+    if (!updated) throw new AppError('Không tìm thấy tư vấn', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
+    return updated;
   }
 
-  /**
-   * 🔍 VALIDATE ICD-10 CODE FORMAT AND BASIC STRUCTURE
-   * ICD-10 format: Letter + 2-3 digits + optional decimal + 1-2 digits
-   * Example: A00, A00.0, A00.01, Z99.89
-   */
-  validateICD10Code(code) {
-    if (!code || typeof code !== 'string') {
-      return { valid: false, message: 'Mã ICD-10 không được để trống' };
-    }
+  async completeConsultation(id, userId) {
+    const updated = await Consultation.findByIdAndUpdate(
+      id,
+      { status: 'COMPLETED', endTime: new Date(), lastModifiedBy: userId },
+      { new: true }
+    );
+    if (!updated) throw new AppError('Không tìm thấy tư vấn', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
+    return updated;
+  }
 
-    // Chuẩn hóa: uppercase và trim
-    const normalizedCode = code.trim().toUpperCase();
+  async approveConsultation(id, approver) {
+    const updated = await Consultation.findByIdAndUpdate(
+      id,
+      { status: 'APPROVED', approvedBy: approver, approvalDate: new Date() },
+      { new: true }
+    );
+    if (!updated) throw new AppError('Không tìm thấy tư vấn', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
+    return updated;
+  }
 
-    // Regex: 1 letter + 2-3 digits + optional (.digit[digit])
-    const icd10Regex = /^[A-Z]\d{2}(\.\d{1,2})?$/;
+  async recordSymptoms(consultationId, symptoms, userId) {
+    const consultation = await Consultation.findById(consultationId);
+    if (!consultation) throw new AppError('Không tìm thấy tư vấn', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
+    consultation.symptoms = symptoms;
+    consultation.lastModifiedBy = userId;
+    await consultation.save();
+    return consultation;
+  }
 
-    if (!icd10Regex.test(normalizedCode)) {
-      return {
-        valid: false,
-        message: 'Định dạng mã ICD-10 không hợp lệ (ví dụ: A00, A00.0, Z99.89)'
-      };
-    }
+  async recordPhysicalExam(consultationId, exam, userId) {
+    const consultation = await Consultation.findById(consultationId);
+    if (!consultation) throw new AppError('Không tìm thấy tư vấn', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
+    consultation.physicalExam = exam;
+    consultation.lastModifiedBy = userId;
+    await consultation.save();
+    return consultation;
+  }
 
-    // Kiểm tra chapter hợp lệ (A-Z)
-    const chapter = normalizedCode[0];
-    const icd10Chapters = {
-      'A': 'Certain infectious and parasitic diseases',
-      'B': 'Certain infectious and parasitic diseases',
-      'C': 'Neoplasms',
-      'D': 'Diseases of the blood and blood-forming organs',
-      'E': 'Endocrine, nutritional and metabolic diseases',
-      'F': 'Mental, Behavioral and Neurodevelopmental disorders',
-      'G': 'Diseases of the nervous system',
-      'H': 'Diseases of the eye and adnexa / ear and mastoid process',
-      'I': 'Diseases of the circulatory system',
-      'J': 'Diseases of the respiratory system',
-      'K': 'Diseases of the digestive system',
-      'L': 'Diseases of the skin and subcutaneous tissue',
-      'M': 'Diseases of the musculoskeletal system and connective tissue',
-      'N': 'Diseases of the genitourinary system',
-      'O': 'Pregnancy, childbirth and the puerperium',
-      'P': 'Certain conditions originating in the perinatal period',
-      'Q': 'Congenital malformations, deformations and chromosomal abnormalities',
-      'R': 'Symptoms, signs and abnormal clinical and laboratory findings',
-      'S': 'Injury, poisoning and certain other consequences of external causes',
-      'T': 'Injury, poisoning and certain other consequences of external causes',
-      'U': 'Codes for special purposes',
-      'V': 'External causes of morbidity',
-      'W': 'External causes of morbidity',
-      'X': 'External causes of morbidity',
-      'Y': 'External causes of morbidity',
-      'Z': 'Factors influencing health status and contact with health services'
-    };
+  async addDiagnosis(consultationId, diagnosis, doctorId) {
+    const consultation = await Consultation.findById(consultationId);
+    if (!consultation) throw new AppError('Không tìm thấy tư vấn', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
 
-    if (!icd10Chapters[chapter]) {
-      return {
-        valid: false,
-        message: `Chapter '${chapter}' không tồn tại trong ICD-10`
-      };
-    }
+    const newDiagnosis = new Diagnosis({
+      diagnosisId: generateMedicalCode('DIAG'),
+      consultationId,
+      medicalRecordId: consultation.medicalRecordId,
+      patientId: consultation.patientId,
+      doctorId: doctorId || consultation.doctorId,
+      diagnosisCode: diagnosis.diagnosisCode || diagnosis.code,
+      diagnosisName: diagnosis.diagnosisName || diagnosis.name,
+      category: diagnosis.category,
+      type: diagnosis.type || 'PRIMARY',
+      certainty: diagnosis.certainty || 'PROBABLE',
+      severity: diagnosis.severity,
+      onsetDate: diagnosis.onsetDate,
+      description: diagnosis.description,
+      clinicalFeatures: diagnosis.clinicalFeatures,
+      diagnosticCriteria: diagnosis.diagnosticCriteria,
+      treatmentStatus: diagnosis.treatmentStatus,
+      followUpRequired: diagnosis.followUpRequired,
+      followUpInterval: diagnosis.followUpInterval,
+      notes: diagnosis.notes
+    });
+    await newDiagnosis.save();
+    consultation.diagnoses = consultation.diagnoses || [];
+    consultation.diagnoses.push(newDiagnosis._id);
+    await consultation.save();
+    return newDiagnosis;
+  }
+
+  async getPatientConsultations(patientId, params) {
+    const { status, startDate, endDate, page = 1, limit = 10 } = params;
+    const filter = { patientId };
+    if (status) filter.status = status;
+    if (startDate) filter.consultationDate = { ...filter.consultationDate, $gte: new Date(startDate) };
+    if (endDate) filter.consultationDate = { ...filter.consultationDate, $lte: new Date(endDate) };
+
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      Consultation.find(filter)
+        .populate('doctorId medicalRecordId')
+        .sort({ consultationDate: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Consultation.countDocuments(filter)
+    ]);
 
     return {
-      valid: true,
-      code: normalizedCode,
-      chapter: chapter,
-      description: icd10Chapters[chapter]
+      items,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
     };
   }
 
-  /**
-   * 🎯 LẤY DANH SÁCH CHẨN ĐOÁN CỦA BỆNH NHÂN
-   */
-  async getPatientDiagnoses(patientId, filters = {}) {
-    try {
-      console.log('📋 [CLINICAL] Getting diagnoses for patient:', patientId);
-
-      const { 
-        status, 
-        page = 1, 
-        limit = 20,
-        startDate,
-        endDate,
-        sortBy = 'diagnosedDate',
-        sortOrder = 'desc'
-      } = filters;
-
-      const skip = (page - 1) * limit;
-
-      // 🎯 BUILD QUERY
-      let query = { patientId };
-      
-      if (status) query.status = status;
-
-      if (startDate || endDate) {
-        query.diagnosedDate = {};
-        if (startDate) query.diagnosedDate.$gte = new Date(startDate);
-        if (endDate) query.diagnosedDate.$lte = new Date(endDate);
-      }
-
-      const sort = { [sortBy]: sortOrder === 'desc' ? -1 : 1 };
-
-      // 🎯 THỰC HIỆN TÌM KIẾM
-      const [diagnoses, total] = await Promise.all([
-        Diagnosis.find(query)
-          .populate('patientId', 'personalInfo email phone dateOfBirth gender')
-          .populate('doctorId', 'personalInfo email professionalInfo specialization')
-          .sort(sort)
-          .skip(skip)
-          .limit(limit),
-        Diagnosis.countDocuments(query)
-      ]);
-
-      // 🎯 TÍNH TOÁN PHÂN TRANG
-      const totalPages = Math.ceil(total / limit);
-
-      return {
-        diagnoses,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalItems: total,
-          itemsPerPage: limit,
-          hasNext: page < totalPages,
-          hasPrev: page > 1
-        }
-      };
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Get patient diagnoses failed:', error.message);
-      throw error;
-    }
+  async searchICD10(query) {
+    if (!query) return [];
+    return Diagnosis.find({
+      $or: [
+        { diagnosisCode: new RegExp(query, 'i') },
+        { diagnosisName: new RegExp(query, 'i') }
+      ]
+    }).limit(20);
   }
 
-  /**
-   * 🎯 GHI NHẬN TRIỆU CHỨNG BỆNH NHÂN
-   */
-  async recordSymptoms(consultationId, symptoms, recordedBy) {
-    try {
-      console.log('🤒 [CLINICAL] Recording symptoms for consultation:', consultationId);
+  async getPatientDiagnoses(patientId, params) {
+    const { status, startDate, endDate, page = 1, limit = 10 } = params;
+    const filter = { patientId };
+    if (status) filter.status = status;
+    if (startDate) filter.diagnosedDate = { ...filter.diagnosedDate, $gte: new Date(startDate) };
+    if (endDate) filter.diagnosedDate = { ...filter.diagnosedDate, $lte: new Date(endDate) };
 
-      const consultation = await Consultation.findOne({ consultationId });
-      
-      if (!consultation) {
-        throw new AppError('Không tìm thấy phiên khám', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      Diagnosis.find(filter)
+        .populate('doctorId')
+        .sort({ diagnosedDate: -1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Diagnosis.countDocuments(filter)
+    ]);
+
+    return {
+      items,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit)
       }
-
-      // 🎯 CẬP NHẬT TRIỆU CHỨNG
-      if (!consultation.subjective) consultation.subjective = {};
-      consultation.subjective.reviewOfSystems = symptoms.join(', ');
-
-      await consultation.save();
-
-      // 🎯 CẬP NHẬT MEDICAL RECORD
-      const medicalRecord = await MedicalRecord.findById(consultation.medicalRecordId);
-      if (medicalRecord) {
-        medicalRecord.symptoms = symptoms.map(symptom => ({
-          symptom,
-          duration: 'Không xác định',
-          severity: 'MODERATE'
-        }));
-        await medicalRecord.save();
-      }
-
-      console.log('✅ [CLINICAL] Symptoms recorded for consultation:', consultationId);
-      return await this.getConsultation(consultationId);
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Record symptoms failed:', error.message);
-      throw error;
-    }
+    };
   }
 
-  /**
-   * 🎯 GHI KẾT QUẢ KHÁM THỰC THỂ
-   */
-  async recordPhysicalExam(consultationId, examData, recordedBy) {
-    try {
-      console.log('👨‍⚕️ [CLINICAL] Recording physical exam for consultation:', consultationId);
-
-      const consultation = await Consultation.findOne({ consultationId });
-      
-      if (!consultation) {
-        throw new AppError('Không tìm thấy phiên khám', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
-      }
-
-      // 🎯 CẬP NHẬT KHÁM THỰC THỂ
-      consultation.objective = {
-        ...consultation.objective,
-        ...examData
-      };
-
-      await consultation.save();
-
-      // 🎯 CẬP NHẬT MEDICAL RECORD
-      const medicalRecord = await MedicalRecord.findById(consultation.medicalRecordId);
-      if (medicalRecord) {
-        medicalRecord.physicalExamination = {
-          ...medicalRecord.physicalExamination,
-          ...examData
-        };
-        await medicalRecord.save();
-      }
-
-      console.log('✅ [CLINICAL] Physical exam recorded for consultation:', consultationId);
-      return await this.getConsultation(consultationId);
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Record physical exam failed:', error.message);
-      throw error;
-    }
+  async createTreatmentPlan(patientId, plan, userId) {
+    const medicalRecord = await this.getLatestRecord(patientId);
+    medicalRecord.treatmentPlan = plan;
+    medicalRecord.lastModifiedBy = userId;
+    await medicalRecord.save();
+    return medicalRecord;
   }
 
-  /**
-   * 🎯 ĐÁNH DẤU HOÀN THÀNH PHIÊN KHÁM
-   */
-  async completeConsultation(consultationId, completedBy) {
-    try {
-      console.log('✅ [CLINICAL] Completing consultation:', consultationId);
-
-      const consultation = await Consultation.findOne({ consultationId });
-      
-      if (!consultation) {
-        throw new AppError('Không tìm thấy phiên khám', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
-      }
-
-      if (consultation.status === 'COMPLETED') {
-        throw new AppError('Phiên khám đã hoàn thành', 400);
-      }
-
-      // 🎯 CẬP NHẬT TRẠNG THÁI
-      consultation.status = 'COMPLETED';
-      consultation.endTime = new Date();
-
-      // 🎯 TÍNH THỜI GIAN THỰC TẾ
-      if (consultation.startTime) {
-        consultation.duration = Math.round(
-          (consultation.endTime - consultation.startTime) / (1000 * 60)
-        );
-      }
-
-      await consultation.save();
-
-      // 🎯 CẬP NHẬT MEDICAL RECORD
-      const medicalRecord = await MedicalRecord.findById(consultation.medicalRecordId);
-      if (medicalRecord) {
-        medicalRecord.status = 'COMPLETED';
-        await medicalRecord.save();
-      }
-
-      console.log('✅ [CLINICAL] Consultation completed:', consultationId);
-      return await this.getConsultation(consultationId);
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Complete consultation failed:', error.message);
-      throw error;
-    }
+  async recordProgressNote(patientId, note, userId) {
+    const medicalRecord = await this.getLatestRecord(patientId);
+    medicalRecord.progressNotes = medicalRecord.progressNotes || [];
+    medicalRecord.progressNotes.push({ ...note, createdBy: userId, createdAt: new Date() });
+    medicalRecord.lastModifiedBy = userId;
+    await medicalRecord.save();
+    return medicalRecord;
   }
 
-  /**
-   * 🎯 CẬP NHẬT THÔNG TIN CHẨN ĐOÁN
-   */
-  async updateDiagnosis(diagnosisId, updateData, updatedBy) {
-    try {
-      console.log('✏️ [CLINICAL] Updating diagnosis:', diagnosisId);
-
-      const diagnosis = await Diagnosis.findOne({ diagnosisId });
-      
-      if (!diagnosis) {
-        throw new AppError('Không tìm thấy chẩn đoán', 404);
-      }
-
-      // 🎯 CẬP NHẬT THÔNG TIN
-      const allowedFields = [
-        'diagnosisName', 'diagnosisCode', 'category', 'type', 'certainty',
-        'severity', 'description', 'clinicalFeatures', 'treatmentStatus',
-        'followUpRequired', 'followUpInterval', 'notes', 'prognosis', 'status'
-      ];
-      
-      allowedFields.forEach(field => {
-        if (updateData[field] !== undefined) {
-          diagnosis[field] = updateData[field];
-        }
-      });
-
-      // 🎯 NẾU ĐÁNH DẤU ĐÃ KHỎI
-      if (updateData.status === 'RESOLVED' && !diagnosis.resolvedDate) {
-        diagnosis.resolvedDate = new Date();
-      }
-
-      await diagnosis.save();
-
-      console.log('✅ [CLINICAL] Diagnosis updated:', diagnosisId);
-      return await Diagnosis.findOne({ diagnosisId })
-        .populate('patientId', 'personalInfo email phone')
-        .populate('doctorId', 'personalInfo email professionalInfo');
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Update diagnosis failed:', error.message);
-      throw error;
-    }
+  async recordNursingNote(patientId, note, userId) {
+    const medicalRecord = await this.getLatestRecord(patientId);
+    medicalRecord.nursingNotes = medicalRecord.nursingNotes || [];
+    medicalRecord.nursingNotes.push({ ...note, createdBy: userId, createdAt: new Date() });
+    medicalRecord.lastModifiedBy = userId;
+    await medicalRecord.save();
+    return medicalRecord;
   }
 
-  /**
-   * 🎯 TẠO KẾ HOẠCH ĐIỀU TRỊ
-   */
-  async createTreatmentPlan(patientId, planData, createdBy) {
-    try {
-      console.log('📋 [CLINICAL] Creating treatment plan for patient:', patientId);
-
-      // 🎯 TÌM MEDICAL RECORD GẦN NHẤT
-      const medicalRecord = await MedicalRecord.findOne({
-        patientId,
-        status: { $in: ['DRAFT', 'COMPLETED'] }
-      }).sort({ visitDate: -1 });
-
-      if (!medicalRecord) {
-        throw new AppError('Không tìm thấy hồ sơ bệnh án để tạo kế hoạch điều trị', 404);
-      }
-
-      // 🎯 CẬP NHẬT TREATMENT PLAN
-      medicalRecord.treatmentPlan = {
-        ...medicalRecord.treatmentPlan,
-        ...planData
-      };
-
-      medicalRecord.lastModifiedBy = createdBy;
-      await medicalRecord.save();
-
-      console.log('✅ [CLINICAL] Treatment plan created for patient:', patientId);
-      return {
-        planId: medicalRecord.recordId,
-        patientId,
-        treatmentPlan: medicalRecord.treatmentPlan,
-        createdBy,
-        createdAt: new Date()
-      };
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Create treatment plan failed:', error.message);
-      throw error;
-    }
+  async getMedicalRecord(patientId) {
+    return await MedicalRecord.findOne({ patientId }).sort({ createdAt: -1 });
   }
 
-  /**
-   * 🎯 LẤY THÔNG TIN KẾ HOẠCH ĐIỀU TRỊ
-   */
-  async getTreatmentPlan(planId) {
-    try {
-      console.log('📋 [CLINICAL] Getting treatment plan:', planId);
+  async exportMedicalRecordPDF(patientId) {
+    const record = await this.getMedicalRecord(patientId);
+    const doc = new PDFDocument({ margin: 50 });
+    const buffers = [];
+    doc.on('data', buffers.push.bind(buffers));
 
-      const medicalRecord = await MedicalRecord.findOne({ recordId: planId })
-        .populate('patientId', 'personalInfo email phone dateOfBirth gender')
-        .populate('doctorId', 'personalInfo email professionalInfo specialization')
-        .populate('lastModifiedBy', 'personalInfo email');
-
-      if (!medicalRecord) {
-        throw new AppError('Không tìm thấy kế hoạch điều trị', 404);
-      }
-
-      return {
-        planId: medicalRecord.recordId,
-        patient: medicalRecord.patientId,
-        doctor: medicalRecord.doctorId,
-        treatmentPlan: medicalRecord.treatmentPlan,
-        status: medicalRecord.status,
-        lastModified: medicalRecord.updatedAt,
-        lastModifiedBy: medicalRecord.lastModifiedBy
-      };
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Get treatment plan failed:', error.message);
-      throw error;
-    }
+    doc.fontSize(18).text('HỒ SƠ BỆNH ÁN', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12).text(`Mã hồ sơ: ${record.recordId}`);
+    doc.text(`Bệnh nhân: ${record.patientId}`);
+    doc.text(`Bác sĩ phụ trách: ${record.doctorId}`);
+    doc.text(`Ngày khám: ${new Date(record.visitDate).toLocaleString('vi-VN')}`);
+    doc.moveDown();
+    if (record.chiefComplaint) doc.text(`Lý do khám: ${record.chiefComplaint}`);
+    if (record.historyOfPresentIllness) doc.text(`Bệnh sử: ${record.historyOfPresentIllness}`);
+    doc.end();
+    return Buffer.concat(buffers);
   }
 
-  /**
-   * 🎯 GHI NHẬN TIẾN TRIỂN CỦA BỆNH NHÂN
-   */
-  async recordProgressNote(patientId, noteData, recordedBy) {
-    try {
-      console.log('📝 [CLINICAL] Recording progress note for patient:', patientId);
-
-      // 🎯 TÌM MEDICAL RECORD HIỆN TẠI
-      let medicalRecord = await MedicalRecord.findOne({
-        patientId,
-        status: { $in: ['DRAFT', 'COMPLETED'] }
-      }).sort({ visitDate: -1 });
-
-      const now = new Date();
-
-      if (!medicalRecord) {
-        const recordId = `MR${generateMedicalCode(8)}`;
-        medicalRecord = new MedicalRecord({
-          recordId,
-          patientId,
-          doctorId: recordedBy,
-          department: 'GENERAL',
-          visitType: 'FOLLOW_UP',
-          visitDate: now,
-          chiefComplaint: 'Theo dõi tiến triển',
-          status: 'DRAFT',
-          createdBy: recordedBy
-        });
-      }
-
-      // 🎯 THÊM PROGRESS NOTE
-      if (!medicalRecord.treatmentPlan) {
-        medicalRecord.treatmentPlan = {};
-      }
-
-      if (!medicalRecord.treatmentPlan.progressNotes) {
-        medicalRecord.treatmentPlan.progressNotes = [];
-      }
-
-      medicalRecord.treatmentPlan.progressNotes.push({
-        ...noteData,
-        recordedBy,
-        recordedAt: now
-      });
-
-      medicalRecord.lastModifiedBy = recordedBy;
-      await medicalRecord.save();
-
-      console.log('✅ [CLINICAL] Progress note recorded for patient:', patientId);
-      return await this.getMedicalRecord(medicalRecord.recordId);
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Record progress note failed:', error.message);
-      throw error;
-    }
+  async recordVitalSigns(patientId, vitals, userId) {
+    const medicalRecord = await this.getLatestRecord(patientId);
+    medicalRecord.vitalSigns = { ...vitals, recordedBy: userId, recordedAt: new Date() };
+    medicalRecord.lastModifiedBy = userId;
+    await medicalRecord.save();
+    return medicalRecord;
   }
 
-  /**
-   * 🎯 CẬP NHẬT KẾ HOẠCH ĐIỀU TRỊ
-   */
-  async updateTreatmentPlan(planId, updateData, updatedBy) {
-    try {
-      console.log('✏️ [CLINICAL] Updating treatment plan:', planId);
+  async getVitalSignsHistory(patientId, params) {
+    const timeframe = params.timeframe || '7d';
+    const now = new Date();
+    const start = new Date(now);
+    const map = { '24h': 1, '7d': 7, '30d': 30, '90d': 90 };
+    start.setDate(start.getDate() - (map[timeframe] || 7));
 
-      const medicalRecord = await MedicalRecord.findOne({ recordId: planId });
-      
-      if (!medicalRecord) {
-        throw new AppError('Không tìm thấy kế hoạch điều trị', 404);
-      }
+    const records = await MedicalRecord.find({
+      patientId,
+      createdAt: { $gte: start, $lte: now }
+    }).select('vitalSigns createdAt');
 
-      // 🎯 CẬP NHẬT TREATMENT PLAN
-      medicalRecord.treatmentPlan = {
-        ...medicalRecord.treatmentPlan,
-        ...updateData
-      };
-
-      medicalRecord.lastModifiedBy = updatedBy;
-      await medicalRecord.save();
-
-      console.log('✅ [CLINICAL] Treatment plan updated:', planId);
-      return await this.getTreatmentPlan(planId);
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Update treatment plan failed:', error.message);
-      throw error;
-    }
+    return records
+      .filter(r => r.vitalSigns && Object.keys(r.vitalSigns).length)
+      .map(r => ({ ...r.vitalSigns, recordedAt: r.vitalSigns.recordedAt || r.createdAt }));
   }
 
-  /**
-   * 🎯 ĐÁNH DẤU HOÀN THÀNH ĐIỀU TRỊ
-   */
-  async completeTreatmentPlan(planId, completedBy) {
-    try {
-      console.log('✅ [CLINICAL] Completing treatment plan:', planId);
-
-      const medicalRecord = await MedicalRecord.findOne({ recordId: planId });
-      
-      if (!medicalRecord) {
-        throw new AppError('Không tìm thấy kế hoạch điều trị', 404);
-      }
-
-      if (!medicalRecord.treatmentPlan) {
-        throw new AppError('Chưa có kế hoạch điều trị', 400);
-      }
-
-      if (medicalRecord.treatmentPlan.status === 'COMPLETED') {
-        throw new AppError('Kế hoạch điều trị đã hoàn thành', 400);
-      }
-
-      // 🎯 CẬP NHẬT TRẠNG THÁI TREATMENT PLAN
-      if (!medicalRecord.treatmentPlan) {
-        medicalRecord.treatmentPlan = {};
-      }
-      medicalRecord.treatmentPlan.status = 'COMPLETED';
-      medicalRecord.treatmentPlan.completedDate = new Date();
-      medicalRecord.treatmentPlan.completedBy = completedBy;
-      medicalRecord.lastModifiedBy = completedBy;
-      await medicalRecord.save();
-
-      console.log('✅ [CLINICAL] Treatment plan completed:', planId);
-      return await this.getTreatmentPlan(planId);
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Complete treatment plan failed:', error.message);
-      throw error;
-    }
+  async getVitalSignsTrend(patientId, type, days) {
+    const history = await this.getVitalSignsHistory(patientId, { timeframe: `${days || 30}d` });
+    const values = history.map(h => ({ value: h[type], at: h.recordedAt }));
+    return {
+      type,
+      points: values.filter(v => v.value !== undefined && v.value !== null)
+    };
   }
 
-  /**
-   * 🎯 LẤY TẤT CẢ NHẬN XÉT TIẾN TRIỂN
-   */
-  async getProgressNotes(patientId, filters = {}) {
-    try {
-      console.log('📋 [CLINICAL] Getting progress notes for patient:', patientId);
-
-      const { 
-        page = 1, 
-        limit = 20,
-        startDate,
-        endDate
-      } = filters;
-
-      const skip = (page - 1) * limit;
-
-      // 🎯 TÌM TẤT CẢ MEDICAL RECORDS CÓ PROGRESS NOTES
-      const medicalRecords = await MedicalRecord.find({
-        patientId,
-        'treatmentPlan.progressNotes': { $exists: true, $ne: [] }
-      })
-      .select('recordId visitDate treatmentPlan.progressNotes')
-      .sort({ visitDate: -1 })
-      .skip(skip)
-      .limit(limit);
-
-      // 🎯 TRÍCH XUẤT PROGRESS NOTES
-      let allProgressNotes = [];
-      medicalRecords.forEach(record => {
-        if (record.treatmentPlan && record.treatmentPlan.progressNotes) {
-          record.treatmentPlan.progressNotes.forEach(note => {
-            allProgressNotes.push({
-              recordId: record.recordId,
-              visitDate: record.visitDate,
-              ...note
-            });
-          });
-        }
-      });
-
-      // 🎯 LỌC THEO THỜI GIAN NẾU CÓ
-      if (startDate || endDate) {
-        allProgressNotes = allProgressNotes.filter(note => {
-          const noteDate = new Date(note.recordedAt || note.visitDate);
-          if (startDate && noteDate < new Date(startDate)) return false;
-          if (endDate && noteDate > new Date(endDate)) return false;
-          return true;
-        });
-      }
-
-      // 🎯 TÍNH TOÁN PHÂN TRANG
-      const total = allProgressNotes.length;
-      const paginatedNotes = allProgressNotes.slice(skip, skip + limit);
-      const totalPages = Math.ceil(total / limit);
-
-      return {
-        progressNotes: paginatedNotes,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalItems: total,
-          itemsPerPage: limit,
-          hasNext: page < totalPages,
-          hasPrev: page > 1
-        }
-      };
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Get progress notes failed:', error.message);
-      throw error;
-    }
+  async getClinicalTemplates(specialty) {
+    return await Template.find({ specialty });
   }
 
-  /**
-   * 🎯 GHI NHẬN CỦA ĐIỀU DƯỠNG
-   */
-  async recordNursingNote(patientId, noteData, recordedBy) {
-    try {
-      console.log('👩‍⚕️ [CLINICAL] Recording nursing note for patient:', patientId);
-
-      // 🎯 TÌM MEDICAL RECORD HIỆN TẠI
-      let medicalRecord = await MedicalRecord.findOne({
-        patientId,
-        status: { $in: ['DRAFT', 'COMPLETED'] }
-      }).sort({ visitDate: -1 });
-
-      const now = new Date();
-
-      if (!medicalRecord) {
-        const recordId = `MR${generateMedicalCode(8)}`;
-        medicalRecord = new MedicalRecord({
-          recordId,
-          patientId,
-          doctorId: recordedBy,
-          department: 'NURSING',
-          visitType: 'INPATIENT',
-          visitDate: now,
-          chiefComplaint: 'Chăm sóc điều dưỡng',
-          status: 'DRAFT',
-          createdBy: recordedBy
-        });
-      }
-
-      // 🎯 THÊM NURSING NOTE
-      if (!medicalRecord.treatmentPlan) {
-        medicalRecord.treatmentPlan = {};
-      }
-
-      if (!medicalRecord.treatmentPlan.nursingNotes) {
-        medicalRecord.treatmentPlan.nursingNotes = [];
-      }
-
-      medicalRecord.treatmentPlan.nursingNotes.push({
-        ...noteData,
-        recordedBy,
-        recordedAt: now,
-        type: 'NURSING_NOTE'
-      });
-
-      medicalRecord.lastModifiedBy = recordedBy;
-      await medicalRecord.save();
-
-      console.log('✅ [CLINICAL] Nursing note recorded for patient:', patientId);
-      return await this.getMedicalRecord(medicalRecord.recordId);
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Record nursing note failed:', error.message);
-      throw error;
-    }
+  async saveClinicalTemplate(template) {
+    return await new Template(template).save();
   }
 
-  /**
-   * 🎯 GHI TÓM TẮT TÌNH TRẠNG KHI XUẤT VIỆN
-   */
-  async recordDischargeSummary(patientId, summaryData, recordedBy) {
-    try {
-      console.log('🏥 [CLINICAL] Recording discharge summary for patient:', patientId);
-
-      // 🎯 TÌM PATIENT TO GET ObjectId
-      const Patient = require('../models/patient.model');
-      const patient = await Patient.findOne({ patientId });
-      
-      if (!patient) {
-        throw new AppError('Không tìm thấy bệnh nhân', 404);
-      }
-
-      // 🎯 TÌM MEDICAL RECORD NHẬP VIỆN
-      let medicalRecord = await MedicalRecord.findOne({
-        patientId: patient._id,
-        visitType: 'INPATIENT',
-        status: { $in: ['DRAFT', 'COMPLETED'] }
-      }).sort({ visitDate: -1 });
-
-      if (!medicalRecord) {
-        throw new AppError('Không tìm thấy hồ sơ nhập viện', 404);
-      }
-
-      const now = new Date();
-
-      // 🎯 THÊM DISCHARGE SUMMARY
-      if (!medicalRecord.treatmentPlan) {
-        medicalRecord.treatmentPlan = {};
-      }
-
-      medicalRecord.treatmentPlan.dischargeSummary = {
-        ...summaryData,
-        dischargedBy: recordedBy,
-        dischargeDate: now
-      };
-
-      // 🎯 CẬP NHẬT TRẠNG THÁI
-      medicalRecord.status = 'COMPLETED';
-      medicalRecord.lastModifiedBy = recordedBy;
-      await medicalRecord.save();
-
-      console.log('✅ [CLINICAL] Discharge summary recorded for patient:', patientId);
-      return await this.getMedicalRecord(medicalRecord.recordId);
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Record discharge summary failed:', error.message);
-      throw error;
-    }
+  async getConsultationAccessLogs(consultationId) {
+    return AuditLog.find({ resourceId: consultationId });
   }
 
-  /**
-   * 🎯 HỖ TRỢ: LẤY THÔNG TIN MEDICAL RECORD
-   */
-  async getMedicalRecord(recordId) {
-    try {
-      const medicalRecord = await MedicalRecord.findOne({ recordId })
-        .populate('patientId', 'personalInfo email phone dateOfBirth gender address')
-        .populate('doctorId', 'personalInfo email phone specialization department')
-        .populate('createdBy', 'personalInfo email')
-        .populate('lastModifiedBy', 'personalInfo email');
-
-      if (!medicalRecord) {
-        throw new AppError('Không tìm thấy hồ sơ bệnh án', 404);
-      }
-
-      return medicalRecord;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  /**
-   * 🔒 CẬP NHẬT MEDICAL RECORD VỚI AUDIT TRAIL - KHÔNG CHO XÓA, CHỈ CHO SỬA
-   */
-  async updateMedicalRecord(recordId, updateData, updatedBy) {
-    try {
-      console.log('✏️ [CLINICAL] Updating medical record:', recordId);
-
-      const medicalRecord = await MedicalRecord.findOne({ recordId });
-      
-      if (!medicalRecord) {
-        throw new AppError('Không tìm thấy hồ sơ bệnh án', 404);
-      }
-
-      // 🔒 KHÔNG CHO XÓA - CHỈ CHO ARCHIVE
-      if (medicalRecord.isArchived) {
-        throw new AppError('Hồ sơ bệnh án đã được lưu trữ, không thể chỉnh sửa', 403);
-      }
-
-      // 🎯 LƯU TRẠNG THÁI CŨ VÀO AUDIT TRAIL
-      const oldState = medicalRecord.toObject();
-      delete oldState._id;
-      delete oldState.__v;
-      delete oldState.auditTrail;
-
-      if (!medicalRecord.auditTrail) medicalRecord.auditTrail = [];
-
-      medicalRecord.auditTrail.push({
-        action: 'RECORD_UPDATED',
-        performedBy: updatedBy,
-        timestamp: new Date(),
-        previousState: oldState,
-        changes: this.detectChanges(oldState, updateData)
-      });
-
-      // 🎯 CẬP NHẬT THÔNG TIN MỚI
-      const allowedFields = [
-        'chiefComplaint', 'symptoms', 'physicalExamination', 'diagnoses',
-        'treatmentPlan', 'followUp', 'notes', 'department', 'status'
-      ];
-
-      allowedFields.forEach(field => {
-        if (updateData[field] !== undefined) {
-          medicalRecord[field] = updateData[field];
-        }
-      });
-
-      medicalRecord.lastModifiedBy = updatedBy;
-      await medicalRecord.save();
-
-      console.log('✅ [CLINICAL] Medical record updated with audit trail:', recordId);
-      return await this.getMedicalRecord(recordId);
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Update medical record failed:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * 🔒 ARCHIVE MEDICAL RECORD - KHÔNG XÓA THẬT, CHỈ ĐÁNH DẤU
-   */
-  async archiveMedicalRecord(recordId, archivedBy, reason) {
-    try {
-      console.log('📦 [CLINICAL] Archiving medical record:', recordId);
-
-      const medicalRecord = await MedicalRecord.findOne({ recordId });
-      
-      if (!medicalRecord) {
-        throw new AppError('Không tìm thấy hồ sơ bệnh án', 404);
-      }
-
-      if (medicalRecord.isArchived) {
-        throw new AppError('Hồ sơ bệnh án đã được lưu trữ trước đó', 400);
-      }
-
-      // 🔒 ĐÁNH DẤU LƯU TRỮ - KHÔNG XÓA
-      medicalRecord.isArchived = true;
-      medicalRecord.archivedAt = new Date();
-      medicalRecord.archivedBy = archivedBy;
-      medicalRecord.archiveReason = reason || 'Lưu trữ theo quy định';
-
-      // 🎯 GHI AUDIT TRAIL
-      if (!medicalRecord.auditTrail) medicalRecord.auditTrail = [];
-      medicalRecord.auditTrail.push({
-        action: 'RECORD_ARCHIVED',
-        performedBy: archivedBy,
-        timestamp: new Date(),
-        details: {
-          reason: medicalRecord.archiveReason
-        }
-      });
-
-      await medicalRecord.save();
-
-      console.log('✅ [CLINICAL] Medical record archived (not deleted):', recordId);
-      return {
-        success: true,
-        message: 'Hồ sơ bệnh án đã được lưu trữ',
-        recordId,
-        archivedAt: medicalRecord.archivedAt
-      };
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Archive medical record failed:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * 🔓 RESTORE ARCHIVED MEDICAL RECORD
-   */
-  async restoreMedicalRecord(recordId, restoredBy) {
-    try {
-      console.log('♻️ [CLINICAL] Restoring archived medical record:', recordId);
-
-      const medicalRecord = await MedicalRecord.findOne({ recordId });
-      
-      if (!medicalRecord) {
-        throw new AppError('Không tìm thấy hồ sơ bệnh án', 404);
-      }
-
-      if (!medicalRecord.isArchived) {
-        throw new AppError('Hồ sơ bệnh án chưa được lưu trữ', 400);
-      }
-
-      // 🔓 KHÔI PHỤC HỒ SƠ
-      medicalRecord.isArchived = false;
-      medicalRecord.restoredAt = new Date();
-      medicalRecord.restoredBy = restoredBy;
-
-      // 🎯 GHI AUDIT TRAIL
-      if (!medicalRecord.auditTrail) medicalRecord.auditTrail = [];
-      medicalRecord.auditTrail.push({
-        action: 'RECORD_RESTORED',
-        performedBy: restoredBy,
-        timestamp: new Date(),
-        details: {
-          previousArchiveDate: medicalRecord.archivedAt,
-          previousArchiveReason: medicalRecord.archiveReason
-        }
-      });
-
-      await medicalRecord.save();
-
-      console.log('✅ [CLINICAL] Medical record restored:', recordId);
-      return await this.getMedicalRecord(recordId);
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Restore medical record failed:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * 📋 GET AUDIT TRAIL FOR MEDICAL RECORD
-   */
-  async getMedicalRecordAuditTrail(recordId) {
-    try {
-      console.log('📜 [CLINICAL] Getting audit trail for medical record:', recordId);
-
-      const medicalRecord = await MedicalRecord.findOne({ recordId })
-        .select('recordId auditTrail')
-        .populate('auditTrail.performedBy', 'personalInfo email role');
-
-      if (!medicalRecord) {
-        throw new AppError('Không tìm thấy hồ sơ bệnh án', 404);
-      }
-
-      return {
-        recordId: medicalRecord.recordId,
-        auditTrail: medicalRecord.auditTrail || [],
-        totalActions: (medicalRecord.auditTrail || []).length
-      };
-
-    } catch (error) {
-      console.error('❌ [CLINICAL] Get audit trail failed:', error.message);
-      throw error;
-    }
-  }
-
-  /**
-   * 🔍 HELPER: DETECT CHANGES BETWEEN OLD AND NEW DATA
-   */
-  detectChanges(oldData, newData) {
-    const changes = [];
-    Object.keys(newData).forEach(key => {
-      if (JSON.stringify(oldData[key]) !== JSON.stringify(newData[key])) {
-        changes.push({
-          field: key,
-          oldValue: oldData[key],
-          newValue: newData[key]
-        });
-      }
-    });
-    return changes;
+  // ===== Helpers =====
+  async getLatestRecord(patientId) {
+    const record = await MedicalRecord.findOne({ patientId }).sort({ createdAt: -1 });
+    if (!record) throw new AppError('Không tìm thấy hồ sơ bệnh án', 404, ERROR_CODES.MEDICAL_RECORD_NOT_FOUND);
+    return record;
   }
 }
 

@@ -1,96 +1,34 @@
-// 💰 Billing & Financial API
+// src/api/billingAPI.js - API Thanh toán (Phiên bản đầy đủ 2025 - Liên kết: Complete consultation/discharge → Create bill)
 import axios from '../axios';
 
 const billingAPI = {
-  // Bills
-  createBill: async (billData) => {
-    return await axios.post('/billing', billData);
-  },
+  // ===== HÓA ĐƠN =====
+  createBill: async (data) => axios.post('/api/billing', data),
+  getBill: async (id) => axios.get(`/api/billing/${id}`),
+  getBills: async (params = {}) => axios.get('/api/billing', { params }),
+  updateBill: async (id, data) => axios.put(`/api/billing/${id}`, data),
+  voidBill: async (id, reason) => axios.patch(`/api/billing/${id}/void`, { reason }),
 
-  getBill: async (id) => {
-    return await axios.get(`/billing/${id}`);
-  },
+  // ===== THANH TOÁN =====
+  processPayment: async (billId, payment) => axios.post(`/api/billing/${billId}/payments`, payment),
+  getPaymentHistory: async (billId) => axios.get(`/api/billing/${billId}/payments`),
+  refundPayment: async (paymentId, data) => axios.post(`/api/payments/${paymentId}/refund`, data),
 
-  getBills: async (params) => {
-    return await axios.get('/billing', { params });
-  },
+  // ===== BỆNH NHÂN =====
+  getPatientBills: async (patientId, params = {}) => axios.get(`/api/patients/${patientId}/bills`, { params }),
 
-  updateBill: async (id, billData) => {
-    return await axios.put(`/billing/${id}`, billData);
-  },
+  // ===== DỊCH VỤ & BẢO HIỂM =====
+  getServices: async (params = {}) => axios.get('/api/services', { params }),
+  verifyInsurance: async (patientId, data) => axios.post(`/api/patients/${patientId}/insurance/verify`, data),
+  submitInsuranceClaim: async (billId, claim) => axios.post(`/api/billing/${billId}/insurance-claim`, claim),
 
-  voidBill: async (id, reason) => {
-    return await axios.patch(`/billing/${id}/void`, { reason });
-  },
+  // ===== BÁO CÁO =====
+  getOutstandingBills: async (params = {}) => axios.get('/api/billing/outstanding', { params }),
+  getRevenueStats: async (params = {}) => axios.get('/api/billing/stats/revenue', { params }),
 
-  // Payments
-  processPayment: async (billId, paymentData) => {
-    return await axios.post(`/billing/${billId}/payment`, paymentData);
-  },
-
-  getPaymentHistory: async (billId) => {
-    return await axios.get(`/billing/${billId}/payment-history`);
-  },
-
-  refundPayment: async (paymentId, refundData) => {
-    return await axios.post(`/billing/payments/${paymentId}/refund`, refundData);
-  },
-
-  // Patient bills
-  getPatientBills: async (patientId, params) => {
-    return await axios.get(`/billing/patient/${patientId}`, { params });
-  },
-
-  // Services
-  getServices: async (params) => {
-    return await axios.get('/services', { params });
-  },
-
-  getServiceById: async (id) => {
-    return await axios.get(`/services/${id}`);
-  },
-
-  // Insurance
-  verifyInsurance: async (patientId, insuranceData) => {
-    return await axios.post('/billing/insurance/verify', {
-      patientId,
-      ...insuranceData,
-    });
-  },
-
-  submitInsuranceClaim: async (billId, claimData) => {
-    return await axios.post(`/billing/${billId}/insurance-claim`, claimData);
-  },
-
-  getInsuranceClaims: async (params) => {
-    return await axios.get('/billing/insurance-claims', { params });
-  },
-
-  // Financial Statistics
-  getRevenueStats: async (params) => {
-    return await axios.get('/billing/revenue-stats', { params });
-  },
-
-  getDailyRevenue: async (date) => {
-    return await axios.get('/billing/daily-revenue', { params: { date } });
-  },
-
-  getOutstandingBills: async (params) => {
-    return await axios.get('/billing/outstanding', { params });
-  },
-
-  // Reports
-  generateInvoice: async (billId) => {
-    return await axios.get(`/billing/${billId}/invoice`, {
-      responseType: 'blob',
-    });
-  },
-
-  generateReceipt: async (paymentId) => {
-    return await axios.get(`/billing/payments/${paymentId}/receipt`, {
-      responseType: 'blob',
-    });
-  },
+  // ===== IN ẤN =====
+  generateInvoicePDF: async (billId) => axios.get(`/api/billing/${billId}/invoice/pdf`, { responseType: 'blob' }),
+  generateReceiptPDF: async (paymentId) => axios.get(`/api/payments/${paymentId}/receipt/pdf`, { responseType: 'blob' }),
 };
 
 export default billingAPI;

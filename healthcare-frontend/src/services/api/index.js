@@ -1,55 +1,56 @@
-// 🎯 API Services Index - Central Export
-// Import all API services
+// src/api/index.js - Phiên bản cuối cùng (sau khi gộp)
 import adminAPI from './adminAPI';
-import adminExtendedAPI from './adminExtendedAPI';
 import appointmentAPI from './appointmentAPI';
 import authAPI from './authAPI';
+import bedManagementAPI from './bedManagementAPI';
 import billingAPI from './billingAPI';
 import clinicalAPI from './clinicalAPI';
-import clinicalExtendedAPI from './clinicalExtendedAPI';
+import inventoryAPI from './inventoryAPI';
 import laboratoryAPI from './laboratoryAPI';
-import medicationAPI from './medicationAPI';
+import medicalRecordAPI from './medicalRecordAPI';
+import * as medicationAPI from './medicationAPI';
+import notificationAPI from './notificationAPI';
 import patientAPI from './patientAPI';
-import patientExtendedAPI from './patientExtendedAPI';
 import prescriptionAPI from './prescriptionAPI';
-import reportAPI from './reportAPI';
-import reportExtendedAPI from './reportExtendedAPI';
+import publicAPI from './publicAPI';
+import queueAPI from './queueAPI';
 import userAPI from './userAPI';
+import messageAPI from './messageAPI';
 
-// Export all services
+// Export riêng lẻ
 export {
   adminAPI,
-  adminExtendedAPI,
   appointmentAPI,
   authAPI,
+  bedManagementAPI,
   billingAPI,
   clinicalAPI,
-  clinicalExtendedAPI,
-  laboratoryAPI,
-  medicationAPI,
+  inventoryAPI,
+  laboratoryAPI, medicalRecordAPI, medicationAPI, notificationAPI,
   patientAPI,
-  patientExtendedAPI,
   prescriptionAPI,
-  reportAPI,
-  reportExtendedAPI,
-  userAPI
+  publicAPI,
+  queueAPI,
+  userAPI,
+  messageAPI
 };
 
-// Export default object with all services
+// Export default
 export default {
   admin: adminAPI,
-  adminExtended: adminExtendedAPI,
-  appointment: appointmentAPI,
   auth: authAPI,
-  billing: billingAPI,
+  user: userAPI,
+  patient: patientAPI,
+  appointment: appointmentAPI,
+  queue: queueAPI,
   clinical: clinicalAPI,
-  clinicalExtended: clinicalExtendedAPI,
+  prescription: prescriptionAPI,
   laboratory: laboratoryAPI,
   medication: medicationAPI,
-  patient: patientAPI,
-  patientExtended: patientExtendedAPI,
-  prescription: prescriptionAPI,
-  report: reportAPI,
-  reportExtended: reportExtendedAPI,
-  user: userAPI
+  medicalRecord: medicalRecordAPI,
+  inventory: inventoryAPI,
+  billing: billingAPI,
+  bedManagement: bedManagementAPI,
+  notification: notificationAPI,
+  message: messageAPI,
 };

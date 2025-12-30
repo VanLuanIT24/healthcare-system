@@ -1,12 +1,13 @@
+// routes/laboratory.routes.js
 const express = require('express');
 const router = express.Router();
 const laboratoryController = require('../controllers/laboratory.controller');
-const { 
-  authenticate, 
+const {
+  authenticate,
   requirePermission,
-  requireRole 
+  requireRole
 } = require('../middlewares/auth.middleware');
-const { 
+const {
   validate
 } = require('../middlewares/validation.middleware');
 const {
@@ -20,108 +21,120 @@ const { PERMISSIONS, ROLES } = require('../constants/roles');
 // Áp dụng xác thực cho tất cả routes
 router.use(authenticate);
 
-// Routes cho bác sĩ
+// Tạo chỉ định xét nghiệm mới
 router.post(
-  '/patients/:patientId/lab-orders',
-  requirePermission(PERMISSIONS['LAB.CREATE_ORDERS']),
+  '/orders',
+  requirePermission(PERMISSIONS['LAB_CREATE_ORDERS']),
   validate(orderLabTestValidation.body),
-  laboratoryController.orderLabTest
+  laboratoryController.createLabOrder
 );
 
+// Lấy thông tin chỉ định xét nghiệm theo ID
 router.get(
-  '/lab-orders/:orderId',
-  requirePermission(PERMISSIONS['LAB.VIEW_ORDERS']),
+  '/orders/:id',
+  requirePermission(PERMISSIONS['LAB_VIEW_ORDERS']),
   laboratoryController.getLabOrder
 );
 
+// Lấy danh sách chỉ định xét nghiệm
+router.get(
+  '/orders',
+  requirePermission(PERMISSIONS['LAB_VIEW_ORDERS']),
+  laboratoryController.getLabOrders
+);
+
+// Cập nhật chỉ định xét nghiệm
 router.put(
-  '/lab-orders/:orderId',
-  requirePermission(PERMISSIONS['LAB.UPDATE_ORDERS']),
+  '/orders/:id',
+  requirePermission(PERMISSIONS['LAB_UPDATE_ORDERS']),
   validate(updateLabOrderValidation.body),
   laboratoryController.updateLabOrder
 );
 
-router.delete(
-  '/lab-orders/:orderId/cancel',
-  requirePermission(PERMISSIONS['LAB.UPDATE_ORDERS']),
+// Hủy chỉ định xét nghiệm
+router.patch(
+  '/orders/:id/cancel',
+  requirePermission(PERMISSIONS['LAB_UPDATE_ORDERS']),
   laboratoryController.cancelLabOrder
 );
 
-// Routes cho kỹ thuật viên
+// Ghi kết quả xét nghiệm
 router.post(
-  '/lab-orders/:orderId/results',
-  requirePermission(PERMISSIONS['LAB.CREATE_RESULTS']),
+  '/orders/:orderId/results',
+  requirePermission(PERMISSIONS['LAB_CREATE_RESULTS']),
   validate(recordLabResultValidation.body),
   laboratoryController.recordLabResult
 );
 
+// Cập nhật kết quả xét nghiệm
 router.patch(
-  '/lab-orders/:orderId/results/:testId',
-  requirePermission(PERMISSIONS['LAB.UPDATE_RESULTS']),
+  '/orders/:orderId/results/:testId',
+  requirePermission(PERMISSIONS['LAB_UPDATE_RESULTS']),
   validate(updateLabResultValidation.body),
   laboratoryController.updateLabResult
 );
 
-router.post(
-  '/lab-orders/:orderId/tests/:testId/approve',
-  requirePermission(PERMISSIONS['LAB.APPROVE_RESULTS']),
+// Duyệt kết quả xét nghiệm
+router.patch(
+  '/orders/:orderId/results/:testId/approve',
+  requirePermission(PERMISSIONS['LAB_APPROVE_RESULTS']),
   laboratoryController.approveLabResult
 );
 
-router.post(
-  '/lab-orders/:orderId/tests/:testId/start',
-  requirePermission(PERMISSIONS['LAB.CREATE_RESULTS']),
-  laboratoryController.markTestInProgress
-);
-
-router.post(
-  '/lab-orders/:orderId/tests/:testId/collect',
-  requirePermission(PERMISSIONS['LAB.CREATE_RESULTS']),
+// Đánh dấu mẫu đã được thu thập
+router.patch(
+  '/orders/:orderId/sample-collected',
+  requirePermission(PERMISSIONS['LAB_UPDATE_ORDERS']),
   laboratoryController.markSampleCollected
 );
 
-// Routes chung
-router.get(
-  '/lab-results/:resultId',
-  requirePermission(PERMISSIONS['LAB.VIEW_RESULTS']),
-  laboratoryController.getLabResult
+// Đánh dấu xét nghiệm hoàn thành
+router.patch(
+  '/orders/:orderId/tests/:testId/complete',
+  requirePermission(PERMISSIONS['LAB_UPDATE_RESULTS']),
+  laboratoryController.markTestCompleted
 );
 
+// Lấy danh sách xét nghiệm
 router.get(
-  '/patients/:patientId/lab-results',
-  requirePermission(PERMISSIONS['LAB.VIEW_RESULTS']),
-  laboratoryController.getPatientLabResults
+  '/tests',
+  requirePermission(PERMISSIONS['LAB_VIEW_ORDERS']),
+  laboratoryController.getLabTests
 );
 
+// Tìm kiếm xét nghiệm
 router.get(
-  '/lab-orders',
-  requirePermission(PERMISSIONS['LAB.VIEW_ORDERS']),
-  laboratoryController.getPendingTests
+  '/tests/search',
+  requirePermission(PERMISSIONS['LAB_VIEW_ORDERS']),
+  laboratoryController.searchLabTests
 );
 
+// Lấy chỉ định đang chờ xử lý
 router.get(
-  '/lab-results',
-  requirePermission(PERMISSIONS['LAB.VIEW_RESULTS']),
-  laboratoryController.getCompletedTests
+  '/orders/pending',
+  requirePermission(PERMISSIONS['LAB_VIEW_ORDERS']),
+  laboratoryController.getPendingOrders
 );
 
-// Admin dashboard routes (simplified) - Allow SUPER_ADMIN, ADMIN, DOCTOR access
+// Lấy kết quả nghiêm trọng
 router.get(
-  '/orders',
-  requireRole('SUPER_ADMIN', 'ADMIN', 'DOCTOR', 'NURSE'),
-  laboratoryController.getOrders
+  '/results/critical',
+  requirePermission(PERMISSIONS['LAB_VIEW_RESULTS']),
+  laboratoryController.getCriticalResults
 );
 
+// Lấy thống kê phòng xét nghiệm
 router.get(
   '/stats',
-  requireRole(['SUPER_ADMIN', 'ADMIN', 'DOCTOR', 'NURSE', 'LAB_TECHNICIAN']),
-  laboratoryController.getStats
+  requirePermission(PERMISSIONS['LAB_VIEW_ORDERS']),
+  laboratoryController.getLabStats
 );
 
-router.put(
-  '/orders/:orderId/result',
-  requireRole('SUPER_ADMIN', 'ADMIN', 'DOCTOR', 'NURSE'),
-  laboratoryController.updateResult
+// Xuất báo cáo PDF kết quả xét nghiệm
+router.get(
+  '/orders/:orderId/report/pdf',
+  requirePermission(PERMISSIONS['LAB_VIEW_RESULTS']),
+  laboratoryController.exportLabResultsPDF
 );
 
 module.exports = router;

@@ -142,7 +142,70 @@ const medicalRecordValidation = {
   // 🎯 LẤY LỊCH SỬ DẤU HIỆU SINH TỒN
   getVitalSignsHistory: Joi.object({
     timeframe: Joi.string().valid('24h', '7d', '30d', '90d').default('7d')
+  }),
+
+  // 🎯 LẤY THEO PATIENT
+  patientIdParam: Joi.object({
+    patientId: commonSchemas.objectId.required()
+  }),
+
+  // 🎯 LẤY THEO RECORD
+  recordIdParam: Joi.object({
+    recordId: commonSchemas.objectId.required()
+  }),
+
+  // 🎯 LỊCH HẸN LIÊN QUAN (alias for patient records)
+  getPatientRecords: Joi.object({
+    visitType: Joi.string().valid('OUTPATIENT', 'INPATIENT', 'EMERGENCY', 'FOLLOW_UP').optional(),
+    status: Joi.string().valid('DRAFT', 'COMPLETED', 'ARCHIVED').optional(),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(50).default(10),
+    startDate: Joi.date().iso().optional(),
+    endDate: Joi.date().iso().min(Joi.ref('startDate')).optional(),
+    sortBy: Joi.string().valid('visitDate', 'createdAt', 'updatedAt').default('visitDate'),
+    sortOrder: Joi.string().valid('asc', 'desc').default('desc')
+  }),
+
+  // 🎯 PHẪU THUẬT
+  addSurgicalHistory: Joi.object({
+    condition: Joi.string().max(200).required(),
+    procedure: Joi.string().max(200).required(),
+    surgeryDate: Joi.date().iso().max('now').required(),
+    surgeon: Joi.string().max(100).optional(),
+    hospital: Joi.string().max(200).optional(),
+    description: Joi.string().max(1000).optional(),
+    complications: Joi.string().max(500).optional(),
+    outcome: Joi.string().valid('SUCCESSFUL', 'PARTIAL', 'COMPLICATED').optional(),
+    notes: Joi.string().max(1000).optional()
+  }),
+
+  // 🎯 PHÁT HIỆN LÂM SÀNG
+  recordClinicalFindings: Joi.object({
+    patientId: commonSchemas.objectId.required(),
+    department: Joi.string().max(100).required(),
+    chiefComplaint: Joi.string().max(500).required(),
+    findings: Joi.string().max(2000).required(),
+    observations: Joi.string().max(1000).optional(),
+    notes: Joi.string().max(1000).optional()
+  }),
+
+  // 🎯 TÌM KIẾM THEO CHẨN ĐOÁN
+  searchByDiagnosis: Joi.object({
+    diagnosis: Joi.string().max(100).required(),
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(50).default(20),
+    startDate: Joi.date().iso().optional(),
+    endDate: Joi.date().iso().min(Joi.ref('startDate')).optional()
+  }),
+
+  // 🎯 THỐNG KÊ
+  getStats: Joi.object({
+    timeframe: Joi.string().valid('7d', '30d', '90d', '1y').default('30d')
   })
 };
+// Aliases to align with route naming
+medicalRecordValidation.getPatientRecords = medicalRecordValidation.getPatientRecords || medicalRecordValidation.getPatientMedicalRecords;
+medicalRecordValidation.getPatientMedicalRecords = medicalRecordValidation.getPatientMedicalRecords || medicalRecordValidation.getPatientRecords;
 
-module.exports = medicalRecordValidation;
+// Expose under `schemas` to match route imports
+module.exports = { schemas: medicalRecordValidation };

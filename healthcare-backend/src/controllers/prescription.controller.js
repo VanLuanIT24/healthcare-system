@@ -1,288 +1,296 @@
+// src/controllers/prescription.controller.js
 const prescriptionService = require('../services/prescription.service');
-const { asyncHandler } = require('../middlewares/error.middleware');
+const { AppError } = require('../middlewares/error.middleware');
+const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
 
 class PrescriptionController {
-  
-  // Tạo đơn thuốc cho bệnh nhân
-  createPrescription = asyncHandler(async (req, res) => {
-    const { patientId } = req.params;
-    const prescriptionData = req.body;
-    const doctorId = req.user._id;
+  async createPrescription(req, res, next) {
+    try {
+      const prescriptionData = req.body;
+      const doctorId = req.user._id;
 
-    const prescription = await prescriptionService.createPrescription(
-      patientId, 
-      prescriptionData, 
-      doctorId
-    );
+      const result = await prescriptionService.createPrescription(prescriptionData, doctorId);
 
-    res.status(201).json({
-      success: true,
-      message: 'Tạo đơn thuốc thành công',
-      data: prescription
-    });
-  });
+      await auditLog(AUDIT_ACTIONS.PRESCRIPTION_CREATE, {
+        resourceId: result.prescription._id,
+        metadata: { patientId: result.prescription.patientId }
+      })(req, res, () => {});
 
-  // Lấy thông tin đơn thuốc
-  getPrescription = asyncHandler(async (req, res) => {
-    const { prescriptionId } = req.params;
+      res.status(201).json({
+        success: true,
+        message: 'Tạo đơn thuốc thành công',
+        data: result.prescription,
+        warnings: result.warnings || null
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    const prescription = await prescriptionService.getPrescription(prescriptionId);
+  async getPrescription(req, res, next) {
+    try {
+      const { id } = req.params;
+      const prescription = await prescriptionService.getPrescription(id);
 
-    res.json({
-      success: true,
-      data: prescription
-    });
-  });
+      await auditLog(AUDIT_ACTIONS.PRESCRIPTION_VIEW, { resourceId: id })(req, res, () => {});
 
-  // Cập nhật đơn thuốc
-  updatePrescription = asyncHandler(async (req, res) => {
-    const { prescriptionId } = req.params;
-    const updateData = req.body;
-    const userId = req.user._id;
+      res.json({
+        success: true,
+        data: prescription
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    const prescription = await prescriptionService.updatePrescription(
-      prescriptionId, 
-      updateData, 
-      userId
-    );
+  async updatePrescription(req, res, next) {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      const updatedBy = req.user._id;
 
-    res.json({
-      success: true,
-      message: 'Cập nhật đơn thuốc thành công',
-      data: prescription
-    });
-  });
+      const prescription = await prescriptionService.updatePrescription(id, updateData, updatedBy);
 
-  // Lấy tất cả đơn thuốc của bệnh nhân
-  getPatientPrescriptions = asyncHandler(async (req, res) => {
-    const { patientId } = req.params;
-    const { page, limit, status } = req.query;
+      await auditLog(AUDIT_ACTIONS.PRESCRIPTION_UPDATE, { resourceId: id })(req, res, () => {});
 
-    const result = await prescriptionService.getPatientPrescriptions(patientId, {
-      page, limit, status
-    });
+      res.json({
+        success: true,
+        message: 'Cập nhật đơn thuốc thành công',
+        data: prescription
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    res.json({
-      success: true,
-      data: result
-    });
-  });
+  async cancelPrescription(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      const cancelledBy = req.user._id;
 
-  // Phát thuốc cho bệnh nhân
-  dispenseMedication = asyncHandler(async (req, res) => {
-    const { prescriptionId } = req.params;
-    const dispenseData = req.body;
-    const pharmacistId = req.user._id;
+      const prescription = await prescriptionService.cancelPrescription(id, reason, cancelledBy);
 
-    const prescription = await prescriptionService.dispenseMedication(
-      prescriptionId,
-      dispenseData,
-      pharmacistId
-    );
+      await auditLog(AUDIT_ACTIONS.PRESCRIPTION_CANCEL, { resourceId: id })(req, res, () => {});
 
-    res.json({
-      success: true,
-      message: 'Phát thuốc thành công',
-      data: prescription
-    });
-  });
+      res.json({
+        success: true,
+        message: 'Hủy đơn thuốc thành công',
+        data: prescription
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-  // Lấy đơn thuốc theo trạng thái (cho nhà thuốc)
-  getPharmacyOrders = asyncHandler(async (req, res) => {
-    const { status } = req.query;
-    const { page, limit } = req.query;
+  async getPrescriptions(req, res, next) {
+    try {
+      const filters = req.query;
+      const prescriptions = await prescriptionService.getPrescriptions(filters);
+      res.json({
+        success: true,
+        data: prescriptions.items,
+        pagination: prescriptions.pagination
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    const result = await prescriptionService.getPharmacyOrders(status, {
-      page, limit
-    });
+  async getPatientPrescriptions(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const filters = req.query;
+      const result = await prescriptionService.getPatientPrescriptions(patientId, filters);
+      res.json({
+        success: true,
+        data: result.items,
+        pagination: result.pagination
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    res.json({
-      success: true,
-      data: result
-    });
-  });
+  async printPrescription(req, res, next) {
+    try {
+      const { id } = req.params;
+      const pdfBuffer = await prescriptionService.generatePrescriptionPDF(id);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="DonThuoc_${id}.pdf"`);
+      res.send(pdfBuffer);
+    } catch (error) {
+      next(error);
+    }
+  }
 
-  // Kiểm tra tương tác thuốc
-  checkDrugInteraction = asyncHandler(async (req, res) => {
-    const { drugs } = req.body;
+  async approvePrescription(req, res, next) {
+    try {
+      const { id } = req.params;
+      const approvedBy = req.user._id;
+      const prescription = await prescriptionService.approvePrescription(id, approvedBy);
+      res.json({
+        success: true,
+        message: 'Duyệt đơn thuốc thành công',
+        data: prescription
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    const interactions = await prescriptionService.checkDrugInteraction(drugs);
+  async dispenseMedication(req, res, next) {
+    try {
+      const { id } = req.params;
+      const dispenseData = req.body;
+      const pharmacistId = req.user._id;
 
-    res.json({
-      success: true,
-      data: {
-        hasInteractions: interactions.length > 0,
-        interactions
-      }
-    });
-  });
+      const prescription = await prescriptionService.dispenseMedication(id, dispenseData, pharmacistId);
 
-  // Ghi nhận bệnh nhân đã dùng thuốc
-  recordMedicationAdministration = asyncHandler(async (req, res) => {
-    const { patientId } = req.params;
-    const medData = req.body;
-    const nurseId = req.user._id;
+      await auditLog(AUDIT_ACTIONS.PRESCRIPTION_DISPENSE, { resourceId: id })(req, res, () => {});
 
-    const record = await prescriptionService.recordMedicationAdministration(
-      patientId,
-      medData,
-      nurseId
-    );
+      res.json({
+        success: true,
+        message: 'Cấp phát thuốc thành công',
+        data: prescription
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    res.json({
-      success: true,
-      message: 'Ghi nhận dùng thuốc thành công',
-      data: record
-    });
-  });
+  async getDispenseHistory(req, res, next) {
+    try {
+      const { id } = req.params;
+      const history = await prescriptionService.getDispenseHistory(id);
+      res.json({
+        success: true,
+        data: history
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-  // Hủy đơn thuốc
-  cancelPrescription = asyncHandler(async (req, res) => {
-    const { prescriptionId } = req.params;
-    const { reason } = req.body;
-    const userId = req.user._id;
+  async checkDrugInteractions(req, res, next) {
+    try {
+      const { medications } = req.body;
+      const result = await prescriptionService.checkDrugInteractions(medications);
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    const prescription = await prescriptionService.cancelPrescription(
-      prescriptionId,
-      reason,
-      userId
-    );
+  async checkPatientAllergies(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const { medications } = req.body;
+      const result = await prescriptionService.checkPatientAllergies(patientId, medications);
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    res.json({
-      success: true,
-      message: 'Hủy đơn thuốc thành công',
-      data: prescription
-    });
-  });
+  async getDosageSuggestions(req, res, next) {
+    try {
+      const { medicationId } = req.params;
+      const patientData = req.query;
+      const suggestions = await prescriptionService.getDosageSuggestions(medicationId, patientData);
+      res.json({
+        success: true,
+        data: suggestions
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-  // Lấy lịch sử sử dụng thuốc
-  getMedicationHistory = asyncHandler(async (req, res) => {
-    const { patientId } = req.params;
-    const { page, limit, medicationId } = req.query;
+  // Medication catalog
+  async searchMedications(req, res, next) {
+    try {
+      const { q, ...filters } = req.query;
+      const results = await prescriptionService.searchMedications(q, filters);
+      res.json({
+        success: true,
+        data: results
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    const result = await prescriptionService.getMedicationHistory(patientId, {
-      page, limit, medicationId
-    });
+  async getMedications(req, res, next) {
+    try {
+      const filters = req.query;
+      const result = await prescriptionService.getMedications(filters);
+      res.json({
+        success: true,
+        data: result.items,
+        pagination: result.pagination
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    res.json({
-      success: true,
-      data: result
-    });
-  });
+  async getMedicationById(req, res, next) {
+    try {
+      const { id } = req.params;
+      const medication = await prescriptionService.getMedicationById(id);
+      res.json({
+        success: true,
+        data: medication
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-  // Kiểm tra thuốc có trong danh mục bảo hiểm
-  checkMedicationCoverage = asyncHandler(async (req, res) => {
-    const { patientId, medicationId } = req.params;
+  // Alerts
+  async getLowStockAlerts(req, res, next) {
+    try {
+      const alerts = await prescriptionService.getLowStockAlerts();
+      res.json({
+        success: true,
+        data: alerts
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    const coverage = await prescriptionService.checkMedicationCoverage(
-      patientId,
-      medicationId
-    );
+  async getExpiringMedications(req, res, next) {
+    try {
+      const { days = 30 } = req.query;
+      const alerts = await prescriptionService.getExpiringMedications(parseInt(days));
+      res.json({
+        success: true,
+        data: alerts
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-    res.json({
-      success: true,
-      data: coverage
-    });
-  });
-
-  // Cập nhật trạng thái phát thuốc
-  updateDispenseStatus = asyncHandler(async (req, res) => {
-    const { prescriptionId } = req.params;
-    const { status } = req.body;
-    const pharmacistId = req.user._id;
-
-    const prescription = await prescriptionService.updateDispenseStatus(
-      prescriptionId,
-      status,
-      pharmacistId
-    );
-
-    res.json({
-      success: true,
-      message: 'Cập nhật trạng thái thành công',
-      data: prescription
-    });
-  });
-
-  // Kiểm tra số lượng thuốc tồn kho
-  getMedicationStock = asyncHandler(async (req, res) => {
-    const { medicationId } = req.params;
-
-    const stock = await prescriptionService.getMedicationStock(medicationId);
-
-    res.json({
-      success: true,
-      data: stock
-    });
-  });
-
-  // Thêm thuốc mới vào kho
-  addMedication = asyncHandler(async (req, res) => {
-    const medicationData = req.body;
-    const userId = req.user._id;
-
-    const medication = await prescriptionService.addMedication(medicationData, userId);
-
-    res.status(201).json({
-      success: true,
-      message: 'Thêm thuốc thành công',
-      data: medication
-    });
-  });
-
-  // Cập nhật thông tin thuốc
-  updateMedication = asyncHandler(async (req, res) => {
-    const { medicationId } = req.params;
-    const updateData = req.body;
-    const userId = req.user._id;
-
-    const medication = await prescriptionService.updateMedication(
-      medicationId,
-      updateData,
-      userId
-    );
-
-    res.json({
-      success: true,
-      message: 'Cập nhật thông tin thuốc thành công',
-      data: medication
-    });
-  });
-
-  // 🎯 THÊM THUỐC VÀO ĐƠN THUỐC - PRESC-1
-  addMedicationToPrescription = asyncHandler(async (req, res) => {
-    const { prescriptionId } = req.params;
-    const medicationData = req.body;
-
-    const prescription = await prescriptionService.addMedicationToPrescription(
-      prescriptionId,
-      medicationData
-    );
-
-    res.json({
-      success: true,
-      message: 'Thêm thuốc vào đơn thành công',
-      data: prescription
-    });
-  });
-
-  // 🎯 CẬP NHẬT THUỐC TRONG ĐƠN - PRESC-2
-  updateMedicationInPrescription = asyncHandler(async (req, res) => {
-    const { prescriptionId, medicationId } = req.params;
-    const updateData = req.body;
-
-    const prescription = await prescriptionService.updateMedicationInPrescription(
-      prescriptionId,
-      medicationId,
-      updateData
-    );
-
-    res.json({
-      success: true,
-      message: 'Cập nhật thuốc trong đơn thành công',
-      data: prescription
-    });
-  });
+  async getRecalledMedications(req, res, next) {
+    try {
+      const recalls = await prescriptionService.getRecalledMedications();
+      res.json({
+        success: true,
+        data: recalls
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new PrescriptionController();

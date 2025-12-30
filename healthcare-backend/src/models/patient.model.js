@@ -59,6 +59,20 @@ const patientSchema = new mongoose.Schema({
     insuranceProvider: String
   },
 
+  emergencyContacts: [{
+    name: { type: String, trim: true },
+    phone: { type: String, trim: true },
+    relationship: { type: String },
+    priority: {
+      type: String,
+      enum: ['HIGH', 'MEDIUM', 'LOW'],
+      default: 'MEDIUM'
+    },
+    isPrimary: { type: Boolean, default: false },
+    addedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    addedAt: { type: Date, default: Date.now }
+  }],
+
   // 🤧 DỊ ỨNG
   allergies: [{
     allergen: {
@@ -357,6 +371,30 @@ const patientSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     }
+  }],
+
+  documents: [{
+    title: { type: String, trim: true },
+    description: String,
+    fileName: { type: String, required: true },
+    mimeType: String,
+    storagePath: { type: String, required: true },
+    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    uploadedAt: { type: Date, default: Date.now },
+    visibility: {
+      type: String,
+      enum: ['PRIVATE', 'SHARED', 'PUBLIC'],
+      default: 'PRIVATE'
+    }
+  }],
+
+  consents: [{
+    title: { type: String, trim: true },
+    version: String,
+    granted: { type: Boolean, default: false },
+    grantedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    grantedAt: Date,
+    notes: String
   }],
 
   // 👤 THÔNG TIN NGƯỜI TẠO/CẬP NHẬT

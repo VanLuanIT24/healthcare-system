@@ -1,78 +1,36 @@
-// 💊 Prescription & Medication API
+// src/api/prescriptionAPI.js - API Quản lý Đơn thuốc (Phiên bản đầy đủ 2025 - Liên kết: Kê đơn → Cấp phát → Cập nhật stock medicationAPI)
 import axios from '../axios';
 
 const prescriptionAPI = {
-  // Prescriptions
-  createPrescription: async (prescriptionData) => {
-    return await axios.post('/prescriptions', prescriptionData);
-  },
+  // ===== QUẢN LÝ ĐƠN THUỐC =====
+  createPrescription: async (prescriptionData) => axios.post('/api/prescriptions', prescriptionData),
+  getPrescription: async (id) => axios.get(`/api/prescriptions/${id}`),
+  updatePrescription: async (id, prescriptionData) => axios.put(`/api/prescriptions/${id}`, prescriptionData),
+  cancelPrescription: async (id, reason) => axios.patch(`/api/prescriptions/${id}/cancel`, { reason }),
+  getPrescriptions: async (params = {}) => axios.get('/api/prescriptions', { params }),
+  getPatientPrescriptions: async (patientId, params = {}) => axios.get(`/api/patients/${patientId}/prescriptions`, { params }),
+  printPrescription: async (id) => axios.get(`/api/prescriptions/${id}/print`, { responseType: 'blob' }),
+  approvePrescription: async (id) => axios.patch(`/api/prescriptions/${id}/approve`),
 
-  getPrescription: async (id) => {
-    return await axios.get(`/prescriptions/${id}`);
-  },
+  // ===== CẤP PHÁT THUỐC =====
+  dispenseMedication: async (prescriptionId, dispenseData) => axios.post(`/api/prescriptions/${prescriptionId}/dispense`, dispenseData),
+  getDispenseHistory: async (prescriptionId) => axios.get(`/api/prescriptions/${prescriptionId}/dispense-history`),
 
-  updatePrescription: async (id, prescriptionData) => {
-    return await axios.put(`/prescriptions/${id}`, prescriptionData);
-  },
+  // ===== KIỂM TRA AN TOÀN =====
+  checkDrugInteractions: async (medications) => axios.post('/api/prescriptions/check-interactions', { medications }),
+  checkPatientAllergies: async (patientId, medications) => axios.post(`/api/prescriptions/${patientId}/check-allergies`, { medications }),
+  getDosageSuggestions: async (medicationId, patientData) => axios.get(`/api/medications/${medicationId}/dosage-suggestions`, { params: patientData }),
 
-  getPrescriptions: async (params) => {
-    return await axios.get('/prescriptions', { params });
-  },
+  // ===== DANH MỤC THUỐC =====
+  searchMedications: async (query, filters = {}) => axios.get('/api/medications/search', { params: { q: query, ...filters } }),
+  getMedications: async (params = {}) => axios.get('/api/medications', { params }),
+  getMedicationById: async (id) => axios.get(`/api/medications/${id}`),
+  searchByActiveIngredient: async (ingredient) => axios.get('/api/medications/search', { params: { activeIngredient: ingredient } }),
 
-  // Dispense medication
-  dispenseMedication: async (prescriptionId, dispenseData) => {
-    return await axios.post(`/prescriptions/${prescriptionId}/dispense`, dispenseData);
-  },
-
-  // Check drug interactions
-  checkDrugInteractions: async (medications) => {
-    return await axios.post('/prescriptions/check-interactions', { medications });
-  },
-
-  // Medications
-  getMedications: async (params) => {
-    return await axios.get('/medications', { params });
-  },
-
-  getMedicationById: async (id) => {
-    return await axios.get(`/medications/${id}`);
-  },
-
-  createMedication: async (medicationData) => {
-    return await axios.post('/medications', medicationData);
-  },
-
-  updateMedication: async (id, medicationData) => {
-    return await axios.put(`/medications/${id}`, medicationData);
-  },
-
-  deleteMedication: async (id) => {
-    return await axios.delete(`/medications/${id}`);
-  },
-
-  // Medication inventory
-  getMedicationInventory: async (params) => {
-    return await axios.get('/medications/inventory', { params });
-  },
-
-  updateMedicationStock: async (id, stockData) => {
-    return await axios.patch(`/medications/${id}/stock`, stockData);
-  },
-
-  // Low stock alerts
-  getLowStockAlerts: async () => {
-    return await axios.get('/medications/low-stock');
-  },
-
-  // Expiring medications
-  getExpiringMedications: async (days = 30) => {
-    return await axios.get('/medications/expiring', { params: { days } });
-  },
-
-  // Search medications
-  searchMedications: async (query) => {
-    return await axios.get('/medications/search', { params: { q: query } });
-  },
+  // ===== CẢNH BÁO =====
+  getLowStockAlerts: async () => axios.get('/api/medications/low-stock'),
+  getExpiringMedications: async (days = 30) => axios.get('/api/medications/expiring', { params: { days } }),
+  getRecalledMedications: async () => axios.get('/api/medications/recalls'),
 };
 
 export default prescriptionAPI;

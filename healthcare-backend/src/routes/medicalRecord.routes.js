@@ -1,155 +1,149 @@
+// src/routes/medicalRecord.routes.js
 const express = require('express');
 const router = express.Router();
 const medicalRecordController = require('../controllers/medicalRecord.controller');
-const medicalRecordValidation = require('../validations/medicalRecord.validation');
-const { validateBody, validateParams, validateQuery } = require('../middlewares/validation.middleware');
-const { 
-  requireRole, 
-  requirePermission, 
-  requirePatientDataAccess,
-  requireModuleAccess 
-} = require('../middlewares/rbac.middleware');
-const { ROLES, PERMISSIONS } = require('../constants/roles');
+const { validate } = require('../middlewares/validation.middleware');
+const { schemas } = require('../validations/medicalRecord.validation');
 const { authenticate } = require('../middlewares/auth.middleware');
+const { requireRole, requirePermission } = require('../middlewares/rbac.middleware');
+const { ROLES, PERMISSIONS } = require('../constants/roles');
 
-/**
- * 🏥 MEDICAL RECORD ROUTES
- * Quản lý tất cả endpoints liên quan đến hồ sơ bệnh án
- */
-
-// APPLY AUTH MIDDLEWARE CHO TẤT CẢ ROUTES
 router.use(authenticate);
 
-// 🎯 TÌM KIẾM HỒ SƠ THEO CHẨN ĐOÁN - MUST BE BEFORE /:recordId
-router.get(
-  '/search',
-  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  medicalRecordController.searchMedicalRecordsByDiagnosis
-);
-
-// 🎯 THỐNG KÊ HỒ SƠ BỆNH ÁN - MUST BE BEFORE /:recordId
-router.get(
-  '/stats',
-  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  medicalRecordController.getMedicalRecordsStats
-);
-
-// 🎯 TẠO HỒ SƠ BỆNH ÁN
+// ===== TẠO & QUẢN LÝ HỒ SƠ BỆNH ÁN =====
 router.post(
   '/',
-  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS['MEDICAL.CREATE_RECORDS']),
-  validateBody(medicalRecordValidation.createMedicalRecord),
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.MEDICAL_CREATE_RECORDS),
+  validate(schemas.createMedicalRecord, 'body'),
   medicalRecordController.createMedicalRecord
 );
 
-// 🎯 LẤY THÔNG TIN HỒ SƠ BỆNH ÁN
 router.get(
   '/:recordId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS.MEDICAL_VIEW_RECORDS),
+  validate(schemas.recordIdParam, 'params'),
   medicalRecordController.getMedicalRecord
 );
 
-// 🎯 LẤY TẤT CẢ HỒ SƠ BỆNH ÁN CỦA BỆNH NHÂN
 router.get(
   '/patient/:patientId',
-  requireRole(ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.DOCTOR, ROLES.NURSE, ROLES.PATIENT),
-  requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
-  validateQuery(medicalRecordValidation.getPatientMedicalRecords),
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
+  requirePermission(PERMISSIONS.MEDICAL_VIEW_RECORDS),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.getPatientRecords, 'query'),
   medicalRecordController.getPatientMedicalRecords
 );
 
-// 🎯 CẬP NHẬT HỒ SƠ BỆNH ÁN
 router.put(
   '/:recordId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
-  validateBody(medicalRecordValidation.updateMedicalRecord),
+  requirePermission(PERMISSIONS.MEDICAL_UPDATE_RECORDS),
+  validate(schemas.recordIdParam, 'params'),
+  validate(schemas.updateMedicalRecord, 'body'),
   medicalRecordController.updateMedicalRecord
 );
 
-// 🎯 GHI NHẬN DẤU HIỆU SINH TỒN
+// ===== DẤU HIỆU SINH TỒN =====
 router.post(
   '/patient/:patientId/vital-signs',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
-  validateBody(medicalRecordValidation.recordVitalSigns),
+  requirePermission(PERMISSIONS.MEDICAL_UPDATE_RECORDS),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.recordVitalSigns, 'body'),
   medicalRecordController.recordVitalSigns
 );
 
-// 🎯 LẤY LỊCH SỬ DẤU HIỆU SINH TỒN - MR-3
 router.get(
   '/patient/:patientId/vital-signs',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
+  requirePermission(PERMISSIONS.MEDICAL_VIEW_RECORDS),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.getVitalSignsHistory, 'query'),
   medicalRecordController.getVitalSignsHistory
 );
 
-// 🎯 THÊM TIỀN SỬ BỆNH LÝ
+// ===== TIỀN SỬ BỆNH LÝ =====
 router.post(
   '/patient/:patientId/medical-history',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
-  validateBody(medicalRecordValidation.addMedicalHistory),
+  requirePermission(PERMISSIONS.MEDICAL_UPDATE_RECORDS),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.addMedicalHistory, 'body'),
   medicalRecordController.addMedicalHistory
 );
 
-// 🎯 LẤY TOÀN BỘ TIỀN SỬ BỆNH LÝ
 router.get(
   '/patient/:patientId/medical-history',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
+  requirePermission(PERMISSIONS.MEDICAL_VIEW_RECORDS),
+  validate(schemas.patientIdParam, 'params'),
   medicalRecordController.getMedicalHistory
 );
 
-// 🎯 THÊM TIỀN SỬ PHẪU THUẬT - MR-6
+// ===== LỊCH SỬ PHẪU THUẬT =====
 router.post(
   '/patient/:patientId/surgical-history',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
+  requirePermission(PERMISSIONS.MEDICAL_UPDATE_RECORDS),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.addSurgicalHistory, 'body'),
   medicalRecordController.addSurgicalHistory
 );
 
-// 🎯 LẤY TIỀN SỬ PHẪU THUẬT - MR-7
 router.get(
   '/patient/:patientId/surgical-history',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
+  requirePermission(PERMISSIONS.MEDICAL_VIEW_RECORDS),
+  validate(schemas.patientIdParam, 'params'),
   medicalRecordController.getSurgicalHistory
 );
 
-// 🎯 LẤY TIỀN SỬ SẢN KHOA - MR-8
+// ===== TIỀN SỬ SẢN KHOA =====
 router.get(
   '/patient/:patientId/obstetric-history',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
+  requirePermission(PERMISSIONS.MEDICAL_VIEW_RECORDS),
+  validate(schemas.patientIdParam, 'params'),
   medicalRecordController.getObstetricHistory
 );
 
-// 🎯 GHI NHẬN PHÁT HIỆN LÂM SÀNG - MR-9
+// ===== PHÁT HIỆN LÂM SÀNG =====
 router.post(
   '/:recordId/clinical-findings',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.SUPER_ADMIN),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  requireRole(ROLES.DOCTOR, ROLES.NURSE),
+  requirePermission(PERMISSIONS.MEDICAL_UPDATE_RECORDS),
+  validate(schemas.recordIdParam, 'params'),
+  validate(schemas.recordClinicalFindings, 'body'),
   medicalRecordController.recordClinicalFindings
 );
 
-// 🎯 LƯU TRỮ HỒ SƠ BỆNH ÁN
+// ===== LƯU TRỮ HỒ SƠ =====
 router.post(
   '/:recordId/archive',
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
+  requirePermission(PERMISSIONS.MEDICAL_UPDATE_RECORDS),
+  validate(schemas.recordIdParam, 'params'),
   medicalRecordController.archiveMedicalRecord
+);
+
+// ===== TÌM KIẾM THEO CHẨN ĐOÁN =====
+router.get(
+  '/search/diagnosis',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS.MEDICAL_VIEW_RECORDS),
+  validate(schemas.searchByDiagnosis, 'query'),
+  medicalRecordController.searchMedicalRecordsByDiagnosis
+);
+
+// ===== THỐNG KÊ =====
+router.get(
+  '/stats',
+  requireRole(ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
+  requirePermission(PERMISSIONS.MEDICAL_VIEW_RECORDS),
+  validate(schemas.getStats, 'query'),
+  medicalRecordController.getMedicalRecordsStats
 );
 
 module.exports = router;

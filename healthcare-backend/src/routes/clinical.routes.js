@@ -1,179 +1,223 @@
+// src/routes/clinical.routes.js
 const express = require('express');
 const router = express.Router();
 const clinicalController = require('../controllers/clinical.controller');
-const clinicalValidation = require('../validations/clinical.validation');
-const { validateBody, validateParams, validateQuery } = require('../middlewares/validation.middleware');
-const { 
-  requireRole, 
-  requirePermission, 
-  requirePatientDataAccess,
-  requireModuleAccess 
-} = require('../middlewares/rbac.middleware');
-const { ROLES, PERMISSIONS } = require('../constants/roles');
+const { validate } = require('../middlewares/validation.middleware');
+const { schemas } = require('../validations/clinical.validation');
 const { authenticate } = require('../middlewares/auth.middleware');
+const { requireRole, requirePermission } = require('../middlewares/rbac.middleware');
+const { ROLES, PERMISSIONS } = require('../constants/roles');
 
-/**
- * 🩺 CLINICAL ROUTES
- * Quản lý tất cả endpoints liên quan đến khám chữa bệnh
- */
-
-// APPLY AUTH MIDDLEWARE CHO TẤT CẢ ROUTES
 router.use(authenticate);
 
-// 🎯 TẠO PHIÊN KHÁM BỆNH
+// Tạo phiên khám
 router.post(
-  '/patient/:patientId/doctor/:doctorId/consultations',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS['MEDICAL.CREATE_RECORDS']),
-  requirePatientDataAccess('patientId'),
-  validateBody(clinicalValidation.createConsultation),
+  '/patients/:patientId/consultations',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS['CONSULTATION.CREATE']),
+  validate(schemas.createConsultation, 'body'),
   clinicalController.createConsultation
 );
 
-// 🎯 LẤY THÔNG TIN PHIÊN KHÁM
+// Lấy phiên khám theo ID
 router.get(
-  '/consultations/:consultationId',
+  '/consultations/:id',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
+  requirePermission(PERMISSIONS['CONSULTATION.VIEW']),
+  validate(schemas.consultationIdParam, 'params'),
   clinicalController.getConsultation
 );
 
-// 🎯 CẬP NHẬT PHIÊN KHÁM
+// Cập nhật phiên khám
 router.put(
-  '/consultations/:consultationId',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
-  validateBody(clinicalValidation.updateConsultation),
+  '/consultations/:id',
+  requireRole(ROLES.DOCTOR),
+  requirePermission(PERMISSIONS['CONSULTATION.UPDATE']),
+  validate(schemas.consultationIdParam, 'params'),
+  validate(schemas.updateConsultation, 'body'),
   clinicalController.updateConsultation
 );
 
-// 🎯 THÊM CHẨN ĐOÁN
-router.post(
-  '/consultations/:consultationId/diagnoses',
+// Hoàn thành phiên khám
+router.patch(
+  '/consultations/:id/complete',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS['DIAGNOSIS.CREATE']),
-  validateBody(clinicalValidation.addDiagnosis),
-  clinicalController.addDiagnosis
-);
-
-// 🎯 LẤY DANH SÁCH CHẨN ĐOÁN
-router.get(
-  '/patient/:patientId/diagnoses',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
-  requirePatientDataAccess('patientId'),
-  validateQuery(clinicalValidation.getPatientDiagnoses),
-  clinicalController.getPatientDiagnoses
-);
-
-// 🎯 GHI NHẬN TRIỆU CHỨNG
-router.post(
-  '/consultations/:consultationId/symptoms',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
-  validateBody(clinicalValidation.recordSymptoms),
-  clinicalController.recordSymptoms
-);
-
-// 🎯 GHI KẾT QUẢ KHÁM THỰC THỂ
-router.post(
-  '/consultations/:consultationId/physical-exam',
-  requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
-  validateBody(clinicalValidation.recordPhysicalExam),
-  clinicalController.recordPhysicalExam
-);
-
-// 🎯 HOÀN THÀNH PHIÊN KHÁM
-router.post(
-  '/consultations/:consultationId/complete',
-  requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
+  requirePermission(PERMISSIONS['CONSULTATION.UPDATE']),
+  validate(schemas.consultationIdParam, 'params'),
   clinicalController.completeConsultation
 );
 
-// 🎯 CẬP NHẬT CHẨN ĐOÁN
-router.put(
-  '/diagnoses/:diagnosisId',
-  requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS['DIAGNOSIS.UPDATE']),
-  validateBody(clinicalValidation.updateDiagnosis),
-  clinicalController.updateDiagnosis
+// Duyệt phiên khám (nếu cần)
+router.patch(
+  '/consultations/:id/approve',
+  requireRole(ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
+  requirePermission(PERMISSIONS['CONSULTATION.UPDATE']),
+  validate(schemas.consultationIdParam, 'params'),
+  clinicalController.approveConsultation
 );
 
-// 🎯 TẠO KẾ HOẠCH ĐIỀU TRỊ
+// Ghi triệu chứng
 router.post(
-  '/patient/:patientId/treatment-plans',
+  '/consultations/:consultationId/symptoms',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE),
+  requirePermission(PERMISSIONS['CONSULTATION.UPDATE']),
+  validate(schemas.consultationIdParam, 'params'),
+  validate(schemas.recordSymptoms, 'body'),
+  clinicalController.recordSymptoms
+);
+
+// Ghi khám thực thể
+router.post(
+  '/consultations/:consultationId/physical-exam',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS['TREATMENT.CREATE_PLANS']),
-  requirePatientDataAccess('patientId'),
-  validateBody(clinicalValidation.createTreatmentPlan),
+  requirePermission(PERMISSIONS['CONSULTATION.UPDATE']),
+  validate(schemas.consultationIdParam, 'params'),
+  validate(schemas.recordPhysicalExam, 'body'),
+  clinicalController.recordPhysicalExam
+);
+
+// Thêm chẩn đoán
+router.post(
+  '/consultations/:consultationId/diagnoses',
+  requireRole(ROLES.DOCTOR),
+   requirePermission(PERMISSIONS['DIAGNOSIS.CREATE']),
+  validate(schemas.consultationIdParam, 'params'),
+  validate(schemas.addDiagnosis, 'body'),
+  clinicalController.addDiagnosis
+);
+
+// Lấy lịch sử khám của bệnh nhân
+router.get(
+  '/patients/:patientId/consultations',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
+  requirePermission(PERMISSIONS['CONSULTATION.VIEW']),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.getPatientConsultations, 'query'),
+  clinicalController.getPatientConsultations
+);
+
+// Tìm mã ICD-10
+router.get(
+  '/icd10/search',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
+  requirePermission(PERMISSIONS['DIAGNOSIS.VIEW']),
+  validate(schemas.searchICD10, 'query'),
+  clinicalController.searchICD10
+);
+
+// Lấy chẩn đoán của bệnh nhân
+router.get(
+  '/patients/:patientId/diagnoses',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
+  requirePermission(PERMISSIONS['DIAGNOSIS.VIEW']),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.getPatientDiagnoses, 'query'),
+  clinicalController.getPatientDiagnoses
+);
+
+// Tạo kế hoạch điều trị
+router.post(
+  '/patients/:patientId/treatment-plans',
+  requireRole(ROLES.DOCTOR),
+   requirePermission(PERMISSIONS['TREATMENT.CREATE_PLANS']),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.createTreatmentPlan, 'body'),
   clinicalController.createTreatmentPlan
 );
 
-// 🎯 LẤY THÔNG TIN KẾ HOẠCH ĐIỀU TRỊ
-router.get(
-  '/treatment-plans/:planId',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS['TREATMENT.VIEW_PLANS']),
-  clinicalController.getTreatmentPlan
-);
-
-// 🎯 GHI NHẬN TIẾN TRIỂN
+// Ghi tiến triển
 router.post(
-  '/patient/:patientId/progress-notes',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
-  requirePatientDataAccess('patientId'),
-  validateBody(clinicalValidation.recordProgressNote),
+  '/patients/:patientId/progress-notes',
+  requireRole(ROLES.DOCTOR),
+   requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.recordProgressNote, 'body'),
   clinicalController.recordProgressNote
 );
 
-// 🎯 CẬP NHẬT KẾ HOẠCH ĐIỀU TRỊ
-router.put(
-  '/treatment-plans/:planId',
-  requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS['TREATMENT.UPDATE_PLANS']),
-  validateBody(clinicalValidation.updateTreatmentPlan),
-  clinicalController.updateTreatmentPlan
-);
-
-// 🎯 HOÀN THÀNH ĐIỀU TRỊ
+// Ghi ghi chép điều dưỡng
 router.post(
-  '/treatment-plans/:planId/complete',
-  requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS['TREATMENT.UPDATE_PLANS']),
-  clinicalController.completeTreatmentPlan
-);
-
-// 🎯 LẤY NHẬN XÉT TIẾN TRIỂN
-router.get(
-  '/patient/:patientId/progress-notes',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
-  requirePatientDataAccess('patientId'),
-  validateQuery(clinicalValidation.getProgressNotes),
-  clinicalController.getProgressNotes
-);
-
-// 🎯 GHI NHẬN CỦA ĐIỀU DƯỠNG
-router.post(
-  '/patient/:patientId/nursing-notes',
+  '/patients/:patientId/nursing-notes',
   requireRole(ROLES.NURSE),
-  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
-  requirePatientDataAccess('patientId'),
-  validateBody(clinicalValidation.recordNursingNote),
+   requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.recordNursingNote, 'body'),
   clinicalController.recordNursingNote
 );
 
-// 🎯 GHI TÓM TẮT XUẤT VIỆN
+// Lấy hồ sơ y tế
+router.get(
+  '/patients/:patientId/medical-record',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
+   requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
+  validate(schemas.patientIdParam, 'params'),
+  clinicalController.getMedicalRecord
+);
+
+// Export PDF hồ sơ y tế
+router.get(
+  '/patients/:patientId/medical-record/export/pdf',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
+   requirePermission(PERMISSIONS['MEDICAL.EXPORT_RECORDS']),
+  validate(schemas.patientIdParam, 'params'),
+  clinicalController.exportMedicalRecordPDF
+);
+
+// Ghi dấu hiệu sinh tồn
 router.post(
-  '/patient/:patientId/discharge-summary',
-  requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
-  requirePatientDataAccess('patientId'),
-  validateBody(clinicalValidation.recordDischargeSummary),
-  clinicalController.recordDischargeSummary
+  '/patients/:patientId/vital-signs',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE),
+   requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.recordVitalSigns, 'body'),
+  clinicalController.recordVitalSigns
+);
+
+// Lấy lịch sử dấu hiệu sinh tồn
+router.get(
+  '/patients/:patientId/vital-signs',
+  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
+   requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.getVitalSignsHistory, 'query'),
+  clinicalController.getVitalSignsHistory
+);
+
+// Lấy xu hướng dấu hiệu sinh tồn
+router.get(
+  '/patients/:patientId/vital-signs/trend',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
+   requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
+  validate(schemas.patientIdParam, 'params'),
+  validate(schemas.getVitalSignsTrend, 'query'),
+  clinicalController.getVitalSignsTrend
+);
+
+// Lấy templates lâm sàng
+router.get(
+  '/clinical/templates',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
+   requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
+  validate(schemas.getClinicalTemplates, 'query'),
+  clinicalController.getClinicalTemplates
+);
+
+// Lưu template lâm sàng
+router.post(
+  '/clinical/templates',
+  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
+   requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
+  validate(schemas.saveClinicalTemplate, 'body'),
+  clinicalController.saveClinicalTemplate
+);
+
+// Lấy logs truy cập phiên khám
+router.get(
+  '/consultations/:consultationId/access-logs',
+  requireRole(ROLES.HOSPITAL_ADMIN),
+   requirePermission(PERMISSIONS['SYSTEM.VIEW_AUDIT_LOG']),
+  validate(schemas.consultationIdParam, 'params'),
+  clinicalController.getConsultationAccessLogs
 );
 
 module.exports = router;

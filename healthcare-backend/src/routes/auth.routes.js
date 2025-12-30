@@ -1,142 +1,67 @@
+// src/routes/auth.routes.js
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const authValidation = require('../validations/auth.validation');
-const { 
-  validateBody,
-  sanitizeInput 
-} = require('../middlewares/validation.middleware');
-const { markPublic } = require('../middlewares/public.middleware');
+const { validateBody, validateParams, sanitizeInput } = require('../middlewares/validation.middleware');
 const { authenticate } = require('../middlewares/auth.middleware');
 const { loginLimiter } = require('../middlewares/rateLimiter');
+const { uploadMiddleware } = require('../middlewares/upload.middleware');
+const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
 
-/**
- * 🛡️ AUTHENTICATION ROUTES CHO HEALTHCARE SYSTEM - HOÀN THIỆN
- */
+// Public routes (không cần auth)
+const publicRoutes = ['/login', '/register', '/forgot-password', '/reset-password', '/refresh-token', '/verify-email', '/resend-verification', '/health'];
 
-// 🎯 ÁP DỤNG markPublic CHO CÁC ROUTE CÔNG KHAI
-const publicRoutes = [
-  '/login',
-  '/register', 
-  '/forgot-password',
-  '/reset-password',
-  '/refresh-token',
-  '/health'
-];
-
+// Mark public routes
 router.use((req, res, next) => {
-  if (publicRoutes.some(route => req.path.includes(route))) {
+  if (publicRoutes.some(route => req.path.startsWith(route))) {
     req.isPublic = true;
   }
   next();
 });
 
-// 🎯 ĐĂNG NHẬP (PUBLIC)
-router.post(
-  '/login',
-  loginLimiter,
-  sanitizeInput(['email', 'password']),
-  validateBody(authValidation.login.body),
-  authController.login
-);
+// PUBLIC ROUTES
+router.post('/login', loginLimiter, sanitizeInput(['email', 'password']), validateBody(authValidation.login.body), authController.login);
 
-// 🎯 ĐĂNG KÝ USER (PUBLIC)
-router.post(
-  '/register',
-  sanitizeInput(['email', 'password', 'confirmPassword', 'personalInfo', 'role']),
-  validateBody(authValidation.registerUser.body),
-  authController.registerUser
-);
+router.post('/register', sanitizeInput(['email', 'password', 'confirmPassword', 'personalInfo', 'role']), validateBody(authValidation.registerUser.body), authController.registerUser);
 
-// 🎯 QUÊN MẬT KHẨU (PUBLIC)
-router.post(
-  '/forgot-password',
-  sanitizeInput(['email']),
-  validateBody(authValidation.forgotPassword.body),
-  authController.forgotPassword
-);
+router.post('/forgot-password', sanitizeInput(['email']), validateBody(authValidation.forgotPassword.body), authController.forgotPassword);
 
-// 🎯 ĐẶT LẠI MẬT KHẨU (PUBLIC)
-router.post(
-  '/reset-password',
-  sanitizeInput(['token', 'newPassword', 'confirmPassword']),
-  validateBody(authValidation.resetPassword.body),
-  authController.resetPassword
-);
+router.post('/reset-password', sanitizeInput(['token', 'newPassword', 'confirmPassword']), validateBody(authValidation.resetPassword.body), authController.resetPassword);
 
-// 🎯 REFRESH TOKEN (PUBLIC)
-router.post(
-  '/refresh-token',
-  sanitizeInput(['refreshToken']),
-  validateBody(authValidation.refreshToken.body),
-  authController.refreshToken
-);
+router.post('/refresh-token', sanitizeInput(['refreshToken']), validateBody(authValidation.refreshToken.body), authController.refreshToken);
 
-// 🎯 HEALTH CHECK (PUBLIC)
+// verify-email: token nằm trong params, không phải body
+router.post('/verify-email/:token', authController.verifyEmail);
+
+router.post('/resend-verification', sanitizeInput(['email']), validateBody(authValidation.resendVerification.body), authController.resendVerification);
+
 router.get('/health', authController.healthCheck);
 
-// 🎯 PROTECTED ROUTES (YÊU CẦU AUTHENTICATION)
+// PROTECTED ROUTES
+router.post('/logout', authenticate, sanitizeInput(['refreshToken', 'sessionId']), validateBody(authValidation.logout.body), authController.logout);
 
-// 🎯 ĐĂNG XUẤT
-router.post(
-  '/logout',
-  authenticate,
-  sanitizeInput(['refreshToken', 'sessionId']),
-  validateBody(authValidation.logout.body),
-  authController.logout
+router.post('/change-password', authenticate, sanitizeInput(['currentPassword', 'newPassword', 'confirmPassword']), validateBody(authValidation.changePassword.body), authController.changePassword);
+
+router.get('/profile', authenticate, authController.getProfile);
+
+router.put('/profile', authenticate, sanitizeInput(['personalInfo']), authController.updateProfile);
+
+router.post('/avatar', 
+  authenticate, 
+  uploadMiddleware.single('avatar'),
+  auditLog(AUDIT_ACTIONS.USER_UPDATE),
+  authController.uploadAvatar
 );
 
-// 🎯 ĐỔI MẬT KHẨU
-router.post(
-  '/change-password',
-  authenticate,
-  sanitizeInput(['currentPassword', 'newPassword', 'confirmPassword']),
-  validateBody(authValidation.changePassword.body),
-  authController.changePassword
-);
+router.get('/me', authenticate, authController.getCurrentUser);
 
-// 🎯 LẤY THÔNG TIN USER HIỆN TẠI
-router.get(
-  '/me',
-  authenticate,
-  authController.getCurrentUser
-);
+router.get('/sessions', authenticate, authController.getUserSessions);
 
-// 🎯 LẤY DANH SÁCH SESSION CỦA USER - ROUTE MỚI
-router.get(
-  '/sessions',
-  authenticate,
-  authController.getUserSessions
-);
+router.post('/sessions/revoke', authenticate, sanitizeInput(['sessionId']), validateBody(authValidation.revokeSession.body), authController.revokeSession);
 
-// 🎯 THU HỒI SESSION CỤ THỂ - ROUTE MỚI
-router.post(
-  '/sessions/revoke',
-  authenticate,
-  sanitizeInput(['sessionId']),
-  validateBody(authValidation.revokeSession.body),
-  authController.revokeSession
-);
+router.post('/sessions/logout-all', authenticate, authController.logoutAllSessions);
 
-// 🎯 ĐĂNG XUẤT TẤT CẢ SESSION - ROUTE MỚI
-router.post(
-  '/sessions/logout-all',
-  authenticate,
-  authController.logoutAllSessions
-);
-
-// 🎯 VERIFY EMAIL (PUBLIC)
-router.get(
-  '/verify-email/:token',
-  authController.verifyEmail
-);
-
-// 🎯 RESEND VERIFICATION EMAIL (PUBLIC)
-router.post(
-  '/resend-verification',
-  sanitizeInput(['email']),
-  validateBody(authValidation.resendVerification.body),
-  authController.resendVerification
-);
+router.post('/sessions/logout-all-other', authenticate, authController.logoutAllOtherSessions);
 
 module.exports = router;

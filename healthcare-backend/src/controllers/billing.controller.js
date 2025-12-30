@@ -1,436 +1,234 @@
-// src/controllers/billing.controller.js
+// controllers/billing.controller.js
 const billingService = require('../services/billing.service');
+const { asyncHandler } = require('../middlewares/error.middleware');
 const { validateBilling } = require('../validations/billing.validation');
-const { AppError } = require('../middlewares/error.middleware');
 const { manualAuditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
 
-/**
- * 🎯 TẠO HÓA ĐƠN CHO BỆNH NHÂN
- */
-const createBill = async (req, res, next) => {
-  try {
-    const { patientId } = req.params;
+class BillingController {
+  // Tạo hóa đơn mới
+  createBill = asyncHandler(async (req, res) => {
     const billData = req.body;
-
-    console.log('💰 [BILLING] Creating bill for patient:', patientId);
-
-    // Validate input data
+    const createdBy = req.user._id;
     const { error } = validateBilling.createBill(billData);
     if (error) {
-      throw new AppError('Dữ liệu không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
+      throw new AppError('Dữ liệu hóa đơn không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
     }
-
-    // Create bill using service
-    const bill = await billingService.createBill(patientId, billData, req.user._id);
-
-    // Audit log
+    const bill = await billingService.createBill(billData.patientId, billData, createdBy);
     await manualAuditLog({
       action: AUDIT_ACTIONS.BILL_CREATE,
       user: req.user,
-      metadata: {
-        billId: bill._id,
-        billNumber: bill.billId,
-        patientId: patientId,
-        amount: bill.grandTotal
-      }
+      metadata: { billId: bill._id, patientId: bill.patientId, amount: bill.grandTotal }
     });
-
-    console.log(`✅ Bill created: ${bill.billId} for patient ${patientId}`);
-
     res.status(201).json({
       success: true,
       message: 'Tạo hóa đơn thành công',
       data: bill
     });
+  });
 
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * 🎯 LẤY THÔNG TIN HÓA ĐƠN
- */
-const getBill = async (req, res, next) => {
-  try {
+  // Lấy thông tin hóa đơn theo ID
+  getBill = asyncHandler(async (req, res) => {
     const { billId } = req.params;
-
-    console.log('💰 [BILLING] Getting bill:', billId);
-
-    const bill = await billingService.getBill(billId, req.user._id, req.user.role);
-
-    // Audit log
+    const bill = await billingService.getBill(billId);
     await manualAuditLog({
       action: AUDIT_ACTIONS.BILL_VIEW,
       user: req.user,
-      metadata: {
-        billId: bill._id,
-        billNumber: bill.billNumber
-      }
+      metadata: { billId: bill._id }
     });
-
     res.json({
       success: true,
       data: bill
     });
+  });
 
-  } catch (error) {
-    next(error);
-  }
-};
+  // Lấy danh sách hóa đơn
+  getBills = asyncHandler(async (req, res) => {
+    const params = req.query;
+    const bills = await billingService.getBills(params);
+    res.json({
+      success: true,
+      data: bills
+    });
+  });
 
-/**
- * 🎯 CẬP NHẬT HÓA ĐƠN
- */
-const updateBill = async (req, res, next) => {
-  try {
+  // Cập nhật hóa đơn
+  updateBill = asyncHandler(async (req, res) => {
     const { billId } = req.params;
     const updateData = req.body;
-
-    console.log('💰 [BILLING] Updating bill:', billId);
-
-    // Validate input data
+    const updatedBy = req.user._id;
     const { error } = validateBilling.updateBill(updateData);
     if (error) {
-      throw new AppError('Dữ liệu không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
+      throw new AppError('Dữ liệu cập nhật không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
     }
-
-    // Update bill using service
-    const bill = await billingService.updateBill(billId, updateData, req.user._id);
-
-    // Audit log
+    const bill = await billingService.updateBill(billId, updateData, updatedBy);
     await manualAuditLog({
       action: AUDIT_ACTIONS.BILL_UPDATE,
       user: req.user,
-      metadata: {
-        billId: bill._id,
-        billNumber: bill.billNumber,
-        updates: Object.keys(updateData)
-      }
+      metadata: { billId: bill._id, updates: Object.keys(updateData) }
     });
-
-    console.log(`✅ Bill updated: ${bill.billNumber}`);
-
     res.json({
       success: true,
       message: 'Cập nhật hóa đơn thành công',
       data: bill
     });
+  });
 
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * 🎯 LẤY TẤT CẢ HÓA ĐƠN CỦA BỆNH NHÂN
- */
-const getPatientBills = async (req, res, next) => {
-  try {
-    const { patientId } = req.params;
-    const queryParams = req.query;
-
-    console.log('💰 [BILLING] Getting bills for patient:', patientId);
-
-    // Validate query params
-    const { error } = validateBilling.billQuery(queryParams);
-    if (error) {
-      throw new AppError('Query parameters không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
-    }
-
-    // Get bills using service
-    const bills = await billingService.getPatientBills(
-      patientId, 
-      req.user._id, 
-      req.user.role, 
-      queryParams
-    );
-
-    // Audit log
-    await manualAuditLog({
-      action: AUDIT_ACTIONS.BILL_VIEW,
-      user: req.user,
-      metadata: {
-        patientId: patientId,
-        billCount: bills.totalDocs,
-        filters: queryParams
-      }
-    });
-
-    res.json({
-      success: true,
-      data: bills
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * 🎯 XỬ LÝ THANH TOÁN HÓA ĐƠN
- */
-const processPayment = async (req, res, next) => {
-  try {
-    const { billId } = req.params;
-    const paymentData = req.body;
-
-    console.log('💰 [BILLING] Processing payment for bill:', billId);
-
-    // Validate payment data
-    const { error } = validateBilling.processPayment(paymentData);
-    if (error) {
-      throw new AppError('Dữ liệu thanh toán không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
-    }
-
-    // Process payment using service
-    const bill = await billingService.processPayment(billId, paymentData, req.user._id);
-
-    // Audit log
-    await manualAuditLog({
-      action: AUDIT_ACTIONS.PAYMENT_PROCESS,
-      user: req.user,
-      metadata: {
-        billId: bill._id,
-        billNumber: bill.billNumber,
-        paymentAmount: paymentData.amount,
-        paymentMethod: paymentData.paymentMethod,
-        newStatus: bill.status
-      }
-    });
-
-    console.log(`✅ Payment processed for bill: ${bill.billNumber}, Amount: ${paymentData.amount}`);
-
-    res.json({
-      success: true,
-      message: 'Xử lý thanh toán thành công',
-      data: {
-        bill,
-        payment: bill.payments[bill.payments.length - 1] // Last payment
-      }
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * 🎯 LẤY LỊCH SỬ THANH TOÁN
- */
-const getPaymentHistory = async (req, res, next) => {
-  try {
-    const { patientId } = req.params;
-    const queryParams = req.query;
-
-    console.log('💰 [BILLING] Getting payment history for patient:', patientId);
-
-    // Validate query params
-    const { error } = validateBilling.paymentQuery(queryParams);
-    if (error) {
-      throw new AppError('Query parameters không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
-    }
-
-    // Get payment history using service
-    const paymentHistory = await billingService.getPaymentHistory(
-      patientId,
-      req.user._id,
-      req.user.role,
-      queryParams
-    );
-
-    // Audit log
-    await manualAuditLog({
-      action: AUDIT_ACTIONS.BILL_VIEW,
-      user: req.user,
-      metadata: {
-        patientId: patientId,
-        paymentCount: paymentHistory.pagination.totalPayments,
-        filters: queryParams
-      }
-    });
-
-    res.json({
-      success: true,
-      data: paymentHistory
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * 🎯 HỦY HÓA ĐƠN
- */
-const voidBill = async (req, res, next) => {
-  try {
+  // Hủy hóa đơn
+  voidBill = asyncHandler(async (req, res) => {
     const { billId } = req.params;
     const { reason } = req.body;
-
-    console.log('💰 [BILLING] Voiding bill:', billId);
-
-    // Validate void data
+    const voidedBy = req.user._id;
     const { error } = validateBilling.voidBill({ reason });
     if (error) {
       throw new AppError('Dữ liệu hủy không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
     }
-
-    // Void bill using service
-    const bill = await billingService.voidBill(billId, reason, req.user._id);
-
-    // Audit log
+    const bill = await billingService.voidBill(billId, reason, voidedBy);
     await manualAuditLog({
       action: AUDIT_ACTIONS.BILL_UPDATE,
       user: req.user,
-      metadata: {
-        billId: bill._id,
-        billNumber: bill.billNumber,
-        action: 'VOIDED',
-        reason: reason
-      }
+      metadata: { billId: bill._id, action: 'VOIDED', reason }
     });
-
-    console.log(`✅ Bill voided: ${bill.billNumber}, Reason: ${reason}`);
-
     res.json({
       success: true,
       message: 'Hủy hóa đơn thành công',
       data: bill
     });
+  });
 
-  } catch (error) {
-    next(error);
-  }
-};
+  // Xử lý thanh toán
+  processPayment = asyncHandler(async (req, res) => {
+    const { billId } = req.params;
+    const paymentData = req.body;
+    const processedBy = req.user._id;
+    const { error } = validateBilling.processPayment(paymentData);
+    if (error) {
+      throw new AppError('Dữ liệu thanh toán không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
+    }
+    const bill = await billingService.processPayment(billId, paymentData, processedBy);
+    await manualAuditLog({
+      action: AUDIT_ACTIONS.PAYMENT_PROCESS,
+      user: req.user,
+      metadata: { billId: bill._id, paymentAmount: paymentData.amount, method: paymentData.method }
+    });
+    res.json({
+      success: true,
+      message: 'Xử lý thanh toán thành công',
+      data: bill
+    });
+  });
 
-/**
- * 🎯 LẤY THỐNG KÊ DOANH THU
- */
-const getRevenueStats = async (req, res, next) => {
-  try {
-    const { timeRange = 'month' } = req.query;
+  // Lấy lịch sử thanh toán
+  getPaymentHistory = asyncHandler(async (req, res) => {
+    const { billId } = req.params;
+    const history = await billingService.getPaymentHistory(billId);
+    res.json({
+      success: true,
+      data: history
+    });
+  });
 
-    console.log('💰 [BILLING] Getting revenue stats for:', timeRange);
+  // Hoàn tiền
+  refundPayment = asyncHandler(async (req, res) => {
+    const { paymentId } = req.params;
+    const refundData = req.body;
+    const refundedBy = req.user._id;
+    const { error } = validateBilling.refundPayment(refundData);
+    if (error) {
+      throw new AppError('Dữ liệu hoàn tiền không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
+    }
+    const refund = await billingService.refundPayment(paymentId, refundData, refundedBy);
+    await manualAuditLog({
+      action: AUDIT_ACTIONS.BILL_REFUND,
+      user: req.user,
+      metadata: { paymentId, refundAmount: refundData.amount, reason: refundData.reason }
+    });
+    res.json({
+      success: true,
+      message: 'Hoàn tiền thành công',
+      data: refund
+    });
+  });
 
-    const stats = await billingService.getRevenueStats(timeRange);
+  // Lấy hóa đơn của bệnh nhân
+  getPatientBills = asyncHandler(async (req, res) => {
+    const { patientId } = req.params;
+    const params = req.query;
+    const bills = await billingService.getPatientBills(patientId, params);
+    res.json({
+      success: true,
+      data: bills
+    });
+  });
 
+  // Xác minh bảo hiểm
+  verifyInsurance = asyncHandler(async (req, res) => {
+    const { patientId } = req.params;
+    const insuranceData = req.body;
+    const { error } = validateBilling.verifyInsurance(insuranceData);
+    if (error) {
+      throw new AppError('Dữ liệu bảo hiểm không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
+    }
+    const result = await billingService.verifyInsurance(patientId, insuranceData);
+    res.json({
+      success: true,
+      message: 'Xác minh bảo hiểm thành công',
+      data: result
+    });
+  });
+
+  // Gửi yêu cầu bảo hiểm
+  submitInsuranceClaim = asyncHandler(async (req, res) => {
+    const { billId } = req.params;
+    const claimData = req.body;
+    const { error } = validateBilling.insuranceClaim(claimData);
+    if (error) {
+      throw new AppError('Dữ liệu yêu cầu bảo hiểm không hợp lệ', 400, 'VALIDATION_ERROR', error.details);
+    }
+    const claim = await billingService.submitInsuranceClaim(billId, claimData);
+    res.status(201).json({
+      success: true,
+      message: 'Gửi yêu cầu bảo hiểm thành công',
+      data: claim
+    });
+  });
+
+  // Lấy hóa đơn chưa thanh toán
+  getOutstandingBills = asyncHandler(async (req, res) => {
+    const params = req.query;
+    const bills = await billingService.getOutstandingBills(params);
+    res.json({
+      success: true,
+      data: bills
+    });
+  });
+
+  // Lấy thống kê doanh thu
+  getRevenueStats = asyncHandler(async (req, res) => {
+    const params = req.query;
+    const stats = await billingService.getRevenueStats(params);
     res.json({
       success: true,
       data: stats
     });
+  });
 
-  } catch (error) {
-    next(error);
-  }
-};
+  // Xuất hóa đơn PDF
+  generateInvoicePDF = asyncHandler(async (req, res) => {
+    const { billId } = req.params;
+    const pdf = await billingService.generateInvoicePDF(billId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=invoice-${billId}.pdf`);
+    res.send(pdf);
+  });
 
-/**
- * 🎯 LẤY TẤT CẢ HÓA ĐƠN
- */
-const getAllBills = async (req, res, next) => {
-  try {
-    const { 
-      page = 1, 
-      limit = 10,
-      status,
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
-    } = req.query;
-
-    console.log('💰 [BILLING] Getting all bills');
-
-    const bills = await billingService.getAllBills({
-      page: parseInt(page),
-      limit: parseInt(limit),
-      status,
-      sortBy,
-      sortOrder
-    });
-
-    res.json({
-      success: true,
-      data: bills.bills,
-      pagination: bills.pagination
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * 🎯 HỒI TIỀN (REFUND)
- */
-const refundPayment = async (req, res, next) => {
-  try {
+  // Xuất biên lai PDF
+  generateReceiptPDF = asyncHandler(async (req, res) => {
     const { paymentId } = req.params;
-    const refundData = req.body;
+    const pdf = await billingService.generateReceiptPDF(paymentId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=receipt-${paymentId}.pdf`);
+    res.send(pdf);
+  });
+}
 
-    console.log('💰 [BILLING] Processing refund for payment:', paymentId);
-
-    const refund = await billingService.refundPayment(
-      paymentId, 
-      refundData,
-      req.user._id
-    );
-
-    await manualAuditLog({
-      action: AUDIT_ACTIONS.BILL_REFUND,
-      user: req.user,
-      metadata: {
-        paymentId: paymentId,
-        refundAmount: refundData.amount,
-        reason: refundData.reason
-      }
-    });
-
-    res.json({
-      success: true,
-      message: 'Xử lý hồi tiền thành công',
-      data: refund
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
-
-/**
- * 🎯 LẤY CÁC HÓA ĐƠN CHƯA THANH TOÁN
- */
-const getOutstandingBills = async (req, res, next) => {
-  try {
-    const { page = 1, limit = 10 } = req.query;
-
-    console.log('💰 [BILLING] Getting outstanding bills');
-
-    const bills = await billingService.getOutstandingBills({
-      page: parseInt(page),
-      limit: parseInt(limit)
-    });
-
-    res.json({
-      success: true,
-      data: bills.bills,
-      pagination: bills.pagination
-    });
-
-  } catch (error) {
-    next(error);
-  }
-};
-
-module.exports = {
-  createBill,
-  getBill,
-  updateBill,
-  getPatientBills,
-  processPayment,
-  getPaymentHistory,
-  voidBill,
-  getRevenueStats,
-  getAllBills,
-  refundPayment,
-  getOutstandingBills
-};
+module.exports = new BillingController();

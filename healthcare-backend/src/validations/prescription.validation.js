@@ -1,8 +1,14 @@
 const Joi = require('joi');
 const { commonSchemas } = require('../middlewares/validation.middleware');
 
-const createPrescriptionValidation = {
-  body: Joi.object({
+const schemas = {
+  // ===== PARAMS =====
+  prescriptionIdParam: Joi.object({ id: commonSchemas.objectId.required() }),
+  patientIdParam: Joi.object({ patientId: commonSchemas.objectId.required() }),
+  medicationIdParam: Joi.object({ medicationId: commonSchemas.objectId.required() }),
+
+  // ===== BODY =====
+  createPrescription: Joi.object({
     patientId: commonSchemas.objectId.optional(),
     doctorId: commonSchemas.objectId.optional(),
     medicalRecordId: commonSchemas.objectId.optional(),
@@ -46,11 +52,9 @@ const createPrescriptionValidation = {
     notes: Joi.string().max(1000).optional(),
     specialInstructions: Joi.string().max(500).optional(),
     validityDays: Joi.number().integer().min(1).max(90).default(30)
-  })
-};
+  }),
 
-const updatePrescriptionValidation = {
-  body: Joi.object({
+  updatePrescription: Joi.object({
     medications: Joi.array().items(
       Joi.object({
         medicationId: commonSchemas.objectId.required(),
@@ -73,21 +77,21 @@ const updatePrescriptionValidation = {
     notes: Joi.string().max(1000).optional(),
     specialInstructions: Joi.string().max(500).optional(),
     status: Joi.string().valid('DRAFT', 'ACTIVE', 'CANCELLED').optional()
-  })
-};
+  }),
 
-const dispenseMedicationValidation = {
-  body: Joi.object({
+  cancelPrescription: Joi.object({
+    reason: Joi.string().max(500).optional()
+  }),
+
+  dispenseMedication: Joi.object({
     medicationId: commonSchemas.objectId.required(),
     quantity: Joi.number().integer().positive().required(),
     batchNumber: Joi.string().optional(),
     expiryDate: Joi.date().min(new Date()).optional(),
     notes: Joi.string().max(500).optional()
-  })
-};
+  }),
 
-const checkDrugInteractionValidation = {
-  body: Joi.object({
+  checkDrugInteractions: Joi.object({
     medications: Joi.array().items(commonSchemas.objectId).min(1).optional(),
     drugs: Joi.array().items(
       Joi.object({
@@ -96,11 +100,13 @@ const checkDrugInteractionValidation = {
         dosage: Joi.string().optional()
       })
     ).min(1).optional()
-  })
-};
+  }),
 
-const addMedicationToPrescriptionValidation = {
-  body: Joi.object({
+  checkPatientAllergies: Joi.object({
+    medications: Joi.array().items(commonSchemas.objectId).min(1).optional()
+  }),
+
+  addMedicationToPrescription: Joi.object({
     medicationId: commonSchemas.objectId.required(),
     dosage: Joi.string().required(),
     frequency: Joi.string().required(),
@@ -108,23 +114,19 @@ const addMedicationToPrescriptionValidation = {
     quantity: Joi.number().integer().min(1).required(),
     instructions: Joi.string().optional(),
     totalQuantity: Joi.number().integer().min(1).optional()
-  })
-};
+  }),
 
-const updateMedicationInPrescriptionValidation = {
-  body: Joi.object({
+  updateMedicationInPrescription: Joi.object({
     dosage: Joi.string().optional(),
     frequency: Joi.string().optional(),
     duration: Joi.string().optional(),
     quantity: Joi.number().integer().min(1).optional(),
     instructions: Joi.string().optional()
-  })
-};
+  }),
 
-const medicationAdministrationValidation = {
-  body: Joi.object({
+  medicationAdministration: Joi.object({
     medicationId: commonSchemas.objectId.required(),
-    prescriptionId: Joi.string().required(), // Accept string ID for prescriptions
+    prescriptionId: Joi.string().required(),
     dose: Joi.string().required(),
     time: Joi.date().required(),
     administeredBy: commonSchemas.objectId.required(),
@@ -134,15 +136,15 @@ const medicationAdministrationValidation = {
       heartRate: Joi.number().optional(),
       temperature: Joi.number().optional()
     }).optional()
-  })
+  }),
+
+  // ===== QUERIES =====
+  getPrescriptions: Joi.object({}).unknown(true),
+  getPatientPrescriptions: Joi.object({}).unknown(true),
+  getDosageSuggestions: Joi.object({}).unknown(true),
+  getMedications: Joi.object({}).unknown(true),
+  searchMedications: Joi.object({}).unknown(true),
+  getExpiringMedications: Joi.object({}).unknown(true)
 };
 
-module.exports = {
-  createPrescriptionValidation,
-  updatePrescriptionValidation,
-  dispenseMedicationValidation,
-  checkDrugInteractionValidation,
-  medicationAdministrationValidation,
-  addMedicationToPrescriptionValidation,
-  updateMedicationInPrescriptionValidation
-};
+module.exports = { schemas };

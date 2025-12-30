@@ -1,23 +1,39 @@
+// routes/report.routes.js - Báo cáo & Thống kê
 const express = require('express');
 const router = express.Router();
-const ReportController = require('../controllers/report.controller');
-const { authenticate } = require('../middlewares/auth.middleware');
-const { requireRole } = require('../middlewares/rbac.middleware');
+const reportController = require('../controllers/report.controller');
+const { authenticate, requirePermission } = require('../middlewares/auth.middleware');
+const { PERMISSIONS } = require('../constants/roles');
 
-// All report routes require authentication and admin/doctor role
+// Áp dụng xác thực cho tất cả routes
 router.use(authenticate);
-router.use(requireRole('SUPER_ADMIN', 'ADMIN', 'DOCTOR'));
 
-// Clinical reports
-router.get('/clinical', ReportController.getClinicalReport);
+// ===== BÁOO CÁO LÂM SÀNG =====
+router.get(
+  '/clinical',
+  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  reportController.getClinicalReport
+);
 
-// Financial reports
-router.get('/financial', ReportController.getFinancialReport);
+// ===== BÁOO CÁO TÀI CHÍNH =====
+router.get(
+  '/financial',
+  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  reportController.getFinancialReport
+);
 
-// Pharmacy reports
-router.get('/pharmacy', ReportController.getPharmacyReport);
+// ===== BÁOO CÁO DƯỢC =====
+router.get(
+  '/pharmacy',
+  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  reportController.getPharmacyReport
+);
 
-// HR reports
-router.get('/hr', ReportController.getHRReport);
+// ===== BÁOO CÁO NHÂN SỰ =====
+router.get(
+  '/hr',
+  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  reportController.getHRReport
+);
 
 module.exports = router;

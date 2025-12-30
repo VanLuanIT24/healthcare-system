@@ -1,3 +1,4 @@
+// services/laboratory.service.js
 const LabOrder = require('../models/labOrder.model');
 const LabTest = require('../models/labTest.model');
 const Patient = require('../models/patient.model');
@@ -5,538 +6,259 @@ const { generateMedicalCode } = require('../utils/healthcare.utils');
 const { AppError } = require('../middlewares/error.middleware');
 
 class LaboratoryService {
-  
-  // Chỉ định xét nghiệm cho bệnh nhân
-  async orderLabTest(patientId, testData, doctorId) {
-    try {
-      // Kiểm tra bệnh nhân tồn tại
-      const patient = await Patient.findOne({ userId: patientId });
-      if (!patient) {
-        throw new AppError('Bệnh nhân không tồn tại', 404);
-      }
-
-      // Tạo order ID
-      const orderId = await generateMedicalCode('LAB');
-
-      // Kiểm tra thông tin xét nghiệm
-      const testsWithDetails = [];
-      for (let test of testData.tests) {
-        let labTest;
-        
-        // Tìm test theo testId hoặc testCode
-        if (test.testId) {
-          labTest = await LabTest.findById(test.testId);
-        } else if (test.testCode) {
-          labTest = await LabTest.findOne({ code: test.testCode });
-        }
-        
-        // Nếu không tìm thấy, tạo test entry từ data provided
-        if (!labTest) {
-          // Fallback: sử dụng thông tin từ request nếu có đầy đủ
-          if (test.testCode && test.testName && test.category) {
-            // Convert specimenRequirements array to string or undefined
-            const specimenReqs = test.specimenRequirements 
-              ? (Array.isArray(test.specimenRequirements) 
-                  ? test.specimenRequirements.join(', ') 
-                  : test.specimenRequirements)
-              : undefined;
-            
-            testsWithDetails.push({
-              // testId will be undefined - model needs to allow this or we create placeholder
-              testCode: test.testCode,
-              testName: test.testName,
-              category: test.category,
-              specimenType: test.specimenType || 'BLOOD',
-              specimenRequirements: specimenReqs,
-              instructions: test.instructions,
-              price: test.price || 0,
-              priority: test.urgency || test.priority || 'ROUTINE'
-            });
-            continue;
-          } else {
-            throw new AppError(`Xét nghiệm ${test.testId || test.testCode} không tồn tại`, 404);
-          }
-        }
-
-        // Convert specimenRequirements array to string if needed
-        const specimenReqs = Array.isArray(labTest.specimenRequirements)
-          ? labTest.specimenRequirements.join(', ')
-          : labTest.specimenRequirements;
-
-        testsWithDetails.push({
-          testId: labTest._id,
-          testCode: labTest.code,
-          testName: labTest.name,
-          category: labTest.category,
-          specimenType: test.specimenType || labTest.specimenType,
-          specimenRequirements: specimenReqs,
-          instructions: test.instructions,
-          price: labTest.pricing?.price || 0,
-          priority: test.urgency || test.priority || labTest.turnaroundTime?.priority || 'ROUTINE'
-        });
-      }
-
-      const labOrder = new LabOrder({
-        orderId,
-        patientId,
-        doctorId,
-        tests: testsWithDetails,
-        clinicalIndication: testData.clinicalIndication,
-        differentialDiagnosis: testData.differentialDiagnosis,
-        preTestConditions: testData.preTestConditions,
-        notes: testData.notes,
-        specialInstructions: testData.specialInstructions,
-        priority: testData.tests.some(t => t.priority === 'STAT') ? 'STAT' : 
-                 testData.tests.some(t => t.priority === 'URGENT') ? 'URGENT' : 'ROUTINE',
-        createdBy: doctorId,
-        status: 'ORDERED'
-      });
-
-      await labOrder.save();
-      
-      // Populate thông tin trước khi trả về
-      await labOrder.populate('tests.testId');
-      await labOrder.populate('patientId', 'personalInfo');
-      
-      return labOrder;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // Lấy thông tin chỉ định xét nghiệm
-  async getLabOrder(orderId) {
-    const labOrder = await LabOrder.findOne({ orderId })
-      .populate('patientId', 'personalInfo')
-      .populate('doctorId', 'personalInfo')
-      .populate('tests.testId')
-      .populate('tests.collectedBy', 'personalInfo')
-      .populate('tests.performedBy', 'personalInfo')
-      .populate('tests.result.verifiedBy', 'personalInfo');
-
-    if (!labOrder) {
-      throw new AppError('Chỉ định xét nghiệm không tồn tại', 404);
+  // Tạo chỉ định xét nghiệm mới
+  async createLabOrder(data, doctorId) {
+    const patient = await Patient.findOne({ userId: data.patientId });
+    if (!patient) {
+      throw new AppError('Bệnh nhân không tồn tại', 404);
     }
 
-    return labOrder;
-  }
+    const orderId = await generateMedicalCode('LAB');
+    const testsWithDetails = await this.processTests(data.tests);
 
-  // Ghi kết quả xét nghiệm
-  async recordLabResult(orderId, resultData, technicianId) {
-    const labOrder = await LabOrder.findOne({ orderId });
-    
-    if (!labOrder) {
-      throw new AppError('Chỉ định xét nghiệm không tồn tại', 404);
-    }
-
-    // Tìm test trong order
-    const test = labOrder.tests.id(resultData.testId);
-    if (!test) {
-      throw new AppError('Xét nghiệm không có trong chỉ định', 404);
-    }
-
-    if (test.status === 'COMPLETED') {
-      throw new AppError('Xét nghiệm đã có kết quả', 400);
-    }
-
-    // Thêm kết quả
-    labOrder.addTestResult(resultData.testId, resultData.result, technicianId);
-
-    // Thêm thông tin methodology nếu có
-    if (resultData.methodology) {
-      test.methodology = resultData.methodology;
-    }
-
-    // Thêm thông tin quality control
-    if (resultData.qualityControl) {
-      test.qualityControl = resultData.qualityControl;
-    }
+    const labOrder = new LabOrder({
+      orderId,
+      patientId: data.patientId,
+      doctorId,
+      tests: testsWithDetails,
+      clinicalIndication: data.clinicalIndication,
+      differentialDiagnosis: data.differentialDiagnosis,
+      preTestConditions: data.preTestConditions,
+      notes: data.notes,
+      specialInstructions: data.specialInstructions,
+      priority: this.determinePriority(data.tests),
+      createdBy: doctorId,
+      status: 'ORDERED'
+    });
 
     await labOrder.save();
+    await labOrder.populate('tests.testId patientId doctorId');
     return labOrder;
   }
 
-  // Lấy kết quả xét nghiệm theo ID
-  async getLabResult(resultId) {
-    // Trong cấu trúc hiện tại, resultId là testId trong LabOrder
-    const labOrder = await LabOrder.findOne({ 'tests._id': resultId })
-      .populate('patientId', 'personalInfo')
-      .populate('doctorId', 'personalInfo')
-      .populate('tests.testId')
-      .populate('tests.performedBy', 'personalInfo')
-      .populate('tests.result.verifiedBy', 'personalInfo');
-
-    if (!labOrder) {
-      throw new AppError('Kết quả xét nghiệm không tồn tại', 404);
-    }
-
-    const test = labOrder.tests.id(resultId);
-    if (!test) {
-      throw new AppError('Kết quả xét nghiệm không tồn tại', 404);
-    }
-
-    return {
-      order: labOrder,
-      test: test
-    };
-  }
-
-  // Lấy tất cả kết quả XN của bệnh nhân
-  async getPatientLabResults(patientId, options = {}) {
-    const { page = 1, limit = 20, startDate, endDate, category } = options;
-    const skip = (page - 1) * limit;
-
-    const query = { patientId };
-    
-    // Filter theo thời gian
-    if (startDate || endDate) {
-      query.orderDate = {};
-      if (startDate) query.orderDate.$gte = new Date(startDate);
-      if (endDate) query.orderDate.$lte = new Date(endDate);
-    }
-
-    // Filter theo category
-    if (category) {
-      query['tests.category'] = category;
-    }
-
-    const labOrders = await LabOrder.find(query)
-      .populate('doctorId', 'personalInfo')
-      .populate('tests.testId')
-      .populate('tests.performedBy', 'personalInfo')
-      .sort({ orderDate: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    // Lọc chỉ các test đã có kết quả
-    const results = labOrders.flatMap(order => 
-      order.tests
-        .filter(test => test.status === 'COMPLETED' && test.result)
-        .map(test => ({
-          orderId: order.orderId,
-          testId: test._id,
-          testName: test.testName,
-          testCode: test.testCode,
-          category: test.category,
-          result: test.result,
-          orderDate: order.orderDate,
-          completedDate: test.completedDate,
-          performedBy: test.performedBy,
-          verifiedBy: test.result.verifiedBy
-        }))
-    );
-
-    const total = await LabOrder.countDocuments(query);
-
-    return {
-      results,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
+  // Xử lý danh sách xét nghiệm
+  async processTests(tests) {
+    const testsWithDetails = [];
+    for (const test of tests) {
+      let labTest = await LabTest.findOne({ $or: [{ _id: test.testId }, { code: test.testCode }] });
+      if (!labTest) {
+        if (test.testCode && test.testName && test.category) {
+          labTest = new LabTest({
+            code: test.testCode,
+            name: test.testName,
+            category: test.category,
+            specimenType: test.specimenType || 'BLOOD',
+            specimenRequirements: test.specimenRequirements,
+            description: test.instructions
+          });
+          await labTest.save();
+        } else {
+          throw new AppError(`Xét nghiệm ${test.testId || test.testCode} không tồn tại`, 404);
+        }
       }
-    };
+      testsWithDetails.push({
+        testId: labTest._id,
+        testCode: labTest.code,
+        testName: labTest.name,
+        category: labTest.category,
+        specimenType: test.specimenType || labTest.specimenType,
+        specimenRequirements: labTest.specimenRequirements,
+        instructions: test.instructions,
+        price: labTest.pricing?.price || 0,
+        priority: test.priority || 'ROUTINE'
+      });
+    }
+    return testsWithDetails;
   }
 
-  // Lấy danh sách xét nghiệm đang chờ xử lý
-  async getPendingTests(options = {}) {
-    const { page = 1, limit = 20, department, priority } = options;
-    const skip = (page - 1) * limit;
-
-    const query = {
-      status: { $in: ['ORDERED', 'IN_PROGRESS'] }
-    };
-
-    if (department) {
-      query.department = department;
-    }
-
-    if (priority) {
-      query.priority = priority;
-    }
-
-    const labOrders = await LabOrder.find(query)
-      .populate('patientId', 'personalInfo')
-      .populate('doctorId', 'personalInfo')
-      .populate('tests.testId')
-      .sort({ 
-        priority: -1, // STAT, URGENT first
-        orderDate: 1 
-      })
-      .skip(skip)
-      .limit(limit);
-
-    // Tách các test pending
-    const pendingTests = labOrders.flatMap(order => 
-      order.tests
-        .filter(test => test.status !== 'COMPLETED' && test.status !== 'CANCELLED')
-        .map(test => ({
-          orderId: order.orderId,
-          testId: test._id,
-          testName: test.testName,
-          testCode: test.testCode,
-          category: test.category,
-          specimenType: test.specimenType,
-          status: test.status,
-          priority: order.priority,
-          orderDate: order.orderDate,
-          patient: order.patientId,
-          doctor: order.doctorId,
-          clinicalIndication: order.clinicalIndication
-        }))
-    );
-
-    const total = await LabOrder.countDocuments(query);
-
-    return {
-      pendingTests,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    };
+  // Xác định mức độ ưu tiên tổng thể
+  determinePriority(tests) {
+    if (tests.some(t => t.priority === 'STAT')) return 'STAT';
+    if (tests.some(t => t.priority === 'URGENT')) return 'URGENT';
+    return 'ROUTINE';
   }
 
-  // Cập nhật thông tin chỉ định XN
-  async updateLabOrder(orderId, updateData, userId) {
-    const labOrder = await LabOrder.findOne({ orderId });
-    
+  // Lấy thông tin chỉ định xét nghiệm theo ID
+  async getLabOrder(id) {
+    const labOrder = await LabOrder.findById(id)
+      .populate('patientId doctorId tests.testId tests.collectedBy tests.performedBy tests.result.verifiedBy');
     if (!labOrder) {
       throw new AppError('Chỉ định xét nghiệm không tồn tại', 404);
     }
+    return labOrder;
+  }
 
-    if (labOrder.status !== 'DRAFT' && labOrder.status !== 'ORDERED') {
-      throw new AppError('Chỉ có thể cập nhật chỉ định ở trạng thái DRAFT hoặc ORDERED', 400);
+  // Lấy danh sách chỉ định xét nghiệm
+  async getLabOrders(params) {
+    const { page = 1, limit = 10, status, priority } = params;
+    const query = {};
+    if (status) query.status = status;
+    if (priority) query.priority = priority;
+
+    const labOrders = await LabOrder.find(query)
+      .populate('patientId doctorId')
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .sort({ orderDate: -1 });
+
+    const total = await LabOrder.countDocuments(query);
+    return { labOrders, total, page, limit };
+  }
+
+  // Cập nhật chỉ định xét nghiệm
+  async updateLabOrder(id, data, userId) {
+    const labOrder = await LabOrder.findById(id);
+    if (!labOrder) {
+      throw new AppError('Chỉ định xét nghiệm không tồn tại', 404);
     }
-
-    Object.assign(labOrder, updateData);
-    labOrder.lastModifiedBy = userId;
-
+    Object.assign(labOrder, data);
+    labOrder.updatedBy = userId;
     await labOrder.save();
     return labOrder;
   }
 
   // Hủy chỉ định xét nghiệm
-  async cancelLabOrder(orderId, reason, userId) {
-    const labOrder = await LabOrder.findOne({ orderId });
-    
+  async cancelLabOrder(id, reason, userId) {
+    const labOrder = await LabOrder.findById(id);
     if (!labOrder) {
       throw new AppError('Chỉ định xét nghiệm không tồn tại', 404);
     }
-
-    if (!['DRAFT', 'ORDERED'].includes(labOrder.status)) {
-      throw new AppError('Không thể hủy chỉ định ở trạng thái hiện tại', 400);
-    }
-
     labOrder.status = 'CANCELLED';
-    labOrder.notes = labOrder.notes ? 
-      `${labOrder.notes}\nHủy: ${reason}` : `Hủy: ${reason}`;
-    labOrder.lastModifiedBy = userId;
-
-    // Hủy tất cả tests chưa hoàn thành
-    labOrder.tests.forEach(test => {
-      if (test.status !== 'COMPLETED') {
-        test.status = 'CANCELLED';
-      }
-    });
-
+    labOrder.notes = `${labOrder.notes || ''}\nLý do hủy: ${reason}`;
+    labOrder.updatedBy = userId;
     await labOrder.save();
     return labOrder;
   }
 
-  // Cập nhật kết quả xét nghiệm (sửa lỗi)
-  async updateLabResult(orderId, testId, updateData, userId) {
-    const labOrder = await LabOrder.findOne({ orderId });
-    
+  // Ghi kết quả xét nghiệm
+  async recordLabResult(orderId, results, technicianId) {
+    const labOrder = await LabOrder.findById(orderId);
     if (!labOrder) {
       throw new AppError('Chỉ định xét nghiệm không tồn tại', 404);
     }
+    labOrder.tests.forEach(test => {
+      const result = results.find(r => r.testId === test._id.toString());
+      if (result) {
+        test.result = result;
+        test.performedBy = technicianId;
+        test.completedDate = new Date();
+        test.status = 'COMPLETED';
+      }
+    });
+    await labOrder.save();
+    return labOrder;
+  }
 
+  // Cập nhật kết quả xét nghiệm
+  async updateLabResult(orderId, testId, result, userId) {
+    const labOrder = await LabOrder.findById(orderId);
+    if (!labOrder) {
+      throw new AppError('Chỉ định xét nghiệm không tồn tại', 404);
+    }
     const test = labOrder.tests.id(testId);
     if (!test) {
       throw new AppError('Xét nghiệm không tồn tại', 404);
     }
-
-    if (test.status !== 'COMPLETED') {
-      throw new AppError('Chỉ có thể cập nhật kết quả đã hoàn thành', 400);
-    }
-
-    // Cập nhật kết quả
-    if (updateData.result) {
-      Object.assign(test.result, updateData.result);
-    }
-
-    if (updateData.methodology) {
-      test.methodology = updateData.methodology;
-    }
-
-    // Ghi log sửa đổi
-    test.modifiedBy = userId;
-    test.modifiedAt = new Date();
-
+    Object.assign(test.result, result);
+    test.updatedBy = userId;
     await labOrder.save();
     return labOrder;
   }
 
   // Duyệt kết quả xét nghiệm
   async approveLabResult(orderId, testId, approverId) {
-    const labOrder = await LabOrder.findOne({ orderId });
-    
+    const labOrder = await LabOrder.findById(orderId);
     if (!labOrder) {
       throw new AppError('Chỉ định xét nghiệm không tồn tại', 404);
     }
-
     const test = labOrder.tests.id(testId);
     if (!test) {
       throw new AppError('Xét nghiệm không tồn tại', 404);
     }
-
-    if (test.status !== 'COMPLETED') {
-      throw new AppError('Chỉ có thể duyệt kết quả đã hoàn thành', 400);
-    }
-
-    if (!test.result) {
-      throw new AppError('Không có kết quả để duyệt', 400);
-    }
-
-    // Duyệt kết quả
-    labOrder.verifyTestResult(testId, approverId);
-
+    test.result.approvedBy = approverId;
+    test.result.approvedAt = new Date();
     await labOrder.save();
     return labOrder;
   }
 
-  // Lấy xét nghiệm đã hoàn thành trong khoảng thời gian
-  async getCompletedTests(timeframe = '7d', options = {}) {
-    const { page = 1, limit = 20, department } = options;
-    const skip = (page - 1) * limit;
-
-    // Tính khoảng thời gian
-    const now = new Date();
-    let startDate = new Date();
-    
-    switch (timeframe) {
-      case '24h':
-        startDate.setDate(now.getDate() - 1);
-        break;
-      case '7d':
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case '30d':
-        startDate.setDate(now.getDate() - 30);
-        break;
-      case '90d':
-        startDate.setDate(now.getDate() - 90);
-        break;
-      default:
-        startDate.setDate(now.getDate() - 7);
-    }
-
-    const query = {
-      status: 'COMPLETED',
-      orderDate: {
-        $gte: startDate,
-        $lte: now
-      }
-    };
-
-    if (department) {
-      query.department = department;
-    }
-
-    const labOrders = await LabOrder.find(query)
-      .populate('patientId', 'personalInfo')
-      .populate('doctorId', 'personalInfo')
-      .populate('tests.testId')
-      .populate('tests.performedBy', 'personalInfo')
-      .sort({ orderDate: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    // Lấy tất cả tests đã hoàn thành
-    const completedTests = labOrders.flatMap(order => 
-      order.tests
-        .filter(test => test.status === 'COMPLETED')
-        .map(test => ({
-          orderId: order.orderId,
-          testId: test._id,
-          testName: test.testName,
-          testCode: test.testCode,
-          category: test.category,
-          result: test.result,
-          orderDate: order.orderDate,
-          completedDate: test.completedDate,
-          performedBy: test.performedBy,
-          verifiedBy: test.result.verifiedBy,
-          patient: order.patientId,
-          doctor: order.doctorId
-        }))
-    );
-
-    const total = await LabOrder.countDocuments(query);
-
-    return {
-      completedTests,
-      timeframe,
-      startDate,
-      endDate: now,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    };
-  }
-
-  // Đánh dấu test đang được thực hiện
-  async markTestInProgress(orderId, testId, technicianId) {
-    const labOrder = await LabOrder.findOne({ orderId });
-    
+  // Đánh dấu mẫu đã được thu thập
+  async markSampleCollected(orderId) {
+    const labOrder = await LabOrder.findById(orderId);
     if (!labOrder) {
       throw new AppError('Chỉ định xét nghiệm không tồn tại', 404);
     }
+    labOrder.tests.forEach(test => {
+      test.collectionDate = new Date();
+      test.status = 'COLLECTED';
+    });
+    await labOrder.save();
+    return labOrder;
+  }
 
+  // Đánh dấu xét nghiệm hoàn thành
+  async markTestCompleted(orderId, testId) {
+    const labOrder = await LabOrder.findById(orderId);
+    if (!labOrder) {
+      throw new AppError('Chỉ định xét nghiệm không tồn tại', 404);
+    }
     const test = labOrder.tests.id(testId);
     if (!test) {
       throw new AppError('Xét nghiệm không tồn tại', 404);
     }
-
-    if (test.status !== 'ORDERED' && test.status !== 'COLLECTED') {
-      throw new AppError('Không thể bắt đầu xét nghiệm ở trạng thái hiện tại', 400);
-    }
-
-    labOrder.markTestInProgress(testId, technicianId);
+    test.completedDate = new Date();
+    test.status = 'COMPLETED';
     await labOrder.save();
     return labOrder;
   }
 
-  // Đánh dấu đã thu thập mẫu
-  async markSampleCollected(orderId, testId, collectorId) {
-    const labOrder = await LabOrder.findOne({ orderId });
-    
-    if (!labOrder) {
-      throw new AppError('Chỉ định xét nghiệm không tồn tại', 404);
-    }
+  // Lấy danh sách xét nghiệm
+  async getLabTests(params) {
+    const { category, status = 'ACTIVE' } = params;
+    const query = { status };
+    if (category) query.category = category;
+    return await LabTest.find(query).sort({ name: 1 });
+  }
 
-    const test = labOrder.tests.id(testId);
-    if (!test) {
-      throw new AppError('Xét nghiệm không tồn tại', 404);
-    }
+  // Tìm kiếm xét nghiệm
+  async searchLabTests(query) {
+    return await LabTest.find({ name: new RegExp(query, 'i'), status: 'ACTIVE' });
+  }
 
-    if (test.status !== 'ORDERED') {
-      throw new AppError('Không thể thu thập mẫu ở trạng thái hiện tại', 400);
-    }
+  // Lấy chỉ định đang chờ xử lý
+  async getPendingOrders() {
+    return await LabOrder.find({ status: 'PENDING' }).populate('patientId doctorId');
+  }
 
-    test.status = 'COLLECTED';
-    test.collectedBy = collectorId;
-    test.collectionDate = new Date();
+  // Lấy kết quả nghiêm trọng
+  async getCriticalResults() {
+    return await LabOrder.find({ 'tests.result.flag': 'CRITICAL' }).populate('patientId doctorId');
+  }
 
-    await labOrder.save();
-    return labOrder;
+  // Lấy thống kê phòng xét nghiệm
+  async getLabStats(params) {
+    const { startDate, endDate } = params;
+    const query = {};
+    if (startDate) query.orderDate = { $gte: new Date(startDate) };
+    if (endDate) query.orderDate.$lte = new Date(endDate);
+
+    const [total, pending, completed] = await Promise.all([
+      LabOrder.countDocuments(query),
+      LabOrder.countDocuments({ ...query, status: 'PENDING' }),
+      LabOrder.countDocuments({ ...query, status: 'COMPLETED' })
+    ]);
+
+    return { total, pending, completed };
+  }
+
+  // Xuất báo cáo PDF kết quả xét nghiệm (giả sử sử dụng thư viện pdfkit hoặc tương tự)
+  async exportLabResultsPDF(orderId) {
+    // Ở đây implement logic tạo PDF, ví dụ sử dụng pdfkit
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument();
+    // Thêm nội dung PDF...
+    doc.text(`Báo cáo kết quả xét nghiệm cho order ${orderId}`);
+    // ...
+    return doc;
   }
 }
 

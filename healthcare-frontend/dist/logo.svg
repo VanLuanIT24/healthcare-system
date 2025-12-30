@@ -1,0 +1,181 @@
+<svg viewBox="0 0 380 140" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Premium Multi-layer Gradients -->
+    <linearGradient id="ultraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0066ff;stop-opacity:1" />
+      <stop offset="35%" style="stop-color:#0052cc;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#1890ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#003d99;stop-opacity:1" />
+    </linearGradient>
+    
+    <radialGradient id="radialGrad" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" style="stop-color:#1e90ff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#0066ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#003d99;stop-opacity:1" />
+    </radialGradient>
+    
+    <linearGradient id="heartGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff4757;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#ff3838;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e74c3c;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="shinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.25" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+    </linearGradient>
+    
+    <!-- Advanced Filters -->
+    <filter id="ultraShadow" x="-100%" y="-100%" width="300%" height="300%">
+      <feDropShadow dx="0" dy="10" stdDeviation="6" flood-color:#003d99" flood-opacity="0.35"/>
+      <feDropShadow dx="0" dy="20" stdDeviation="12" flood-color="#003d99" flood-opacity="0.15"/>
+    </filter>
+    
+    <filter id="innerGlow2">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <filter id="shine">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="2" dy="3" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.4"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background Glow & Aura -->
+  <g opacity="0.12">
+    <circle cx="75" cy="70" r="65" fill="url(#radialGrad)"/>
+  </g>
+  
+  <!-- Animated Glow Ring -->
+  <g opacity="0.08" filter="url(#glow)">
+    <circle cx="75" cy="70" r="68" fill="none" stroke="url(#ultraGrad)" stroke-width="2"/>
+  </g>
+
+  <!-- Main Icon Container -->
+  <g filter="url(#ultraShadow)">
+    <!-- Outer premium rings -->
+    <circle cx="75" cy="70" r="62" fill="url(#radialGrad)"/>
+    
+    <!-- Glossy overlay -->
+    <ellipse cx="75" cy="48" rx="58" ry="35" fill="url(#shinGrad)"/>
+    
+    <!-- Premium highlight -->
+    <ellipse cx="75" cy="48" rx="56" ry="32" fill="white" opacity="0.15"/>
+    
+    <!-- Inner shadow circle -->
+    <circle cx="75" cy="70" r="62" fill="none" stroke="black" stroke-width="0.5" opacity="0.2"/>
+    
+    <!-- Border shine -->
+    <circle cx="75" cy="70" r="62" fill="none" stroke="white" stroke-width="1.5" opacity="0.3"/>
+  </g>
+
+  <!-- Heart & Pulse Icon with Premium Effects -->
+  <g transform="translate(75, 70)" filter="url(#innerGlow2)">
+    <!-- Background circle -->
+    <circle cx="0" cy="0" r="58" fill="white" opacity="0.04"/>
+    
+    <!-- Main heart shape - premium look -->
+    <path d="M 0 -24 C -20 -40, -42 -32, -42 -8 C -42 16, -20 32, 0 48 C 20 32, 42 16, 42 -8 C 42 -32, 20 -40, 0 -24" 
+          fill="white" filter="url(#shine)"/>
+    
+    <!-- Medical Plus Sign - Premium styling -->
+    <g>
+      <!-- Vertical bar with gradient -->
+      <rect x="-10" y="-24" width="20" height="48" fill="url(#heartGrad)" rx="10" filter="url(#shine)"/>
+      <!-- Horizontal bar with gradient -->
+      <rect x="-24" y="-10" width="48" height="20" fill="url(#heartGrad)" rx="10" filter="url(#shine)"/>
+      
+      <!-- Inner highlight for bars -->
+      <rect x="-10" y="-24" width="20" height="8" fill="white" opacity="0.3" rx="5"/>
+      <rect x="-24" y="-10" width="10" height="20" fill="white" opacity="0.3" rx="5"/>
+    </g>
+    
+    <!-- Subtle depth shadow -->
+    <path d="M 0 -24 C -20 -40, -42 -32, -42 -8 C -42 16, -20 32, 0 48 C 20 32, 42 16, 42 -8 C 42 -32, 20 -40, 0 -24" 
+          fill="black" opacity="0.08"/>
+  </g>
+
+  <!-- Premium Pulse Wave -->
+  <g transform="translate(75, 70)" opacity="0.35">
+    <path d="M -22 0 L -16 -3.5 L -10 3.5 L -4 -2.5 L 0 0 L 4 -3 L 10 3 L 16 -2 L 22 0" 
+          fill="none" stroke="url(#heartGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Text Content - Premium Styling -->
+  <g>
+    <!-- Main Title -->
+    <text x="160" y="60" font-family="Inter, sans-serif" font-size="48" font-weight="700" fill="url(#ultraGrad)" letter-spacing="-0.5">
+      HealthCare
+    </text>
+    
+    <!-- Subtitle with gradient -->
+    <text x="160" y="85" font-family="Inter, sans-serif" font-size="14" font-weight="500" fill="#0066ff" opacity="0.85" letter-spacing="0.5">
+      Hệ Thống Y Tế Thông Minh
+    </text>
+    
+    <!-- Decorative line -->
+    <line x1="160" y1="92" x2="240" y2="92" stroke="url(#ultraGrad)" stroke-width="1.5" opacity="0.6"/>
+  </g>
+</svg>
+    <text x="160" y="73" 
+          font-family="'Segoe UI', 'Trebuchet MS', -apple-system, sans-serif" 
+          font-size="48" 
+          font-weight="950" 
+          fill="#003d99" 
+          opacity="0.1"
+          letter-spacing="-1.2">HealthCare</text>
+    
+    <!-- Main Title -->
+    <text x="160" y="70" 
+          font-family="'Segoe UI', 'Trebuchet MS', -apple-system, sans-serif" 
+          font-size="48" 
+          font-weight="950" 
+          fill="url(#ultraGrad)" 
+          letter-spacing="-1.2"
+          style="text-shadow: 0 2px 4px rgba(0,61,153,0.15)">HealthCare</text>
+    
+    <!-- Subtitle -->
+    <text x="160" y="103" 
+          font-family="'Segoe UI', 'Trebuchet MS', sans-serif" 
+          font-size="14" 
+          font-weight="800" 
+          fill="#0066ff" 
+          letter-spacing="2.5">QUẢN LÝ BỆNH VIỆN</text>
+    
+    <!-- Premium Decorative Line -->
+    <line x1="160" y1="112" x2="305" y2="112" stroke="url(#ultraGrad)" stroke-width="4" stroke-linecap="round" opacity="0.9"/>
+    <line x1="160" y1="112" x2="305" y2="112" stroke="url(#ultraGrad)" stroke-width="2" stroke-linecap="round" opacity="0.3" filter="url(#innerGlow2)"/>
+  </g>
+
+  <!-- Decorative Premium Elements -->
+  <g opacity="0.5">
+    <circle cx="310" cy="28" r="5" fill="url(#ultraGrad)"/>
+    <circle cx="325" cy="65" r="4" fill="url(#heartGrad)"/>
+    <circle cx="315" cy="105" r="3.5" fill="url(#ultraGrad)"/>
+  </g>
+
+  <!-- Corner Accent -->
+  <g opacity="0.3">
+    <circle cx="160" cy="50" r="2.5" fill="url(#heartGrad)"/>
+    <circle cx="305" cy="85" r="2" fill="url(#ultraGrad)"/>
+  </g>
+</svg>

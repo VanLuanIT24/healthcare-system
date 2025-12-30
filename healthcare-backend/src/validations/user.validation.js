@@ -3,33 +3,69 @@ const Joi = require('joi');
 const { ROLES } = require('../constants/roles');
 const { commonSchemas } = require('../middlewares/validation.middleware');
 
-// 🎯 SCHEMAS CHO TẤT CẢ CÁC HÀM
-
 // ==================== PARAMS SCHEMAS ====================
 
-// 🎯 CHO CẢ 'id' VÀ 'userId' PARAM (LINH HOẠT)
+// Hỗ trợ cả :id và :userId trong params
 const userIdParams = Joi.alternatives().try(
-  Joi.object({ 
+  Joi.object({
     id: commonSchemas.objectId.required().messages({
-      'any.required': 'ID là bắt buộc',
-      'string.hex': 'ID phải là hex string',
-      'string.length': 'ID phải có 24 ký tự'
+      'any.required': 'ID người dùng là bắt buộc',
+      'string.pattern.base': 'ID phải là ObjectId hợp lệ (24 ký tự hex)'
     })
   }),
-  Joi.object({ 
+  Joi.object({
     userId: commonSchemas.objectId.required().messages({
       'any.required': 'User ID là bắt buộc',
-      'string.hex': 'User ID phải là hex string',
-      'string.length': 'User ID phải có 24 ký tự'
+      'string.pattern.base': 'User ID phải là ObjectId hợp lệ (24 ký tự hex)'
     })
   })
 ).messages({
-  'alternatives.match': 'Phải cung cấp ID hoặc userId'
+  'alternatives.match': 'Phải cung cấp ID hoặc userId trong URL'
 });
 
-// 🎯 RIÊNG CHO EMAIL PARAM
 const userEmailParams = Joi.object({
   email: commonSchemas.email.required()
+});
+
+// ==================== QUERY SCHEMAS ====================
+
+const listUsersQuery = Joi.object({
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(10),
+  role: Joi.string().valid(...Object.values(ROLES)).optional(),
+  search: Joi.string().trim().max(100).optional(),
+  status: Joi.string().valid('ACTIVE', 'INACTIVE', 'SUSPENDED', 'LOCKED', 'PENDING_APPROVAL').optional(),
+  includeDeleted: Joi.boolean().default(false),
+  sortBy: Joi.string().valid(
+    'createdAt',
+    'email',
+    'lastLogin',
+    'personalInfo.firstName',
+    'personalInfo.lastName',
+    'updatedAt'
+  ).default('createdAt'),
+  sortOrder: Joi.string().valid('asc', 'desc').default('desc')
+});
+
+const searchUsersQuery = Joi.object({
+  q: Joi.string().trim().min(1).max(100).required().messages({
+    'string.min': 'Từ khóa tìm kiếm phải có ít nhất 1 ký tự',
+    'string.max': 'Từ khóa tìm kiếm không được vượt quá 100 ký tự',
+    'any.required': 'Từ khóa tìm kiếm là bắt buộc'
+  })
+});
+
+const getUsersByRoleQuery = Joi.object({
+  role: Joi.string().valid(...Object.values(ROLES)).required().messages({
+    'any.only': 'Vai trò không hợp lệ',
+    'any.required': 'Vai trò là bắt buộc'
+  })
+});
+
+const getUsersByDepartmentQuery = Joi.object({
+  department: Joi.string().trim().max(100).required().messages({
+    'any.required': 'Tên khoa/phòng là bắt buộc'
+  })
 });
 
 // ==================== BODY SCHEMAS ====================
@@ -42,16 +78,14 @@ const createUserBody = Joi.object({
     'any.required': 'Vai trò là bắt buộc'
   }),
   personalInfo: Joi.object({
-    firstName: Joi.string().min(2).max(50).required().messages({
+    firstName: Joi.string().trim().min(2).max(50).required().messages({
       'string.min': 'Họ phải có ít nhất 2 ký tự',
       'string.max': 'Họ không được vượt quá 50 ký tự',
-      'string.empty': 'Vui lòng nhập họ',
       'any.required': 'Họ là bắt buộc'
     }),
-    lastName: Joi.string().min(2).max(50).required().messages({
+    lastName: Joi.string().trim().min(2).max(50).required().messages({
       'string.min': 'Tên phải có ít nhất 2 ký tự',
       'string.max': 'Tên không được vượt quá 50 ký tự',
-      'string.empty': 'Vui lòng nhập tên',
       'any.required': 'Tên là bắt buộc'
     }),
     dateOfBirth: Joi.date().max('now').required().messages({
@@ -76,7 +110,7 @@ const createUserBody = Joi.object({
       phone: commonSchemas.phone.optional()
     }).optional()
   }).required(),
-  
+
   professionalInfo: Joi.object({
     licenseNumber: Joi.string().max(50).optional(),
     specialization: Joi.string().max(100).optional(),
@@ -115,8 +149,8 @@ const createUserBody = Joi.object({
 
 const updateUserBody = Joi.object({
   personalInfo: Joi.object({
-    firstName: Joi.string().min(2).max(50).optional(),
-    lastName: Joi.string().min(2).max(50).optional(),
+    firstName: Joi.string().trim().min(2).max(50).optional(),
+    lastName: Joi.string().trim().min(2).max(50).optional(),
     dateOfBirth: Joi.date().max('now').optional(),
     gender: Joi.string().valid('MALE', 'FEMALE', 'OTHER').optional(),
     phone: commonSchemas.phone.optional(),
@@ -162,8 +196,8 @@ const updateUserBody = Joi.object({
 
 const updateUserProfileBody = Joi.object({
   personalInfo: Joi.object({
-    firstName: Joi.string().min(2).max(50).optional(),
-    lastName: Joi.string().min(2).max(50).optional(),
+    firstName: Joi.string().trim().min(2).max(50).optional(),
+    lastName: Joi.string().trim().min(2).max(50).optional(),
     phone: commonSchemas.phone.optional(),
     address: Joi.object({
       street: Joi.string().max(200).optional(),
@@ -193,15 +227,6 @@ const updateUserProfileBody = Joi.object({
   'object.min': 'Phải cung cấp ít nhất một trường để cập nhật'
 });
 
-const disableUserBody = Joi.object({
-  reason: Joi.string().min(5).max(500).required().messages({
-    'string.min': 'Lý do phải có ít nhất 5 ký tự',
-    'string.max': 'Lý do không được vượt quá 500 ký tự',
-    'string.empty': 'Vui lòng nhập lý do vô hiệu hóa',
-    'any.required': 'Lý do vô hiệu hóa là bắt buộc'
-  })
-});
-
 const assignRoleBody = Joi.object({
   role: Joi.string().valid(...Object.values(ROLES)).required().messages({
     'any.only': 'Vai trò không hợp lệ',
@@ -209,154 +234,74 @@ const assignRoleBody = Joi.object({
   })
 });
 
-const listUsersQuery = Joi.object({
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
-  role: Joi.string().valid(...Object.values(ROLES)).optional(),
-  search: Joi.string().max(100).optional(),
-  status: Joi.string().valid('ACTIVE', 'INACTIVE', 'SUSPENDED', 'LOCKED', 'PENDING_APPROVAL').optional(),
-  includeDeleted: Joi.boolean().default(false),
-  sortBy: Joi.string().valid('createdAt', 'email', 'lastLogin', 'personalInfo.firstName', 'updatedAt').default('createdAt'),
-  sortOrder: Joi.string().valid('asc', 'desc').default('desc')
-});
-
-const checkUserPermissionBody = Joi.object({
-  permission: Joi.string().required().messages({
-    'string.empty': 'Vui lòng nhập permission',
-    'any.required': 'Permission là bắt buộc'
+const disableUserBody = Joi.object({
+  reason: Joi.string().trim().min(5).max(500).required().messages({
+    'string.min': 'Lý do phải có ít nhất 5 ký tự',
+    'string.max': 'Lý do không được vượt quá 500 ký tự',
+    'any.required': 'Lý do vô hiệu hóa là bắt buộc'
   })
 });
 
 const deleteUserBody = Joi.object({
-  reason: Joi.string().min(5).max(500).required().messages({
+  reason: Joi.string().trim().min(5).max(500).required().messages({
     'string.min': 'Lý do phải có ít nhất 5 ký tự',
     'string.max': 'Lý do không được vượt quá 500 ký tự',
-    'string.empty': 'Vui lòng nhập lý do xóa',
     'any.required': 'Lý do xóa là bắt buộc'
   })
 });
 
 const verifyEmailBody = Joi.object({
-  token: Joi.string().required().messages({
-    'string.empty': 'Token xác thực là bắt buộc',
+  token: Joi.string().trim().required().messages({
     'any.required': 'Token xác thực là bắt buộc'
   })
 });
 
-const uploadAvatarBody = Joi.object({
-  // File upload validation sẽ được xử lý bằng multer
-}).unknown(true);
-
-// ==================== QUERY SCHEMAS (NEW) ====================
-
-const searchUsersQuery = Joi.object({
-  q: Joi.string().min(1).max(100).required().messages({
-    'string.min': 'Từ khóa tìm kiếm phải có ít nhất 1 ký tự',
-    'string.max': 'Từ khóa tìm kiếm không được vượt quá 100 ký tự',
-    'any.required': 'Từ khóa tìm kiếm là bắt buộc'
+const changePasswordBody = Joi.object({
+  oldPassword: Joi.string().required().messages({
+    'any.required': 'Mật khẩu cũ là bắt buộc'
+  }),
+  newPassword: commonSchemas.password.required().messages({
+    'any.required': 'Mật khẩu mới là bắt buộc'
   })
 });
 
-const usersByRoleParams = Joi.object({
-  role: Joi.string().valid(...Object.values(ROLES)).required().messages({
-    'any.only': 'Vai trò không hợp lệ',
-    'any.required': 'Vai trò là bắt buộc'
-  })
-});
+const uploadAvatarBody = Joi.object({}).unknown(true); // Multer xử lý file
 
-// ==================== EXPORT SCHEMAS ====================
+const schemas = {
+  // Cá nhân
+  getMyProfile: {},
+  updateUserProfile: { body: updateUserProfileBody },
+  changePassword: { body: changePasswordBody },
+  uploadAvatar: { body: uploadAvatarBody },
+  verifyEmail: { body: verifyEmailBody },
+  resendVerificationEmail: {},
 
-module.exports = {
-  // 🎯 CHO CREATE USER
-  createUser: {
-    body: createUserBody
-  },
+  // Đăng ký bệnh nhân tự do
+  registerPatient: { body: createUserBody },
 
-  // 🎯 CHO UPDATE USER
-  updateUser: {
-    params: userIdParams,
-    body: updateUserBody
-  },
+  // Quản trị
+  createUser: { body: createUserBody },
+  listUsers: { query: listUsersQuery },
+  listDeletedUsers: { query: listUsersQuery },
+  getUserById: { params: userIdParams },
+  updateUser: { params: userIdParams, body: updateUserBody },
+  assignRole: { params: userIdParams, body: assignRoleBody },
+  disableUser: { params: userIdParams, body: disableUserBody },
+  enableUser: { params: userIdParams },
+  restoreUser: { params: userIdParams },
+  deleteUser: { params: userIdParams, body: deleteUserBody },
+  searchUsers: { query: searchUsersQuery },
+  getUsersByRole: { query: getUsersByRoleQuery },
+  getUsersByDepartment: { query: getUsersByDepartmentQuery },
+  getUserStatistics: {},
+  getUserPermissions: { params: userIdParams },
 
-  // 🎯 CHO UPDATE USER PROFILE
-  updateUserProfile: {
-    body: updateUserProfileBody
-  },
-
-  // 🎯 CHO DISABLE USER
-  disableUser: {
-    params: userIdParams,
-    body: disableUserBody
-  },
-
-  // 🎯 CHO ASSIGN ROLE
-  assignRole: {
-    params: userIdParams,
-    body: assignRoleBody
-  },
-
-  // 🎯 CHO GET USER BY ID
-  getUserById: {
-    params: userIdParams
-  },
-
-  // 🎯 CHO GET USER BY EMAIL
-  getUserByEmail: {
-    params: userEmailParams
-  },
-
-  // 🎯 CHO DELETE USER
-  deleteUser: {
-    params: userIdParams,
-    body: deleteUserBody
-  },
-
-  // 🎯 CHO LIST USERS
-  listUsers: {
-    query: listUsersQuery
-  },
-
-  // 🎯 CHO CHECK USER PERMISSION
-  checkUserPermission: {
-    params: userIdParams,
-    body: checkUserPermissionBody
-  },
-
-  // 🎯 CHO VERIFY EMAIL
-  verifyEmail: {
-    body: verifyEmailBody
-  },
-
-  // 🎯 CHO UPLOAD AVATAR
-  uploadAvatar: {
-    body: uploadAvatarBody
-  },
-
-  // 🎯 CHO SEARCH USERS (NEW)
-  searchUsers: {
-    query: searchUsersQuery
-  },
-
-  // 🎯 CHO GET USERS BY ROLE (NEW)
-  getUsersByRole: {
-    params: usersByRoleParams
-  },
-
-  // 🎯 EXPORT CÁC SCHEMAS RIÊNG LẺ (CHO LINH HOẠT)
-  schemas: {
-    createUserBody,
-    updateUserBody,
-    updateUserProfileBody,
-    disableUserBody,
-    assignRoleBody,
-    userIdParams,
-    userEmailParams,
-    listUsersQuery,
-    checkUserPermissionBody,
-    deleteUserBody,
-    verifyEmailBody,
-    uploadAvatarBody,
-    searchUsersQuery,
-    usersByRoleParams
-  }
+  // Hỗ trợ UI
+  getRoles: {},
+  getCreatableRoles: {},
+  getPermissionsByRole: { params: Joi.object({ role: Joi.string().required() }) },
+  getAllPermissions: {},
 };
+
+// Expose under `schemas` to match route imports
+module.exports = { schemas };

@@ -1,704 +1,413 @@
+// src/controllers/patient.controller.js
 const patientService = require('../services/patient.service');
 const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
 
-/**
- * 🏥 PATIENT CONTROLLER - QUẢN LÝ BỆNH NHÂN
- * Core business logic cho healthcare system
- */
-
 class PatientController {
-  
   async registerPatient(req, res, next) {
-  try {
-    // 🎯 DEBUG CHI TIẾT DỮ LIỆU ĐẦU VÀO
-    console.log('🔍 [CONTROLLER - registerPatient] Full request details:', {
-      body: req.body,
-      bodyType: typeof req.body,
-      bodyKeys: req.body ? Object.keys(req.body) : 'NO BODY',
-      bodyRaw: JSON.stringify(req.body),
-      headers: req.headers,
-      user: req.user ? {
-        _id: req.user._id,
-        role: req.user.role,
-        email: req.user.email
-      } : 'No user'
-    });
-
-    // 🎯 KIỂM TRA DỮ LIỆU ĐẦU VÀO KỸ HƠN
-    if (!req.body) {
-      console.log('❌ [CONTROLLER] Request body is completely missing');
-      throw new AppError('Dữ liệu đăng ký không hợp lệ: thiếu body', 400, ERROR_CODES.VALIDATION_FAILED);
-    }
-
-    if (!req.body.email) {
-      console.log('❌ [CONTROLLER] Email is missing in body:', {
-        availableKeys: Object.keys(req.body),
-        bodyContent: req.body
-      });
-      throw new AppError('Email là bắt buộc', 400, ERROR_CODES.VALIDATION_FAILED);
-    }
-
-    console.log('👤 [PATIENT] Registering new patient:', req.body.email);
-    
-    const patientData = {
-      ...req.body,
-      createdBy: req.user._id
-    };
-
-    console.log('📦 [CONTROLLER] Patient data prepared:', {
-      email: patientData.email,
-      hasPassword: !!patientData.password,
-      createdBy: patientData.createdBy,
-      totalKeys: Object.keys(patientData).length
-    });
-
-    const patient = await patientService.registerPatient(patientData);
-    
-    // 🎯 AUDIT LOG - Temporarily disabled due to patientId validation issue
-    // try {
-    //   await auditLog(AUDIT_ACTIONS.PATIENT_CREATE, {
-    //     resource: 'Patient',
-    //     resourceId: patient._id,
-    //     metadata: { patientId: patient.patientId }
-    //   })(req, res, () => {});
-    // } catch (auditError) {
-    //   console.error('❌ Lỗi ghi audit log:', auditError.message);
-    // }
-
-    res.status(201).json({
-      success: true,
-      message: 'Đăng ký bệnh nhân thành công',
-      data: patient
-    });
-
-  } catch (error) {
-    console.error('❌ [CONTROLLER] Register patient error:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-      bodyReceived: req.body
-    });
-    next(error);
-  }
-}
-
-  /**
-   * 🎯 TÌM KIẾM BỆNH NHÂN
-   */
-  async searchPatients(req, res, next) {
     try {
-      const { 
-        keyword, 
-        page = 1, 
-        limit = 10,
-        sortBy = 'createdAt',
-        sortOrder = 'desc'
-      } = req.query;
-
-      console.log('🔍 [PATIENT] Searching patients:', { keyword, page, limit });
-
-      const result = await patientService.searchPatients({
-        keyword,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sortBy,
-        sortOrder
-      });
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, {
-        resource: 'Patient',
-        category: 'SEARCH'
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Tìm kiếm bệnh nhân thành công',
-        data: result
-      });
-
+      const patientData = req.body;
+      const patient = await patientService.registerPatient(patientData);
+      await auditLog(AUDIT_ACTIONS.PATIENT_CREATE, { metadata: { patientId: patient._id } })(req, res, () => {});
+      res.status(201).json({ success: true, data: patient });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY BỆNH NHÂN THEO ID - FULL DATA
-   */
+  async searchPatients(req, res, next) {
+    try {
+      const query = req.query;
+      const patients = await patientService.searchPatients(query);
+      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, { metadata: { type: 'search' } })(req, res, () => {});
+      res.json({ success: true, data: patients });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async advancedSearch(req, res, next) {
+    try {
+      const params = req.body;
+      const patients = await patientService.advancedSearch(params);
+      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, { metadata: { type: 'advanced_search' } })(req, res, () => {});
+      res.json({ success: true, data: patients });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getPatients(req, res, next) {
+    try {
+      const params = req.query;
+      const patients = await patientService.getPatients(params);
+      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, { metadata: { type: 'list' } })(req, res, () => {});
+      res.json({ success: true, data: patients });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getPatientById(req, res, next) {
     try {
       const { patientId } = req.params;
-      
-      console.log('📋 [PATIENT] Getting full data for:', patientId);
-
       const patient = await patientService.getPatientById(patientId);
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'FULL_DATA'
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Lấy thông tin bệnh nhân thành công',
-        data: patient
-      });
-
+      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, { metadata: { patientId } })(req, res, () => {});
+      res.json({ success: true, data: patient });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY THÔNG TIN NHÂN KHẨU BỆNH NHÂN
-   */
-  async getPatientDemographics(req, res, next) {
+  async getPatientSensitiveData(req, res, next) {
     try {
       const { patientId } = req.params;
-      
-      console.log('📋 [PATIENT] Getting demographics for:', patientId);
-
-      const demographics = await patientService.getPatientDemographics(patientId);
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'DEMOGRAPHICS'
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Lấy thông tin bệnh nhân thành công',
-        data: demographics
-      });
-
+      const emergencyReason = req.query.emergencyReason;
+      const data = await patientService.getPatientSensitiveData(patientId, emergencyReason);
+      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, { metadata: { patientId, sensitive: true } })(req, res, () => {});
+      res.json({ success: true, data: data });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 CẬP NHẬT THÔNG TIN NHÂN KHẨU
-   */
-  async updatePatientDemographics(req, res, next) {
+  async updatePatient(req, res, next) {
     try {
       const { patientId } = req.params;
-      const updateData = req.body;
-      
-      console.log('✏️ [PATIENT] Updating demographics for:', patientId);
-
-      const updatedPatient = await patientService.updatePatientDemographics(
-        patientId, 
-        updateData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'DEMOGRAPHICS',
-        metadata: { updatedFields: Object.keys(updateData) }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Cập nhật thông tin bệnh nhân thành công',
-        data: updatedPatient
-      });
-
+      const data = req.body;
+      const updated = await patientService.updatePatient(patientId, data);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId } })(req, res, () => {});
+      res.json({ success: true, data: updated });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 NHẬP VIỆN BỆNH NHÂN
-   */
+  async deletePatient(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const deleted = await patientService.deletePatient(patientId);
+      await auditLog(AUDIT_ACTIONS.PATIENT_DELETE, { metadata: { patientId } })(req, res, () => {});
+      res.json({ success: true, data: deleted });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async admitPatient(req, res, next) {
     try {
       const { patientId } = req.params;
-      const admissionData = req.body;
-      
-      console.log('🏥 [PATIENT] Admitting patient:', patientId);
-
-      const admission = await patientService.admitPatient(
-        patientId, 
-        admissionData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'ADMISSION',
-        metadata: { 
-          department: admissionData.department,
-          room: admissionData.room 
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Nhập viện bệnh nhân thành công',
-        data: admission
-      });
-
+      const data = req.body;
+      const admitted = await patientService.admitPatient(patientId, data);
+      await auditLog(AUDIT_ACTIONS.PATIENT_ADMIT, { metadata: { patientId } })(req, res, () => {});
+      res.json({ success: true, data: admitted });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 XUẤT VIỆN BỆNH NHÂN
-   */
   async dischargePatient(req, res, next) {
     try {
       const { patientId } = req.params;
-      const dischargeData = req.body;
-      
-      console.log('🎉 [PATIENT] Discharging patient:', patientId);
-
-      const discharge = await patientService.dischargePatient(
-        patientId, 
-        dischargeData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'DISCHARGE',
-        metadata: { 
-          dischargeReason: dischargeData.dischargeReason,
-          condition: dischargeData.condition 
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Xuất viện bệnh nhân thành công',
-        data: discharge
-      });
-
+      const data = req.body;
+      const discharged = await patientService.dischargePatient(patientId, data);
+      await auditLog(AUDIT_ACTIONS.PATIENT_DISCHARGE, { metadata: { patientId } })(req, res, () => {});
+      res.json({ success: true, data: discharged });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY THÔNG TIN BẢO HIỂM
-   */
   async getPatientInsurance(req, res, next) {
     try {
       const { patientId } = req.params;
-      
-      console.log ('🏦 [PATIENT] Getting insurance for:', patientId);
-
       const insurance = await patientService.getPatientInsurance(patientId);
-
-      // 🎯 AUDIT LOG - Insurance data is sensitive
-      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'INSURANCE'
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Lấy thông tin bảo hiểm thành công',
-        data: insurance
-      });
-
+      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, { metadata: { patientId, type: 'insurance' } })(req, res, () => {});
+      res.json({ success: true, data: insurance });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 CẬP NHẬT THÔNG TIN BẢO HIỂM
-   */
   async updatePatientInsurance(req, res, next) {
     try {
       const { patientId } = req.params;
-      const insuranceData = req.body;
-      
-      console.log('💳 [PATIENT] Updating insurance for:', patientId);
-
-      const updatedInsurance = await patientService.updatePatientInsurance(
-        patientId, 
-        insuranceData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'INSURANCE',
-        metadata: { 
-          provider: insuranceData.provider,
-          policyNumber: insuranceData.policyNumber 
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Cập nhật thông tin bảo hiểm thành công',
-        data: updatedInsurance
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-  
-  /**
-   * 🎯 LẤY THÔNG TIN LIÊN LẠC BỆNH NHÂN
-   */
-  async getPatientContacts(req, res, next) {
-    try {
-      const { patientId } = req.params;
-      
-      console.log('📞 [PATIENT] Getting contacts for:', patientId);
-
-      const contacts = await patientService.getPatientContacts(patientId);
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'CONTACTS'
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Lấy thông tin liên lạc thành công',
-        data: contacts
-      });
-
+      const data = req.body;
+      const updated = await patientService.updatePatientInsurance(patientId, data);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId, type: 'insurance' } })(req, res, () => {});
+      res.json({ success: true, data: updated });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY THÔNG TIN DỊ ỨNG
-   */
   async getPatientAllergies(req, res, next) {
     try {
       const { patientId } = req.params;
-      const { activeOnly = 'true' } = req.query;
-      
-      console.log('🤧 [PATIENT] Getting allergies for:', patientId);
-
-      const allergies = await patientService.getPatientAllergies(
-        patientId, 
-        activeOnly === 'true'
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'ALLERGIES'
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Lấy thông tin dị ứng thành công',
-        data: allergies
-      });
-
+      const allergies = await patientService.getPatientAllergies(patientId);
+      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, { metadata: { patientId, type: 'allergies' } })(req, res, () => {});
+      res.json({ success: true, data: allergies });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 CẬP NHẬT THÔNG TIN DỊ ỨNG
-   */
-  async updatePatientAllergies(req, res, next) {
+  async addPatientAllergy(req, res, next) {
     try {
       const { patientId } = req.params;
-      const allergyUpdates = req.body;
-      
-      console.log('✏️ [PATIENT] Updating allergies for:', patientId);
-
-      const updatedPatient = await patientService.updatePatientAllergies(
-        patientId, 
-        allergyUpdates,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'ALLERGIES',
-        metadata: { 
-          operation: allergyUpdates.operation,
-          allergen: allergyUpdates.allergyData?.allergen 
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Cập nhật thông tin dị ứng thành công',
-        data: updatedPatient
-      });
-
+      const data = req.body;
+      const added = await patientService.addPatientAllergy(patientId, data);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId, type: 'allergies' } })(req, res, () => {});
+      res.json({ success: true, data: added });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY THÔNG TIN BẢO HIỂM
-   */
-  async getPatientInsurance(req, res, next) {
+  async updatePatientAllergy(req, res, next) {
     try {
-      const { patientId } = req.params;
-      
-      console.log('🏦 [PATIENT] Getting insurance for:', patientId);
-
-      const insurance = await patientService.getPatientInsurance(patientId);
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'INSURANCE'
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Lấy thông tin bảo hiểm thành công',
-        data: insurance
-      });
-
+      const { patientId, allergyId } = req.params;
+      const data = req.body;
+      const updated = await patientService.updatePatientAllergy(patientId, allergyId, data);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId, type: 'allergies' } })(req, res, () => {});
+      res.json({ success: true, data: updated });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY TIỀN SỬ GIA ĐÌNH
-   */
+  async deletePatientAllergy(req, res, next) {
+    try {
+      const { patientId, allergyId } = req.params;
+      const deleted = await patientService.deletePatientAllergy(patientId, allergyId);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId, type: 'allergies' } })(req, res, () => {});
+      res.json({ success: true, data: deleted });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getPatientFamilyHistory(req, res, next) {
     try {
       const { patientId } = req.params;
-      
-      console.log('👨‍👩‍👧‍👦 [PATIENT] Getting family history for:', patientId);
-
-      const familyHistory = await patientService.getPatientFamilyHistory(patientId);
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'FAMILY_HISTORY'
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Lấy thông tin tiền sử gia đình thành công',
-        data: familyHistory
-      });
-
+      const history = await patientService.getPatientFamilyHistory(patientId);
+      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, { metadata: { patientId, type: 'family_history' } })(req, res, () => {});
+      res.json({ success: true, data: history });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 CẬP NHẬT TIỀN SỬ GIA ĐÌNH
-   */
-  async updatePatientFamilyHistory(req, res, next) {
+  async addFamilyHistory(req, res, next) {
     try {
       const { patientId } = req.params;
-      const familyHistoryData = req.body;
-      
-      console.log('✏️ [PATIENT] Updating family history for:', patientId);
-
-      const updatedPatient = await patientService.updatePatientFamilyHistory(
-        patientId, 
-        familyHistoryData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, {
-        resource: 'Patient',
-        resourceId: patientId,
-        category: 'FAMILY_HISTORY',
-        metadata: { 
-          operation: familyHistoryData.operation,
-          condition: familyHistoryData.historyData?.condition 
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Cập nhật thông tin tiền sử gia đình thành công',
-        data: updatedPatient
-      });
-
+      const data = req.body;
+      const added = await patientService.addFamilyHistory(patientId, data);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId, type: 'family_history' } })(req, res, () => {});
+      res.json({ success: true, data: added });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY DANH SÁCH BỆNH NHÂN
-   */
-  async getAllPatients(req, res, next) {
+  async updateFamilyHistory(req, res, next) {
     try {
-      const { page = 1, limit = 12, search = '', status = '', gender = '' } = req.query;
-      
-      console.log('👥 [PATIENT] Getting all patients with filters:', { page, limit, search, status, gender });
-
-      const query = {};
-      
-      // Search by name or email
-      if (search) {
-        query.$or = [
-          { firstName: { $regex: search, $options: 'i' } },
-          { lastName: { $regex: search, $options: 'i' } },
-          { email: { $regex: search, $options: 'i' } },
-          { phone: { $regex: search, $options: 'i' } }
-        ];
-      }
-
-      // Filter by status
-      if (status) {
-        query.status = status;
-      }
-
-      // Filter by gender
-      if (gender) {
-        query.demographics = { gender };
-      }
-
-      const Patient = require('../models/patient.model');
-      const skip = (page - 1) * limit;
-
-      const patients = await Patient.find(query)
-        .select('firstName lastName email phone status gender demographics.dateOfBirth createdAt')
-        .limit(limit * 1)
-        .skip(skip)
-        .sort({ createdAt: -1 });
-
-      const total = await Patient.countDocuments(query);
-
-      res.json({
-        success: true,
-        data: patients,
-        pagination: {
-          total,
-          page: parseInt(page),
-          limit: parseInt(limit),
-          pages: Math.ceil(total / limit)
-        }
-      });
-
+      const { patientId, historyId } = req.params;
+      const data = req.body;
+      const updated = await patientService.updateFamilyHistory(patientId, historyId, data);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId, type: 'family_history' } })(req, res, () => {});
+      res.json({ success: true, data: updated });
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY THỐNG KÊ BỆNH NHÂN
-   */
+  async deleteFamilyHistory(req, res, next) {
+    try {
+      const { patientId, historyId } = req.params;
+      const deleted = await patientService.deleteFamilyHistory(patientId, historyId);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId, type: 'family_history' } })(req, res, () => {});
+      res.json({ success: true, data: deleted });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getEmergencyContacts(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const contacts = await patientService.getEmergencyContacts(patientId);
+      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, { metadata: { patientId, type: 'emergency_contacts' } })(req, res, () => {});
+      res.json({ success: true, data: contacts });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async addEmergencyContact(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const data = req.body;
+      const added = await patientService.addEmergencyContact(patientId, data);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId, type: 'emergency_contacts' } })(req, res, () => {});
+      res.json({ success: true, data: added });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateEmergencyContact(req, res, next) {
+    try {
+      const { patientId, contactId } = req.params;
+      const data = req.body;
+      const updated = await patientService.updateEmergencyContact(patientId, contactId, data);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId, type: 'emergency_contacts' } })(req, res, () => {});
+      res.json({ success: true, data: updated });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteEmergencyContact(req, res, next) {
+    try {
+      const { patientId, contactId } = req.params;
+      const deleted = await patientService.deleteEmergencyContact(patientId, contactId);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId, type: 'emergency_contacts' } })(req, res, () => {});
+      res.json({ success: true, data: deleted });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getPatientConsents(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const consents = await patientService.getPatientConsents(patientId);
+      await auditLog(AUDIT_ACTIONS.PATIENT_VIEW, { metadata: { patientId, type: 'consents' } })(req, res, () => {});
+      res.json({ success: true, data: consents });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async addPatientConsent(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const data = req.body;
+      const added = await patientService.addPatientConsent(patientId, data);
+      await auditLog(AUDIT_ACTIONS.PATIENT_UPDATE, { metadata: { patientId, type: 'consents' } })(req, res, () => {});
+      res.json({ success: true, data: added });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async exportPatientRecordPDF(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const pdfBuffer = await patientService.exportPatientRecordPDF(patientId);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.send(pdfBuffer);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async generatePatientQRCode(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const qrCode = await patientService.generatePatientQRCode(patientId);
+      res.setHeader('Content-Type', 'image/png');
+      res.send(qrCode);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getPatientAccessLogs(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const params = req.query;
+      const logs = await patientService.getPatientAccessLogs(patientId, params);
+      res.json({ success: true, data: logs });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getPatientStats(req, res, next) {
     try {
-      console.log('📊 [PATIENT] Getting patient statistics');
+      const stats = await patientService.getPatientStats();
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-      const Patient = require('../models/patient.model');
-      
-      // Total patients
-      const totalPatients = await Patient.countDocuments();
-      
-      // Active patients (with recent activity)
-      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const activePatients = await Patient.countDocuments({ 
-        lastModified: { $gte: thirtyDaysAgo } 
-      });
+  async getPatientStatistics(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const stats = await patientService.getPatientStatistics(patientId);
+      res.json({ success: true, data: stats });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-      // Patients by status
-      const patientsByStatus = await Patient.aggregate([
-        { $group: { _id: '$status', count: { $sum: 1 } } }
-      ]);
+  async getPatientAppointments(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const params = req.query;
+      const appointments = await patientService.getPatientAppointments(patientId, params);
+      res.json({ success: true, data: appointments });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-      // Patients by gender
-      const patientsByGender = await Patient.aggregate([
-        { $group: { _id: '$demographics.gender', count: { $sum: 1 } } }
-      ]);
+  async getPatientMedicalRecords(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const params = req.query;
+      const records = await patientService.getPatientMedicalRecords(patientId, params);
+      res.json({ success: true, data: records });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-      // New registrations this month
-      const thisMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-      const newThisMonth = await Patient.countDocuments({ 
-        createdAt: { $gte: thisMonthStart } 
-      });
+  async getPatientPrescriptions(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const params = req.query;
+      const prescriptions = await patientService.getPatientPrescriptions(patientId, params);
+      res.json({ success: true, data: prescriptions });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-      // Age distribution
-      const ageDistribution = [
-        { range: '0-18', count: 0 },
-        { range: '19-35', count: 0 },
-        { range: '36-50', count: 0 },
-        { range: '51-65', count: 0 },
-        { range: '65+', count: 0 }
-      ];
+  async getPatientBills(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const params = req.query;
+      const bills = await patientService.getPatientBills(patientId, params);
+      res.json({ success: true, data: bills });
+    } catch (error) {
+      next(error);
+    }
+  }
 
-      const patientsWithAge = await Patient.find({}, { 'demographics.dateOfBirth': 1 });
-      
-      patientsWithAge.forEach(p => {
-        if (!p.demographics?.dateOfBirth) return;
-        
-        const today = new Date();
-        const birthDate = new Date(p.demographics.dateOfBirth);
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
-        }
-
-        if (age <= 18) ageDistribution[0].count++;
-        else if (age <= 35) ageDistribution[1].count++;
-        else if (age <= 50) ageDistribution[2].count++;
-        else if (age <= 65) ageDistribution[3].count++;
-        else ageDistribution[4].count++;
-      });
-
-      res.json({
-        success: true,
-        data: {
-          totalPatients,
-          activePatients,
-          newThisMonth,
-          byStatus: patientsByStatus.reduce((acc, item) => {
-            acc[item._id || 'Unknown'] = item.count;
-            return acc;
-          }, {}),
-          byGender: patientsByGender.reduce((acc, item) => {
-            acc[item._id || 'Unknown'] = item.count;
-            return acc;
-          }, {}),
-          ageDistribution
-        }
-      });
-
+  async getPatientLabResults(req, res, next) {
+    try {
+      const { patientId } = req.params;
+      const params = req.query;
+      const results = await patientService.getPatientLabResults(patientId, params);
+      res.json({ success: true, data: results });
     } catch (error) {
       next(error);
     }
   }
 }
-
 
 module.exports = new PatientController();

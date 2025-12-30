@@ -1,581 +1,635 @@
-// src/services/billing.service.js
+// services/billing.service.js - Phiên bản ĐẦY ĐỦ, CHUYÊN NGHIỆP, CHI TIẾT 2025
 const Bill = require('../models/bill.model');
 const Patient = require('../models/patient.model');
 const { AppError } = require('../middlewares/error.middleware');
+const mongoose = require('mongoose');
+const PDFDocument = require('pdfkit');
+const { format } = require('date-fns');
 
 class BillingService {
   /**
-   * 🎯 TẠO HÓA ĐƠN MỚI
+   * 🎯 TẠO HÓA ĐƠN MỚI - ĐẦY ĐỦ LOGIC TÍNH TOÁN
    */
   async createBill(patientId, billData, createdBy) {
-    try {
-      // Kiểm tra bệnh nhân tồn tại và populate thông tin user
-      const patient = await Patient.findById(patientId).populate('userId', 'personalInfo email');
-      
-      if (!patient) {
-        throw new AppError('Không tìm thấy bệnh nhân', 404, 'PATIENT_NOT_FOUND');
-      }
-
-      // Tạo mã hóa đơn tự động
-      const billCount = await Bill.countDocuments();
-      const billId = `HD${String(billCount + 1).padStart(6, '0')}`;
-
-      // Chuyển đổi items thành services format của model
-      const services = (billData.items || []).map(item => ({
-        serviceName: item.description,
-        description: item.description,
-        quantity: item.quantity || 1,
-        unitPrice: item.unitPrice,
-        discount: 0,
-        taxRate: billData.taxRate || 0,
-        total: (item.quantity || 1) * item.unitPrice
-      }));
-
-      // Tính toán các trường theo model
-      const subtotal = services.reduce((sum, service) => sum + service.total, 0);
-      const totalTax = subtotal * (billData.taxRate || 0) / 100;
-      const grandTotal = subtotal + totalTax;
-      const balanceDue = grandTotal; // Chưa thanh toán gì
-
-      const bill = new Bill({
-        billId,
-        patientId,
-        billType: (billData.items && billData.items[0] && billData.items[0].category) || 'OTHER',
-        services,
-        subtotal,
-        totalTax,
-        grandTotal,
-        balanceDue,
-        status: 'ISSUED',
-        dueDate: billData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        createdBy,
-        notes: billData.notes
-      });
-
-      return await bill.save();
-    } catch (error) {
-      console.error('❌ [BILLING SERVICE] Create bill error:', error);
-      throw error;
+    // Validate patientId
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      throw new AppError('ID bệnh nhân không hợp lệ', 400);
     }
+
+    // Kiểm tra bệnh nhân tồn tại
+    const patient = await Patient.findById(patientId).select('personalInfo patientId insurance');
+    if (!patient) {
+      throw new AppError('Không tìm thấy bệnh nhân', 404);
+    }
+
+    // Tính toán chi tiết từ services
+    let subtotal = 0;
+    let totalDiscount = 0;
+    let totalTax = 0;
+
+    const processedServices = billData.services.map(service => {
+      const serviceTotal = service.quantity * service.unitPrice;
+      const discountAmount = service.discount || 0;
+      const afterDiscount = serviceTotal - discountAmount;
+      const taxAmount = afterDiscount * (service.taxRate || billData.taxRate || 0) / 100;
+
+      subtotal += afterDiscount;
+      totalDiscount += discountAmount;
+      totalTax += taxAmount;
+
+      return {
+        serviceCode: service.serviceCode || null,
+        serviceName: service.serviceName,
+        description: service.description || '',
+        quantity: service.quantity,
+        unitPrice: service.unitPrice,
+        discount: discountAmount,
+        taxRate: service.taxRate || billData.taxRate || 0,
+        total: afterDiscount + taxAmount
+      };
+    });
+
+    const grandTotal = subtotal + totalTax;
+    const balanceDue = grandTotal;
+
+    // Tạo billId duy nhất
+    const billCount = await Bill.countDocuments();
+    const billId = `HD${format(new Date(), 'yyyyMMdd')}-${String(billCount + 1).padStart(5, '0')}`;
+
+    const newBill = new Bill({
+      billId,
+      patientId,
+      issueDate: new Date(),
+      dueDate: billData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 ngày mặc định
+      billType: billData.billType,
+      services: processedServices,
+      subtotal,
+      totalDiscount,
+      totalTax,
+      grandTotal,
+      amountPaid: 0,
+      balanceDue,
+      insurance: billData.insurance || patient.insurance || null,
+      notes: billData.notes || '',
+      terms: billData.terms || '',
+      status: 'ISSUED',
+      createdBy
+    });
+
+    await newBill.save();
+    await newBill.populate('patientId', 'personalInfo patientId');
+    await newBill.populate('createdBy', 'personalInfo');
+
+    return newBill;
   }
 
   /**
-   * 🎯 LẤY THÔNG TIN HÓA ĐƠN
+   * 🎯 LẤY THÔNG TIN HÓA ĐƠN CHI TIẾT
    */
-  async getBill(billId, userId, userRole) {
-    try {
-      const bill = await Bill.findById(billId)
-        .populate('patientId', 'personalInfo patientId');
+  async getBill(billId) {
+    const bill = await Bill.findById(billId)
+      .populate('patientId', 'personalInfo patientId insurance')
+      .populate('createdBy', 'personalInfo')
+      .populate('payments.processedBy', 'personalInfo');
 
-      if (!bill) {
-        throw new AppError('Không tìm thấy hóa đơn', 404, 'BILL_NOT_FOUND');
-      }
-
-      // Kiểm tra quyền truy cập
-      if (userRole === 'PATIENT' && bill.patientId._id.toString() !== userId) {
-        throw new AppError('Bạn chỉ được xem hóa đơn của chính mình', 403, 'ACCESS_DENIED');
-      }
-
-      return bill;
-    } catch (error) {
-      console.error('❌ [BILLING SERVICE] Get bill error:', error);
-      throw error;
+    if (!bill) {
+      throw new AppError('Không tìm thấy hóa đơn', 404);
     }
+
+    return bill;
   }
 
   /**
-   * 🎯 CẬP NHẬT HÓA ĐƠN
+   * 🎯 LẤY DANH SÁCH HÓA ĐƠN VỚI PHÂN TRANG & FILTER
+   */
+  async getBills(filters = {}) {
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      billType,
+      startDate,
+      endDate,
+      patientId,
+      sortBy = 'issueDate',
+      sortOrder = 'desc'
+    } = filters;
+
+    const query = {};
+
+    if (status) query.status = status;
+    if (billType) query.billType = billType;
+    if (patientId) query.patientId = patientId;
+    if (startDate || endDate) {
+      query.issueDate = {};
+      if (startDate) query.issueDate.$gte = new Date(startDate);
+      if (endDate) query.issueDate.$lte = new Date(endDate);
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [bills, total] = await Promise.all([
+      Bill.find(query)
+        .populate('patientId', 'personalInfo patientId')
+        .populate('createdBy', 'personalInfo')
+        .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
+        .skip(skip)
+        .limit(parseInt(limit)),
+      Bill.countDocuments(query)
+    ]);
+
+    return {
+      bills,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page * limit < total,
+        hasPrev: page > 1
+      }
+    };
+  }
+
+  /**
+   * 🎯 CẬP NHẬT HÓA ĐƠN (chỉ khi chưa thanh toán hết hoặc chưa hủy)
    */
   async updateBill(billId, updateData, updatedBy) {
-    try {
-      const bill = await Bill.findById(billId);
-      if (!bill) {
-        throw new AppError('Không tìm thấy hóa đơn', 404, 'BILL_NOT_FOUND');
-      }
-
-      // Kiểm tra trạng thái hóa đơn
-      if (bill.status === 'PAID') {
-        throw new AppError('Không thể cập nhật hóa đơn đã thanh toán', 400, 'BILL_ALREADY_PAID');
-      }
-
-      if (bill.status === 'VOIDED') {
-        throw new AppError('Không thể cập nhật hóa đơn đã hủy', 400, 'BILL_VOIDED');
-      }
-
-      // Cập nhật thông tin
-      if (updateData.items) {
-        bill.items = updateData.items;
-        bill.totalAmount = this.calculateTotalAmount(updateData.items);
-        bill.taxAmount = this.calculateTax(bill.totalAmount, bill.taxRate);
-        bill.finalAmount = bill.totalAmount + bill.taxAmount;
-      }
-
-      if (updateData.taxRate !== undefined) {
-        bill.taxRate = updateData.taxRate;
-        bill.taxAmount = this.calculateTax(bill.totalAmount, bill.taxRate);
-        bill.finalAmount = bill.totalAmount + bill.taxAmount;
-      }
-
-      if (updateData.dueDate) {
-        bill.dueDate = updateData.dueDate;
-      }
-
-      if (updateData.notes !== undefined) {
-        bill.notes = updateData.notes;
-      }
-
-      bill.updatedBy = updatedBy;
-      bill.updatedAt = new Date();
-
-      return await bill.save();
-    } catch (error) {
-      console.error('❌ [BILLING SERVICE] Update bill error:', error);
-      throw error;
+    const bill = await Bill.findById(billId);
+    if (!bill) {
+      throw new AppError('Không tìm thấy hóa đơn', 404);
     }
-  }
 
-  /**
-   * 🎯 LẤY DANH SÁCH HÓA ĐƠN CỦA BỆNH NHÂN
-   */
-  async getPatientBills(patientId, userId, userRole, filters = {}) {
-    try {
-      // Kiểm tra bệnh nhân tồn tại
-      const patient = await Patient.findById(patientId);
-      if (!patient) {
-        throw new AppError('Không tìm thấy bệnh nhân', 404, 'PATIENT_NOT_FOUND');
-      }
-
-      // Kiểm tra quyền truy cập
-      if (userRole === 'PATIENT' && patientId !== userId) {
-        throw new AppError('Bạn chỉ được xem hóa đơn của chính mình', 403, 'ACCESS_DENIED');
-      }
-
-      // Xây dựng query
-      const query = { patientId };
-      if (filters.status) {
-        query.status = filters.status;
-      }
-      if (filters.startDate || filters.endDate) {
-        query.createdAt = {};
-        if (filters.startDate) query.createdAt.$gte = new Date(filters.startDate);
-        if (filters.endDate) query.createdAt.$lte = new Date(filters.endDate);
-      }
-
-      const page = parseInt(filters.page) || 1;
-      const limit = parseInt(filters.limit) || 10;
-      const skip = (page - 1) * limit;
-
-      // Manual pagination
-      const [bills, totalDocs] = await Promise.all([
-        Bill.find(query)
-          .sort({ createdAt: -1 })
-          .skip(skip)
-          .limit(limit)
-          .populate('createdBy', 'name email'),
-        Bill.countDocuments(query)
-      ]);
-
-      return {
-        docs: bills,
-        totalDocs,
-        limit,
-        page,
-        totalPages: Math.ceil(totalDocs / limit),
-        hasNextPage: page < Math.ceil(totalDocs / limit),
-        hasPrevPage: page > 1
-      };
-    } catch (error) {
-      console.error('❌ [BILLING SERVICE] Get patient bills error:', error);
-      throw error;
+    if (bill.status === 'PAID') {
+      throw new AppError('Không thể cập nhật hóa đơn đã thanh toán hoàn tất', 400);
     }
-  }
 
-  /**
-   * 🎯 XỬ LÝ THANH TOÁN
-   */
-  async processPayment(billId, paymentData, processedBy) {
-    try {
-      const bill = await Bill.findById(billId);
-      if (!bill) {
-        throw new AppError('Không tìm thấy hóa đơn', 404, 'BILL_NOT_FOUND');
-      }
-
-      // Kiểm tra trạng thái hóa đơn
-      if (bill.status === 'PAID') {
-        throw new AppError('Hóa đơn đã được thanh toán', 400, 'BILL_ALREADY_PAID');
-      }
-
-      if (bill.status === 'VOIDED') {
-        throw new AppError('Không thể thanh toán hóa đơn đã hủy', 400, 'BILL_VOIDED');
-      }
-
-      // Kiểm tra số tiền thanh toán
-      const remainingAmount = bill.finalAmount - bill.paidAmount;
-      if (paymentData.amount > remainingAmount) {
-        throw new AppError('Số tiền thanh toán vượt quá số tiền còn nợ', 400, 'PAYMENT_AMOUNT_EXCEEDED');
-      }
-
-      // Tạo giao dịch thanh toán
-      const payment = {
-        paymentDate: new Date(),
-        amount: paymentData.amount,
-        paymentMethod: paymentData.paymentMethod,
-        referenceNumber: paymentData.referenceNumber,
-        notes: paymentData.notes,
-        processedBy
-      };
-
-      bill.payments.push(payment);
-      bill.paidAmount += paymentData.amount;
-
-      // Cập nhật trạng thái hóa đơn
-      if (bill.paidAmount >= bill.finalAmount) {
-        bill.status = 'PAID';
-        bill.paidAt = new Date();
-      } else if (bill.paidAmount > 0) {
-        bill.status = 'PARTIAL';
-      }
-
-      bill.updatedBy = processedBy;
-      bill.updatedAt = new Date();
-
-      return await bill.save();
-    } catch (error) {
-      console.error('❌ [BILLING SERVICE] Process payment error:', error);
-      throw error;
+    if (bill.status === 'VOIDED') {
+      throw new AppError('Không thể cập nhật hóa đơn đã hủy', 400);
     }
-  }
 
-  /**
-   * 🎯 LẤY LỊCH SỬ THANH TOÁN
-   */
-  async getPaymentHistory(patientId, userId, userRole, filters = {}) {
-    try {
-      // Kiểm tra bệnh nhân tồn tại
-      const patient = await Patient.findById(patientId);
-      if (!patient) {
-        throw new AppError('Không tìm thấy bệnh nhân', 404, 'PATIENT_NOT_FOUND');
-      }
+    // Cập nhật services nếu có
+    if (updateData.services) {
+      let subtotal = 0;
+      let totalDiscount = 0;
+      let totalTax = 0;
 
-      // Kiểm tra quyền truy cập
-      if (userRole === 'PATIENT' && patientId !== userId) {
-        throw new AppError('Bạn chỉ được xem lịch sử thanh toán của chính mình', 403, 'ACCESS_DENIED');
-      }
+      bill.services = updateData.services.map(service => {
+        const serviceTotal = service.quantity * service.unitPrice;
+        const discountAmount = service.discount || 0;
+        const afterDiscount = serviceTotal - discountAmount;
+        const taxAmount = afterDiscount * (service.taxRate || bill.taxRate || 0) / 100;
 
-      // Xây dựng query
-      const paymentQuery = { 
-        patientId,
-        'payments.0': { $exists: true }
-      };
+        subtotal += afterDiscount;
+        totalDiscount += discountAmount;
+        totalTax += taxAmount;
 
-      if (filters.startDate || filters.endDate) {
-        paymentQuery['payments.paymentDate'] = {};
-        if (filters.startDate) {
-          paymentQuery['payments.paymentDate'].$gte = new Date(filters.startDate);
-        }
-        if (filters.endDate) {
-          paymentQuery['payments.paymentDate'].$lte = new Date(filters.endDate);
-        }
-      }
-
-      const bills = await Bill.find(paymentQuery)
-        .select('billNumber payments patientInfo finalAmount paidAmount status createdAt')
-        .sort({ 'payments.paymentDate': -1 })
-        .lean();
-
-      // Xử lý dữ liệu payments
-      let allPayments = [];
-      bills.forEach(bill => {
-        bill.payments.forEach(payment => {
-          allPayments.push({
-            billNumber: bill.billNumber,
-            billId: bill._id,
-            patientInfo: bill.patientInfo,
-            paymentDate: payment.paymentDate,
-            amount: payment.amount,
-            paymentMethod: payment.paymentMethod,
-            referenceNumber: payment.referenceNumber,
-            totalAmount: bill.finalAmount,
-            paidAmount: bill.paidAmount,
-            status: bill.status,
-            billCreatedAt: bill.createdAt
-          });
-        });
+        return {
+          ...service,
+          discount: discountAmount,
+          total: afterDiscount + taxAmount
+        };
       });
 
-      // Lọc theo payment method nếu có
-      if (filters.paymentMethod) {
-        allPayments = allPayments.filter(
-          payment => payment.paymentMethod === filters.paymentMethod
-        );
-      }
-
-      // Phân trang
-      const page = filters.page || 1;
-      const limit = filters.limit || 10;
-      const startIndex = (page - 1) * limit;
-      const endIndex = startIndex + parseInt(limit);
-
-      return {
-        payments: allPayments.slice(startIndex, endIndex),
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages: Math.ceil(allPayments.length / limit),
-          totalPayments: allPayments.length,
-          hasNext: endIndex < allPayments.length,
-          hasPrev: startIndex > 0
-        }
-      };
-    } catch (error) {
-      console.error('❌ [BILLING SERVICE] Get payment history error:', error);
-      throw error;
+      bill.subtotal = subtotal;
+      bill.totalDiscount = totalDiscount;
+      bill.totalTax = totalTax;
+      bill.grandTotal = subtotal + totalTax;
+      bill.balanceDue = bill.grandTotal - bill.amountPaid;
     }
+
+    // Cập nhật các trường khác
+    if (updateData.dueDate) bill.dueDate = updateData.dueDate;
+    if (updateData.notes !== undefined) bill.notes = updateData.notes;
+    if (updateData.terms !== undefined) bill.terms = updateData.terms;
+    if (updateData.insurance) bill.insurance = { ...bill.insurance, ...updateData.insurance };
+
+    bill.updatedBy = updatedBy;
+    bill.updatedAt = new Date();
+
+    await bill.save();
+    await bill.populate('patientId createdBy');
+
+    return bill;
   }
 
   /**
    * 🎯 HỦY HÓA ĐƠN
    */
   async voidBill(billId, reason, voidedBy) {
-    try {
-      const bill = await Bill.findById(billId);
-      if (!bill) {
-        throw new AppError('Không tìm thấy hóa đơn', 404, 'BILL_NOT_FOUND');
-      }
-
-      // Kiểm tra trạng thái hóa đơn
-      if (bill.status === 'PAID') {
-        throw new AppError('Không thể hủy hóa đơn đã thanh toán', 400, 'BILL_ALREADY_PAID');
-      }
-
-      if (bill.status === 'VOIDED') {
-        throw new AppError('Hóa đơn đã được hủy trước đó', 400, 'BILL_ALREADY_VOIDED');
-      }
-
-      // Hủy hóa đơn
-      bill.status = 'VOIDED';
-      bill.voidReason = reason.trim();
-      bill.voidedBy = voidedBy;
-      bill.voidedAt = new Date();
-      bill.updatedBy = voidedBy;
-      bill.updatedAt = new Date();
-
-      return await bill.save();
-    } catch (error) {
-      console.error('❌ [BILLING SERVICE] Void bill error:', error);
-      throw error;
+    const bill = await Bill.findById(billId);
+    if (!bill) {
+      throw new AppError('Không tìm thấy hóa đơn', 404);
     }
-  }
 
-  /**
-   * 🎯 TÍNH TỔNG TIỀN
-   */
-  calculateTotalAmount(items) {
-    return items.reduce((total, item) => {
-      return total + (item.quantity * item.unitPrice);
-    }, 0);
-  }
-
-  /**
-   * 🎯 TÍNH THUẾ
-   */
-  calculateTax(amount, taxRate = 0) {
-    return amount * (taxRate / 100);
-  }
-
-  /**
-   * 🎯 LẤY THỐNG KÊ DOANH THU
-   */
-  async getRevenueStats(timeRange = 'month') {
-    try {
-      const now = new Date();
-      let startDate;
-
-      switch (timeRange) {
-        case 'day':
-          startDate = new Date(now.setHours(0, 0, 0, 0));
-          break;
-        case 'week':
-          startDate = new Date(now.setDate(now.getDate() - 7));
-          break;
-        case 'month':
-          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-          break;
-        case 'year':
-          startDate = new Date(now.getFullYear(), 0, 1);
-          break;
-        default:
-          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      }
-
-      const stats = await Bill.aggregate([
-        {
-          $match: {
-            createdAt: { $gte: startDate },
-            status: { $in: ['PAID', 'PARTIAL'] }
-          }
-        },
-        {
-          $group: {
-            _id: null,
-            totalRevenue: { $sum: '$paidAmount' },
-            totalBills: { $sum: 1 },
-            averageBillAmount: { $avg: '$finalAmount' }
-          }
-        }
-      ]);
-
-      return stats[0] || { totalRevenue: 0, totalBills: 0, averageBillAmount: 0 };
-    } catch (error) {
-      console.error('❌ [BILLING SERVICE] Get revenue stats error:', error);
-      throw error;
+    if (bill.status === 'PAID') {
+      throw new AppError('Không thể hủy hóa đơn đã thanh toán hoàn tất', 400);
     }
+
+    if (bill.status === 'VOIDED') {
+      throw new AppError('Hóa đơn đã được hủy trước đó', 400);
+    }
+
+    bill.status = 'VOIDED';
+    bill.voidReason = reason;
+    bill.voidedBy = voidedBy;
+    bill.voidedAt = new Date();
+    bill.updatedBy = voidedBy;
+
+    await bill.save();
+    return bill;
   }
 
   /**
-   * 🎯 LẤY TẤT CẢ HÓA ĐƠN
+   * 🎯 XỬ LÝ THANH TOÁN
    */
-  async getAllBills(options = {}) {
-    try {
-      const { 
-        page = 1, 
-        limit = 10,
-        status,
-        sortBy = 'createdAt',
-        sortOrder = 'desc'
-      } = options;
+  async processPayment(billId, paymentData, processedBy) {
+    const bill = await Bill.findById(billId);
+    if (!bill) {
+      throw new AppError('Không tìm thấy hóa đơn', 404);
+    }
 
-      const skip = (page - 1) * limit;
-      const filter = {};
+    if (bill.status === 'VOIDED') {
+      throw new AppError('Không thể thanh toán hóa đơn đã hủy', 400);
+    }
 
-      if (status) {
-        filter.status = status;
-      }
+    if (bill.status === 'PAID') {
+      throw new AppError('Hóa đơn đã được thanh toán hoàn tất', 400);
+    }
 
-      const bills = await Bill.find(filter)
-        .populate('patientId', 'personalInfo patientId')
-        .populate('createdBy', 'personalInfo email')
-        .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
+    const remaining = bill.balanceDue;
+    if (paymentData.amount > remaining) {
+      throw new AppError(`Số tiền thanh toán (${paymentData.amount}) vượt quá số dư còn lại (${remaining})`, 400);
+    }
+
+    const payment = {
+      paymentDate: new Date(),
+      amount: paymentData.amount,
+      method: paymentData.method,
+      reference: paymentData.reference || null,
+      notes: paymentData.notes || '',
+      processedBy,
+      status: 'COMPLETED'
+    };
+
+    bill.payments.push(payment);
+    bill.amountPaid += paymentData.amount;
+    bill.balanceDue = bill.grandTotal - bill.amountPaid;
+
+    // Cập nhật trạng thái
+    if (bill.balanceDue <= 0) {
+      bill.status = 'PAID';
+      bill.paidAt = new Date();
+    } else {
+      bill.status = 'PARTIAL';
+    }
+
+    bill.updatedBy = processedBy;
+    await bill.save();
+
+    await bill.populate('payments.processedBy', 'personalInfo');
+    return bill;
+  }
+
+  /**
+   * 🎯 LẤY LỊCH SỬ THANH TOÁN CỦA HÓA ĐƠN
+   */
+  async getPaymentHistory(billId) {
+    const bill = await Bill.findById(billId)
+      .select('payments billId grandTotal amountPaid balanceDue')
+      .populate('payments.processedBy', 'personalInfo');
+
+    if (!bill) {
+      throw new AppError('Không tìm thấy hóa đơn', 404);
+    }
+
+    return {
+      billId: bill.billId,
+      totalAmount: bill.grandTotal,
+      paidAmount: bill.amountPaid,
+      balanceDue: bill.balanceDue,
+      payments: bill.payments
+    };
+  }
+
+  /**
+   * 🎯 HOÀN TIỀN THANH TOÁN
+   */
+  async refundPayment(paymentId, refundData, refundedBy) {
+    const bill = await Bill.findOne({ 'payments._id': paymentId });
+    if (!bill) {
+      throw new AppError('Không tìm thấy thanh toán', 404);
+    }
+
+    const payment = bill.payments.id(paymentId);
+    if (!payment) {
+      throw new AppError('Không tìm thấy thanh toán', 404);
+    }
+
+    if (payment.status === 'REFUNDED') {
+      throw new AppError('Thanh toán này đã được hoàn tiền trước đó', 400);
+    }
+
+    const refundAmount = refundData.amount || payment.amount;
+
+    if (refundAmount > payment.amount) {
+      throw new AppError('Số tiền hoàn vượt quá số tiền thanh toán ban đầu', 400);
+    }
+
+    // Tạo bản ghi hoàn tiền
+    payment.refund = {
+      amount: refundAmount,
+      reason: refundData.reason,
+      notes: refundData.notes || '',
+      refundDate: new Date(),
+      refundedBy
+    };
+    payment.status = 'REFUNDED';
+
+    // Cập nhật tổng tiền
+    bill.amountPaid -= refundAmount;
+    bill.balanceDue = bill.grandTotal - bill.amountPaid;
+
+    // Cập nhật trạng thái hóa đơn
+    if (bill.balanceDue >= bill.grandTotal) {
+      bill.status = 'ISSUED';
+    } else if (bill.balanceDue > 0) {
+      bill.status = 'PARTIAL';
+    }
+
+    bill.updatedBy = refundedBy;
+    await bill.save();
+
+    return {
+      billId: bill.billId,
+      paymentId,
+      refundAmount,
+      newBalance: bill.balanceDue,
+      billStatus: bill.status
+    };
+  }
+
+  /**
+   * 🎯 LẤY HÓA ĐƠN CỦA BỆNH NHÂN
+   */
+  async getPatientBills(patientId, filters = {}) {
+    if (!mongoose.Types.ObjectId.isValid(patientId)) {
+      throw new AppError('ID bệnh nhân không hợp lệ', 400);
+    }
+
+    const {
+      page = 1,
+      limit = 10,
+      status,
+      startDate,
+      endDate
+    } = filters;
+
+    const query = { patientId };
+    if (status) query.status = status;
+    if (startDate || endDate) {
+      query.issueDate = {};
+      if (startDate) query.issueDate.$gte = new Date(startDate);
+      if (endDate) query.issueDate.$lte = new Date(endDate);
+    }
+
+    const skip = (page - 1) * limit;
+
+    const [bills, total] = await Promise.all([
+      Bill.find(query)
+        .sort({ issueDate: -1 })
         .skip(skip)
-        .limit(limit);
+        .limit(parseInt(limit))
+        .select('billId issueDate dueDate grandTotal amountPaid balanceDue status billType'),
+      Bill.countDocuments(query)
+    ]);
 
-      const total = await Bill.countDocuments(filter);
-
-      return {
-        bills,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      };
-    } catch (error) {
-      console.error('❌ [BILLING SERVICE] Get all bills error:', error);
-      throw error;
-    }
+    return {
+      bills,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   /**
-   * 🎯 HỒI TIỀN
+   * 🎯 XÁC MINH BẢO HIỂM
    */
-  async refundPayment(paymentId, refundData, userId) {
-    try {
-      const Bill = require('../models/bill.model');
-      
-      // Tìm hóa đơn có payment này
-      const bill = await Bill.findOne({ 
-        'payments._id': paymentId 
-      });
-
-      if (!bill) {
-        throw new AppError('Không tìm thấy thanh toán', 404, 'PAYMENT_NOT_FOUND');
-      }
-
-      // Tìm payment
-      const payment = bill.payments.id(paymentId);
-      if (!payment) {
-        throw new AppError('Không tìm thấy thanh toán', 404, 'PAYMENT_NOT_FOUND');
-      }
-
-      // Kiểm tra có thể hoàn tiền
-      if (payment.status === 'REFUNDED') {
-        throw new AppError('Thanh toán này đã được hoàn tiền', 400, 'PAYMENT_ALREADY_REFUNDED');
-      }
-
-      // Tạo refund
-      const refund = {
-        _id: require('mongoose').Types.ObjectId(),
-        amount: refundData.amount || payment.amount,
-        reason: refundData.reason || 'Customer request',
-        refundDate: new Date(),
-        refundedBy: userId,
-        status: 'COMPLETED'
-      };
-
-      // Cập nhật payment
-      payment.status = 'REFUNDED';
-      payment.refund = refund;
-
-      // Tính toán lại balanceDue
-      const totalPaid = bill.payments
-        .filter(p => p.status !== 'REFUNDED')
-        .reduce((sum, p) => sum + p.amount, 0);
-
-      bill.balanceDue = bill.grandTotal - totalPaid + refund.amount;
-      if (bill.balanceDue === 0) {
-        bill.status = 'PAID';
-      } else if (bill.balanceDue < bill.grandTotal && bill.balanceDue > 0) {
-        bill.status = 'PARTIAL';
-      }
-
-      await bill.save();
-
-      return {
-        paymentId,
-        refund,
-        newBalance: bill.balanceDue
-      };
-    } catch (error) {
-      console.error('❌ [BILLING SERVICE] Refund payment error:', error);
-      throw error;
+  async verifyInsurance(patientId, insuranceData) {
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      throw new AppError('Không tìm thấy bệnh nhân', 404);
     }
+
+    patient.insurance = {
+      ...patient.insurance,
+      ...insuranceData,
+      verificationStatus: 'VERIFIED',
+      verifiedAt: new Date(),
+      verifiedBy: insuranceData.verifiedBy || null
+    };
+
+    await patient.save();
+    return patient.insurance;
   }
 
   /**
-   * 🎯 LẤY CÁC HÓA ĐƠN CHƯA THANH TOÁN
+   * 🎯 GỬI YÊU CẦU BẢO HIỂM
    */
-  async getOutstandingBills(options = {}) {
-    try {
-      const { page = 1, limit = 10 } = options;
-      const skip = (page - 1) * limit;
+  async submitInsuranceClaim(billId, claimData, submittedBy) {
+    const bill = await Bill.findById(billId);
+    if (!bill) {
+      throw new AppError('Không tìm thấy hóa đơn', 404);
+    }
 
-      const bills = await Bill.find({
-        status: { $in: ['ISSUED', 'PARTIAL'] },
-        balanceDue: { $gt: 0 }
-      })
+    if (!bill.insurance || !bill.insurance.policyNumber) {
+      throw new AppError('Hóa đơn chưa có thông tin bảo hiểm', 400);
+    }
+
+    bill.insurance.claim = {
+      ...claimData,
+      claimId: `CLAIM-${Date.now()}`,
+      status: 'SUBMITTED',
+      submittedAt: new Date(),
+      submittedBy
+    };
+
+    await bill.save();
+    return bill.insurance.claim;
+  }
+
+  /**
+   * 🎯 LẤY HÓA ĐƠN CHƯA THANH TOÁN
+   */
+  async getOutstandingBills(filters = {}) {
+    const { page = 1, limit = 10 } = filters;
+    const skip = (page - 1) * limit;
+
+    const query = {
+      status: { $in: ['ISSUED', 'PARTIAL'] },
+      balanceDue: { $gt: 0 }
+    };
+
+    const [bills, total] = await Promise.all([
+      Bill.find(query)
         .populate('patientId', 'personalInfo patientId')
         .sort({ dueDate: 1 })
         .skip(skip)
-        .limit(limit);
+        .limit(parseInt(limit)),
+      Bill.countDocuments(query)
+    ]);
 
-      const total = await Bill.countDocuments({
-        status: { $in: ['ISSUED', 'PARTIAL'] },
-        balanceDue: { $gt: 0 }
-      });
+    return {
+      bills,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
 
-      return {
-        bills,
-        pagination: {
-          page,
-          limit,
-          total,
-          pages: Math.ceil(total / limit)
-        }
-      };
-    } catch (error) {
-      console.error('❌ [BILLING SERVICE] Get outstanding bills error:', error);
-      throw error;
+  /**
+   * 🎯 THỐNG KÊ DOANH THU
+   */
+  async getRevenueStats(filters = {}) {
+    const { startDate, endDate, groupBy = 'day' } = filters;
+
+    const match = { status: { $in: ['PAID', 'PARTIAL'] } };
+    if (startDate || endDate) {
+      match.issueDate = {};
+      if (startDate) match.issueDate.$gte = new Date(startDate);
+      if (endDate) match.issueDate.$lte = new Date(endDate);
     }
+
+    const groupFormat = groupBy === 'month' ? '%Y-%m' : groupBy === 'day' ? '%Y-%m-%d' : '%Y';
+
+    const stats = await Bill.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: { $dateToString: { format: groupFormat, date: '$issueDate' } },
+          totalRevenue: { $sum: '$amountPaid' },
+          totalBills: { $sum: 1 },
+          paidBills: { $sum: { $cond: [{ $eq: ['$status', 'PAID'] }, 1, 0] } }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    const totalRevenue = stats.reduce((sum, item) => sum + item.totalRevenue, 0);
+
+    return {
+      period: { startDate, endDate },
+      totalRevenue,
+      totalBills: stats.reduce((sum, item) => sum + item.totalBills, 0),
+      dailyStats: stats
+    };
+  }
+
+  /**
+   * 🎯 XUẤT HÓA ĐƠN PDF CHI TIẾT
+   */
+  async generateInvoicePDF(billId) {
+    const bill = await this.getBill(billId);
+
+    const doc = new PDFDocument({ margin: 50 });
+    const buffers = [];
+
+    doc.on('data', buffers.push.bind(buffers));
+    doc.on('end', () => {});
+
+    // Header
+    doc.fontSize(20).text('HÓA ĐƠN DỊCH VỤ Y TẾ', { align: 'center' });
+    doc.moveDown();
+
+    // Thông tin hóa đơn
+    doc.fontSize(12).text(`Số hóa đơn: ${bill.billId}`);
+    doc.text(`Ngày lập: ${format(new Date(bill.issueDate), 'dd/MM/yyyy')}`);
+    doc.text(`Hạn thanh toán: ${format(new Date(bill.dueDate), 'dd/MM/yyyy')}`);
+    doc.moveDown();
+
+    // Thông tin bệnh nhân
+    doc.text('THÔNG TIN BỆNH NHÂN', { underline: true });
+    doc.text(`Họ tên: ${bill.patientId.personalInfo.firstName} ${bill.patientId.personalInfo.lastName}`);
+    doc.text(`Mã BN: ${bill.patientId.patientId}`);
+    doc.moveDown();
+
+    // Bảng dịch vụ
+    const tableTop = doc.y + 20;
+    const tableLeft = 50;
+
+    // Header bảng
+    doc.fontSize(10).font('Helvetica-Bold');
+    doc.text('STT', tableLeft, tableTop);
+    doc.text('Dịch vụ', tableLeft + 40, tableTop);
+    doc.text('SL', tableLeft + 200, tableTop, { width: 50, align: 'center' });
+    doc.text('Đơn giá', tableLeft + 250, tableTop, { width: 80, align: 'right' });
+    doc.text('Chiết khấu', tableLeft + 330, tableTop, { width: 80, align: 'right' });
+    doc.text('Thành tiền', tableLeft + 410, tableTop, { width: 80, align: 'right' });
+
+    doc.moveTo(tableLeft, tableTop + 15).lineTo(500, tableTop + 15).stroke();
+
+    // Dòng dịch vụ
+    let y = tableTop + 30;
+    bill.services.forEach((service, i) => {
+      doc.font('Helvetica').fontSize(10);
+      doc.text(i + 1, tableLeft, y);
+      doc.text(service.serviceName, tableLeft + 40, y, { width: 150 });
+      doc.text(service.quantity, tableLeft + 200, y, { width: 50, align: 'center' });
+      doc.text(service.unitPrice.toLocaleString('vi-VN'), tableLeft + 250, y, { width: 80, align: 'right' });
+      doc.text(service.discount.toLocaleString('vi-VN'), tableLeft + 330, y, { width: 80, align: 'right' });
+      doc.text(service.total.toLocaleString('vi-VN'), tableLeft + 410, y, { width: 80, align: 'right' });
+      y += 20;
+    });
+
+    // Tổng cộng
+    y += 20;
+    doc.font('Helvetica-Bold');
+    doc.text('Tổng cộng:', tableLeft + 300, y);
+    doc.text(bill.grandTotal.toLocaleString('vi-VN') + ' VND', tableLeft + 410, y, { width: 80, align: 'right' });
+
+    doc.end();
+
+    return Buffer.concat(buffers);
+  }
+
+  /**
+   * 🎯 XUẤT BIÊN LAI THANH TOÁN PDF
+   */
+  async generateReceiptPDF(paymentId) {
+    const bill = await Bill.findOne({ 'payments._id': paymentId });
+    if (!bill) throw new AppError('Không tìm thấy thanh toán', 404);
+
+    const payment = bill.payments.id(paymentId);
+
+    const doc = new PDFDocument({ margin: 50 });
+    const buffers = [];
+
+    doc.on('data', buffers.push.bind(buffers));
+    doc.on('end', () => {});
+
+    doc.fontSize(20).text('BIÊN LAI THU TIỀN', { align: 'center' });
+    doc.moveDown();
+
+    doc.fontSize(12);
+    doc.text(`Số biên lai: BL${payment._id.toString().slice(-8).toUpperCase()}`);
+    doc.text(`Ngày thu: ${format(new Date(payment.paymentDate), 'dd/MM/yyyy HH:mm')}`);
+    doc.text(`Hóa đơn: ${bill.billId}`);
+    doc.moveDown();
+
+    doc.text(`Số tiền thanh toán: ${payment.amount.toLocaleString('vi-VN')} VND`);
+    doc.text(`Phương thức: ${payment.method}`);
+    if (payment.reference) doc.text(`Tham chiếu: ${payment.reference}`);
+    if (payment.notes) doc.text(`Ghi chú: ${payment.notes}`);
+
+    doc.end();
+
+    return Buffer.concat(buffers);
   }
 }
 

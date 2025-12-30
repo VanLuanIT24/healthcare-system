@@ -1,5 +1,5 @@
+// src/validations/clinical.validation.js
 const Joi = require('joi');
-const { commonSchemas } = require('../middlewares/validation.middleware');
 
 /**
  * 🩺 CLINICAL VALIDATION SCHEMAS
@@ -111,7 +111,7 @@ const clinicalValidation = {
     skin: Joi.string().max(500).optional()
   }),
 
-  // 🎯 CẬP NHẬT CHẨN ĐOÁN
+  // 🎯 CẬP NHẬT CHẨN ĐOÁN (nếu có route dùng)
   updateDiagnosis: Joi.object({
     diagnosisName: Joi.string().max(200).optional(),
     diagnosisCode: Joi.string().max(20).optional(),
@@ -174,23 +174,6 @@ const clinicalValidation = {
     nextSteps: Joi.string().max(500).optional()
   }),
 
-  // 🎯 CẬP NHẬT KẾ HOẠCH ĐIỀU TRỊ
-  updateTreatmentPlan: Joi.object({
-    recommendations: Joi.string().max(2000).optional(),
-    followUp: Joi.object({
-      required: Joi.boolean().optional(),
-      date: Joi.date().iso().min('now').optional(),
-      notes: Joi.string().max(500).optional()
-    }).optional(),
-    referrals: Joi.array().items(
-      Joi.object({
-        department: Joi.string().required(),
-        reason: Joi.string().required(),
-        urgency: Joi.string().valid('ROUTINE', 'URGENT', 'EMERGENCY').default('ROUTINE')
-      })
-    ).optional()
-  }),
-
   // 🎯 GHI NHẬN CỦA ĐIỀU DƯỠNG
   recordNursingNote: Joi.object({
     consultationId: Joi.string().optional(),
@@ -212,24 +195,36 @@ const clinicalValidation = {
     patientResponse: Joi.string().max(500).optional()
   }),
 
-  // 🎯 GHI TÓM TẮT XUẤT VIỆN
-  recordDischargeSummary: Joi.object({
-    consultationId: Joi.string().optional(),
-    admissionDate: Joi.date().iso().optional(),
-    dischargeDate: Joi.date().iso().optional(),
-    finalDiagnosis: Joi.string().max(500).optional(),
-    treatmentProvided: Joi.string().max(1000).optional(),
-    condition: Joi.string().valid('RECOVERED', 'IMPROVED', 'UNCHANGED', 'WORSE', 'DECEASED').optional(),
-    conditionAtDischarge: Joi.string().valid('RECOVERED', 'IMPROVED', 'UNCHANGED', 'WORSE', 'DECEASED').optional(),
-    dischargeDiagnosis: Joi.string().max(500).optional(),
-    treatmentReceived: Joi.string().max(1000).optional(),
-    medicationsAtDischarge: Joi.array().items(Joi.string()).optional(),
-    followUpInstructions: Joi.string().max(1000).optional(),
-    restrictions: Joi.string().max(500).optional(),
-    notes: Joi.string().max(1000).optional()
+  // 🎯 GHI DẤU HIỆU SINH TỒN
+  recordVitalSigns: Joi.object({
+    bloodPressure: Joi.object({
+      systolic: Joi.number().integer().min(50).max(250).optional(),
+      diastolic: Joi.number().integer().min(30).max(150).optional()
+    }).optional(),
+    heartRate: Joi.number().integer().min(30).max(200).optional(),
+    temperature: Joi.number().min(30).max(45).optional(),
+    respiratoryRate: Joi.number().integer().min(5).max(60).optional(),
+    spo2: Joi.number().min(0).max(100).optional(),
+    height: Joi.number().min(50).max(250).optional(), // cm
+    weight: Joi.number().min(2).max(500).optional(), // kg
+    recordedAt: Joi.date().iso().optional()
   }),
 
-  // 🎯 TÌM KIẾM CHẨN ĐOÁN
+  // 🎯 TÌM KIẾM ICD-10
+  searchICD10: Joi.object({
+    q: Joi.string().min(2).max(100).required()
+  }),
+
+  // 🎯 QUERY CHO LẤY LỊCH SỬ KHÁM CỦA BỆNH NHÂN
+  getPatientConsultations: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20),
+    from: Joi.date().iso().optional(),
+    to: Joi.date().iso().optional(),
+    status: Joi.string().valid('COMPLETED', 'IN_PROGRESS', 'CANCELLED').optional()
+  }),
+
+  // 🎯 QUERY CHO LẤY CHẨN ĐOÁN CỦA BỆNH NHÂN
   getPatientDiagnoses: Joi.object({
     status: Joi.string().valid('ACTIVE', 'IN_REMISSION', 'RESOLVED', 'CHRONIC').optional(),
     page: Joi.number().integer().min(1).default(1),
@@ -238,13 +233,43 @@ const clinicalValidation = {
     endDate: Joi.date().iso().min(Joi.ref('startDate')).optional()
   }),
 
-  // 🎯 TÌM KIẾM NHẬN XÉT TIẾN TRIỂN
-  getProgressNotes: Joi.object({
+  // 🎯 QUERY CHO LẤY LỊCH SỬ DẤU HIỆU SINH TỒN
+  getVitalSignsHistory: Joi.object({
     page: Joi.number().integer().min(1).default(1),
-    limit: Joi.number().integer().min(1).max(50).default(20),
-    startDate: Joi.date().iso().optional(),
-    endDate: Joi.date().iso().min(Joi.ref('startDate')).optional()
+    limit: Joi.number().integer().min(1).max(100).default(20)
+  }),
+
+  // 🎯 QUERY CHO XU HƯỚNG DẤU HIỆU SINH TỒN
+  getVitalSignsTrend: Joi.object({
+    type: Joi.string().valid('bloodPressure', 'heartRate', 'temperature', 'respiratoryRate', 'spo2', 'weight').required(),
+    days: Joi.number().integer().min(1).max(365).default(90)
+  }),
+
+  // 🎯 QUERY CHO LẤY TEMPLATES LÂM SÀNG
+  getClinicalTemplates: Joi.object({
+    specialty: Joi.string().optional()
+  }),
+
+  // 🎯 LƯU TEMPLATE LÂM SÀNG
+  saveClinicalTemplate: Joi.object({
+    name: Joi.string().max(200).required(),
+    specialty: Joi.string().max(100).optional(),
+    content: Joi.object().required(), // hoặc Joi.string() tùy cấu trúc bạn dùng
+    description: Joi.string().max(500).optional()
+  }),
+
+  // 🎯 PARAM SCHEMAS (rất quan trọng cho validate params)
+  consultationIdParam: Joi.object({
+    id: Joi.string().required(),
+    consultationId: Joi.string().required() // dùng cho route có :consultationId
+  }),
+
+  patientIdParam: Joi.object({
+    patientId: Joi.string().required()
   })
 };
 
-module.exports = clinicalValidation;
+// ⚠️ EXPORT ĐÚNG CẤU TRÚC ĐỂ ROUTES IMPORT ĐƯỢC
+module.exports = {
+  schemas: clinicalValidation
+};

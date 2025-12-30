@@ -1,612 +1,369 @@
- const appointmentService = require('../services/appointment.service');
+// src/controllers/appointment.controller.js
+const appointmentService = require('../services/appointment.service');
 const { AppError, ERROR_CODES } = require('../middlewares/error.middleware');
 const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
 
-/**
- * APPOINTMENT CONTROLLER - QUẢN LÝ LỊCH HẸN
- * Core business logic cho hệ thống đặt lịch
- */
-
 class AppointmentController {
-  
-  /**
-   * TẠO LỊCH HẸN MỚI
-   */
   async createAppointment(req, res, next) {
     try {
-      console.log('📅 [APPOINTMENT] Creating new appointment');
-      
-      const appointmentData = {
-        ...req.body,
-        createdBy: req.user._id
-      };
+      const appointmentData = req.body;
+      const currentUser = req.user;
 
-      const appointment = await appointmentService.createAppointment(appointmentData);
-      
-      // 🎯 AUDIT LOG
+      console.log('🎯 [APPOINTMENT CONTROLLER] Creating appointment:', {
+        doctorId: appointmentData.doctorId,
+        patientId: appointmentData.patientId,
+        creator: currentUser.email
+      });
+
+      const appointment = await appointmentService.createAppointment(appointmentData, currentUser);
+
       await auditLog(AUDIT_ACTIONS.APPOINTMENT_CREATE, {
-        resource: 'Appointment',
-        resourceId: appointment._id,
-        metadata: { 
-          appointmentId: appointment.appointmentId,
+        metadata: {
+          appointmentId: appointment._id,
           patientId: appointment.patientId,
-          doctorId: appointment.doctorId
+          doctorId: appointment.doctorId,
+          createdBy: currentUser._id
         }
-      })(req, res, () => {});
+      })(req, res, () => { });
 
       res.status(201).json({
         success: true,
         message: 'Tạo lịch hẹn thành công',
         data: appointment
       });
-
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY TẤT CẢ LỊCH HẸN
-   */
-  async getAllAppointments(req, res, next) {
+  async getAppointments(req, res, next) {
     try {
-      const { 
-        status, 
-        page = 1, 
-        limit = 10,
-        startDate,
-        endDate
-      } = req.query;
+      const query = req.query;
 
-      console.log('📋 [APPOINTMENT] Getting all appointments');
+      console.log('🎯 [APPOINTMENT CONTROLLER] Getting appointments with filters:', query);
 
-      const appointments = await appointmentService.getAllAppointments({
-        status,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        startDate,
-        endDate
-      });
+      const result = await appointmentService.getAppointments(query);
 
       res.json({
         success: true,
-        message: 'Lấy danh sách lịch hẹn thành công',
-        data: appointments
+        data: result.appointments,
+        pagination: result.pagination
       });
-
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY LỊCH HẸN THEO ID
-   */
   async getAppointmentById(req, res, next) {
-  try {
-    const { id } = req.params; // ✅ Đổi từ appointmentId thành id
-
-    console.log('📋 [APPOINTMENT] Getting appointment by ID:', id);
-
-    // ✅ Tìm cả theo _id và appointmentId
-    let appointment;
-    if (id.match(/^[0-9a-fA-F]{24}$/)) {
-      // Nếu là ObjectId (24 hex characters)
-      appointment = await appointmentService.getAppointmentById(id);
-    } else {
-      // Nếu là appointmentId (AP123456ABC)
-      appointment = await appointmentService.getAppointment(id);
-    }
-
-    if (!appointment) {
-      return res.status(404).json({
-        success: false,
-        error: 'Không tìm thấy lịch hẹn'
-      });
-    }
-
-    res.json({
-      success: true,
-      message: 'Lấy thông tin lịch hẹn thành công',
-      data: appointment
-    });
-
-  } catch (error) {
-    next(error);
-  }
-}
-
-  /**
-   * 🎯 LẤY LỊCH HẸN CỦA BỆNH NHÂN
-   */
-  async getPatientAppointments(req, res, next) {
     try {
-      const { patientId } = req.params;
-      const { 
-        status, 
-        page = 1, 
-        limit = 10,
-        startDate,
-        endDate
-      } = req.query;
+      const { id } = req.params;
 
-      console.log('📋 [APPOINTMENT] Getting appointments for patient:', patientId);
+      console.log('🎯 [APPOINTMENT CONTROLLER] Getting appointment by ID:', id);
 
-      const result = await appointmentService.getPatientAppointments({
-        patientId,
-        status,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        startDate,
-        endDate
-      });
+      const appointment = await appointmentService.getAppointmentById(id);
 
-      // AUDIT LOG
+      if (!appointment) {
+        throw new AppError('Không tìm thấy lịch hẹn', 404, ERROR_CODES.APPOINTMENT_NOT_FOUND);
+      }
+
       await auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW, {
-        resource: 'Appointment',
-        category: 'PATIENT_APPOINTMENTS',
-        metadata: { patientId }
-      })(req, res, () => {});
+        metadata: { appointmentId: id }
+      })(req, res, () => { });
 
       res.json({
         success: true,
-        message: 'Lấy danh sách lịch hẹn thành công',
-        data: result
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * LẤY LỊCH HẸN CỦA BÁC SĨ
-   */
-  async getDoctorAppointments(req, res, next) {
-    try {
-      const { doctorId } = req.params;
-      const { 
-        status, 
-        page = 1, 
-        limit = 10,
-        date
-      } = req.query;
-
-      console.log('👨‍⚕️ [APPOINTMENT] Getting appointments for doctor:', doctorId);
-
-      const result = await appointmentService.getDoctorAppointments({
-        doctorId,
-        status,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        date
-      });
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW, {
-        resource: 'Appointment',
-        category: 'DOCTOR_APPOINTMENTS',
-        metadata: { doctorId }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Lấy danh sách lịch hẹn thành công',
-        data: result
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * LẤY THÔNG TIN LỊCH HẸN CHI TIẾT
-   */
-  async getAppointment(req, res, next) {
-    try {
-      const { appointmentId } = req.params;
-      
-      console.log('🔍 [APPOINTMENT] Getting appointment details:', appointmentId);
-
-      const appointment = await appointmentService.getAppointment(appointmentId);
-
-      // AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW, {
-        resource: 'Appointment',
-        resourceId: appointmentId,
-        category: 'APPOINTMENT_DETAILS'
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Lấy thông tin lịch hẹn thành công',
         data: appointment
       });
-
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * CẬP NHẬT LỊCH HẸN
-   */
   async updateAppointment(req, res, next) {
     try {
-      const { appointmentId } = req.params;
+      const { id } = req.params;
       const updateData = req.body;
-      
-      console.log('✏️ [APPOINTMENT] Updating appointment:', appointmentId);
+      const updater = req.user;
 
-      const updatedAppointment = await appointmentService.updateAppointment(
-        appointmentId, 
-        updateData,
-        req.user._id
-      );
+      console.log('🎯 [APPOINTMENT CONTROLLER] Updating appointment:', id);
 
-      // AUDIT LOG
+      const appointment = await appointmentService.updateAppointment(id, updateData, updater);
+
       await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
-        resource: 'Appointment',
-        resourceId: appointmentId,
-        category: 'APPOINTMENT_UPDATE',
-        metadata: { updatedFields: Object.keys(updateData) }
-      })(req, res, () => {});
+        metadata: {
+          appointmentId: id,
+          updatedFields: Object.keys(updateData)
+        }
+      })(req, res, () => { });
 
       res.json({
         success: true,
         message: 'Cập nhật lịch hẹn thành công',
-        data: updatedAppointment
+        data: appointment
       });
-
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * HỦY LỊCH HẸN
-   */
   async cancelAppointment(req, res, next) {
     try {
-      const { appointmentId } = req.params;
-      const { reason, notes } = req.body;
-      
-      console.log('❌ [APPOINTMENT] Cancelling appointment:', appointmentId);
+      const { id } = req.params;
+      const { reason } = req.body;
+      const canceller = req.user;
 
-      const cancelledAppointment = await appointmentService.cancelAppointment(
-        appointmentId, 
-        req.user._id,
-        reason,
-        notes
-      );
+      console.log('🎯 [APPOINTMENT CONTROLLER] Cancelling appointment:', id);
 
-      // AUDIT LOG
+      const appointment = await appointmentService.cancelAppointment(id, canceller, reason);
+
       await auditLog(AUDIT_ACTIONS.APPOINTMENT_CANCEL, {
-        resource: 'Appointment',
-        resourceId: appointmentId,
-        category: 'APPOINTMENT_CANCELLATION',
-        metadata: { reason, cancelledBy: req.user._id }
-      })(req, res, () => {});
+        metadata: { appointmentId: id, reason }
+      })(req, res, () => { });
 
       res.json({
         success: true,
         message: 'Hủy lịch hẹn thành công',
-        data: cancelledAppointment
+        data: appointment
       });
-
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 TẠO LỊCH LÀM VIỆC
-   */
-  async createSchedule(req, res, next) {
+  async requestCancelAppointment(req, res, next) {
     try {
-      const scheduleData = {
-        ...req.body,
-        createdBy: req.user._id
-      };
+      const { id } = req.params;
+      const { reason } = req.body;
+      const requester = req.user;
 
-      console.log('📋 [APPOINTMENT] Creating schedule for doctor:', scheduleData.doctorId);
+      console.log('🎯 [APPOINTMENT CONTROLLER] Requesting cancel for appointment:', id);
 
-      const schedule = await appointmentService.createSchedule(scheduleData);
+      const appointment = await appointmentService.requestCancelAppointment(id, requester, reason);
 
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.APPOINTMENT_CREATE, {
-        resource: 'Schedule',
-        category: 'SCHEDULE_CREATION',
-        metadata: { 
-          doctorId: scheduleData.doctorId,
-          date: scheduleData.date 
-        }
-      })(req, res, () => {});
-
-      res.status(201).json({
-        success: true,
-        message: 'Tạo lịch làm việc thành công',
-        data: schedule
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 LẤY LỊCH LÀM VIỆC
-   */
-  async getDoctorSchedule(req, res, next) {
-    try {
-      const { doctorId } = req.params;
-      const { date, week } = req.query;
-
-      console.log('📅 [APPOINTMENT] Getting schedule for doctor:', doctorId);
-
-      const schedule = await appointmentService.getDoctorSchedule(doctorId, date, week);
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_REQUEST_CANCEL, {
+        metadata: { appointmentId: id, reason }
+      })(req, res, () => { });
 
       res.json({
         success: true,
-        message: 'Lấy lịch làm việc thành công',
-        data: schedule
+        message: 'Yêu cầu hủy lịch hẹn đã được gửi',
+        data: appointment
       });
-
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 ĐẶT LẠI LỊCH HẸN
-   */
+  async approveCancelRequest(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { approved, note } = req.body;
+      const approver = req.user;
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Approving cancel request for appointment:', id);
+
+      const appointment = await appointmentService.approveCancelRequest(id, approver, approved, note);
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_APPROVE_CANCEL, {
+        metadata: { appointmentId: id, approved }
+      })(req, res, () => { });
+
+      res.json({
+        success: true,
+        message: approved ? 'Yêu cầu hủy đã được duyệt' : 'Yêu cầu hủy bị từ chối',
+        data: appointment
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async rescheduleAppointment(req, res, next) {
     try {
-      const { appointmentId } = req.params;
+      const { id } = req.params;
       const { newTime } = req.body;
-      
-      console.log('🔄 [APPOINTMENT] Rescheduling appointment:', appointmentId);
+      const rescheduler = req.user;
 
-      const rescheduledAppointment = await appointmentService.rescheduleAppointment(
-        appointmentId, 
-        newTime,
-        req.user._id
-      );
+      console.log('🎯 [APPOINTMENT CONTROLLER] Rescheduling appointment:', id);
 
-      // 🎯 AUDIT LOG
+      const appointment = await appointmentService.rescheduleAppointment(id, newTime, rescheduler);
+
       await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
-        resource: 'Appointment',
-        resourceId: appointmentId,
-        category: 'APPOINTMENT_RESCHEDULE',
-        metadata: { 
-          newTime,
-          rescheduledBy: req.user._id 
-        }
-      })(req, res, () => {});
+        metadata: { appointmentId: id, newTime }
+      })(req, res, () => { });
 
       res.json({
         success: true,
         message: 'Đặt lại lịch hẹn thành công',
-        data: rescheduledAppointment
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 TÌM KIẾM LỊCH HẸN NÂNG CAO
-   */
-  async searchAppointments(req, res, next) {
-    try {
-      const filters = req.query;
-      
-      console.log('🔍 [APPOINTMENT] Searching appointments with filters:', filters);
-
-      const result = await appointmentService.searchAppointments(filters);
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW, {
-        resource: 'Appointment',
-        category: 'APPOINTMENT_SEARCH',
-        metadata: { filters }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Tìm kiếm lịch hẹn thành công',
-        data: result
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 LẤY LỊCH HẸN THEO DEPARTMENT
-   */
-  async getDepartmentAppointments(req, res, next) {
-    try {
-      const { departmentId } = req.params;
-      const { date } = req.query;
-      
-      console.log('🏥 [APPOINTMENT] Getting department appointments:', departmentId);
-
-      const result = await appointmentService.getDepartmentAppointments(departmentId, date);
-
-      res.json({
-        success: true,
-        message: 'Lấy lịch hẹn theo khoa thành công',
-        data: result
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 CẬP NHẬT LỊCH LÀM VIỆC
-   */
-  async updateSchedule(req, res, next) {
-    try {
-      const { scheduleId } = req.params;
-      const updateData = req.body;
-      
-      console.log('📋 [APPOINTMENT] Updating schedule:', scheduleId);
-
-      const result = await appointmentService.updateSchedule(
-        scheduleId, 
-        updateData,
-        req.user._id
-      );
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
-        resource: 'Schedule',
-        resourceId: scheduleId,
-        category: 'SCHEDULE_UPDATE',
-        metadata: { 
-          updatedBy: req.user._id,
-          changes: updateData.changes 
-        }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Cập nhật lịch làm việc thành công',
-        data: result
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 GỬI THÔNG BÁO NHẮC LỊCH HẸN
-   */
-  async sendAppointmentReminder(req, res, next) {
-    try {
-      const { appointmentId } = req.params;
-      
-      console.log('🔔 [APPOINTMENT] Sending reminder for appointment:', appointmentId);
-
-      const result = await appointmentService.sendAppointmentReminder(appointmentId);
-
-      // 🎯 AUDIT LOG
-      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
-        resource: 'Appointment',
-        resourceId: appointmentId,
-        category: 'APPOINTMENT_REMINDER',
-        metadata: { reminderSent: true }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Gửi thông báo nhắc lịch thành công',
-        data: result
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 TỰ ĐỘNG GỬI NHẮC NHỞ (INTERNAL/ADMIN)
-   */
-  async sendScheduledReminders(req, res, next) {
-    try {
-      console.log('⏰ [APPOINTMENT] Sending scheduled reminders');
-
-      const result = await appointmentService.sendScheduledReminders();
-
-      res.json({
-        success: true,
-        message: 'Gửi nhắc nhở tự động hoàn tất',
-        data: result
-      });
-
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /**
-   * 🎯 CHECK-IN LỊCH HẸN
-   */
-  async checkInAppointment(req, res, next) {
-    try {
-      const { appointmentId } = req.params;
-
-      console.log('✅ [APPOINTMENT] Check-in appointment:', appointmentId);
-
-      const appointment = await appointmentService.checkInAppointment(
-        appointmentId,
-        req.user._id
-      );
-
-      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
-        resource: 'Appointment',
-        resourceId: appointmentId,
-        metadata: { status: 'CHECKED_IN' }
-      })(req, res, () => {});
-
-      res.json({
-        success: true,
-        message: 'Check-in lịch hẹn thành công',
         data: appointment
       });
-
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 HOÀN THÀNH LỊCH HẸN
-   */
-  async completeAppointment(req, res, next) {
+  async checkInAppointment(req, res, next) {
     try {
-      const { appointmentId } = req.params;
+      const { id } = req.params;
+      const checker = req.user;
 
-      console.log('✅ [APPOINTMENT] Completing appointment:', appointmentId);
+      console.log('🎯 [APPOINTMENT CONTROLLER] Checking in appointment:', id);
 
-      const appointment = await appointmentService.completeAppointment(
-        appointmentId,
-        req.user._id,
-        req.body
-      );
+      const appointment = await appointmentService.checkInAppointment(id, checker);
 
       await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
-        resource: 'Appointment',
-        resourceId: appointmentId,
-        metadata: { status: 'COMPLETED' }
-      })(req, res, () => {});
+        metadata: { appointmentId: id, status: 'CHECKED_IN' }
+      })(req, res, () => { });
+
+      res.json({
+        success: true,
+        message: 'Check-in thành công',
+        data: appointment
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async completeAppointment(req, res, next) {
+    try {
+      const { id } = req.params;
+      const completer = req.user;
+      const notes = req.body.notes;
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Completing appointment:', id);
+
+      const appointment = await appointmentService.completeAppointment(id, completer, notes);
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
+        metadata: { appointmentId: id, status: 'COMPLETED' }
+      })(req, res, () => { });
 
       res.json({
         success: true,
         message: 'Hoàn thành lịch hẹn thành công',
         data: appointment
       });
-
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY CÁC SLOT THỜI GIAN KHẢ DỤNG
-   */
+  async noShowAppointment(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      const marker = req.user;
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Marking no-show for appointment:', id);
+
+      const appointment = await appointmentService.noShowAppointment(id, marker, reason);
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
+        metadata: { appointmentId: id, status: 'NO_SHOW' }
+      })(req, res, () => { });
+
+      res.json({
+        success: true,
+        message: 'Đánh dấu no-show thành công',
+        data: appointment
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getDoctorAppointments(req, res, next) {
+    try {
+      let { doctorId } = req.params;
+      const query = req.query;
+
+      // Handle special 'me' value
+      if (doctorId === 'me') {
+        doctorId = req.user._id;
+      }
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Getting doctor appointments:', doctorId);
+
+      const result = await appointmentService.getDoctorAppointments({ doctorId, ...query });
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW, {
+        metadata: { doctorId }
+      })(req, res, () => { });
+
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getPatientAppointments(req, res, next) {
+    try {
+      let { patientId } = req.params;
+      const query = req.query;
+
+      // Handle special 'me' value
+      if (patientId === 'me') {
+        patientId = req.user._id;
+      }
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Getting patient appointments:', patientId);
+
+      const result = await appointmentService.getPatientAppointments({ patientId, ...query });
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW, {
+        metadata: { patientId }
+      })(req, res, () => { });
+
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getTodayAppointments(req, res, next) {
+    try {
+      console.log('🎯 [APPOINTMENT CONTROLLER] Getting today appointments');
+
+      const appointments = await appointmentService.getTodayAppointments(req.user);
+
+      res.json({
+        success: true,
+        data: appointments
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getUpcomingAppointments(req, res, next) {
+    try {
+      const { days } = req.query;
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Getting upcoming appointments');
+
+      const appointments = await appointmentService.getUpcomingAppointments(req.user, days);
+
+      res.json({
+        success: true,
+        data: appointments
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getAvailableSlots(req, res, next) {
     try {
       const { doctorId, date } = req.query;
 
-      console.log('📅 [APPOINTMENT] Getting available slots:', { doctorId, date });
+      console.log('🎯 [APPOINTMENT CONTROLLER] Getting available slots');
 
       const slots = await appointmentService.getAvailableSlots(doctorId, date);
 
@@ -614,81 +371,211 @@ class AppointmentController {
         success: true,
         data: slots
       });
-
     } catch (error) {
       next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY THỐNG KÊ LỊCH HẸN
-   */
+  async getDoctorSchedule(req, res, next) {
+    try {
+      let { doctorId } = req.params;
+      const { date, week } = req.query;
+
+      // Handle special 'me' value to get current user's schedule
+      if (doctorId === 'me') {
+        doctorId = req.user._id;
+        console.log('🎯 [APPOINTMENT CONTROLLER] Getting schedule for current doctor:', doctorId);
+      } else {
+        console.log('🎯 [APPOINTMENT CONTROLLER] Getting doctor schedule for doctor:', doctorId);
+      }
+
+      const schedule = await appointmentService.getDoctorSchedule(doctorId, date, week);
+
+      res.json({
+        success: true,
+        data: schedule
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createDoctorSchedule(req, res, next) {
+    try {
+      const scheduleData = req.body;
+      const creator = req.user;
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Creating doctor schedule');
+
+      const schedule = await appointmentService.createDoctorSchedule(scheduleData, creator);
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_CREATE, {
+        metadata: { scheduleId: schedule._id }
+      })(req, res, () => { });
+
+      res.status(201).json({
+        success: true,
+        message: 'Tạo lịch làm việc thành công',
+        data: schedule
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateDoctorSchedule(req, res, next) {
+    try {
+      const { scheduleId } = req.params;
+      const updateData = req.body;
+      const updater = req.user;
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Updating doctor schedule');
+
+      const schedule = await appointmentService.updateDoctorSchedule(scheduleId, updateData, updater);
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
+        metadata: { scheduleId }
+      })(req, res, () => { });
+
+      res.json({
+        success: true,
+        message: 'Cập nhật lịch làm việc thành công',
+        data: schedule
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteDoctorSchedule(req, res, next) {
+    try {
+      const { scheduleId } = req.params;
+      const deleter = req.user;
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Deleting doctor schedule');
+
+      await appointmentService.deleteDoctorSchedule(scheduleId, deleter);
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_DELETE, {
+        metadata: { scheduleId }
+      })(req, res, () => { });
+
+      res.json({
+        success: true,
+        message: 'Xóa lịch làm việc thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async sendReminder(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Sending reminder');
+
+      const result = await appointmentService.sendReminder(id);
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
+        metadata: { appointmentId: id, action: 'SEND_REMINDER' }
+      })(req, res, () => { });
+
+      res.json({
+        success: true,
+        message: 'Gửi nhắc nhở thành công',
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async sendBulkReminders(req, res, next) {
+    try {
+      console.log('🎯 [APPOINTMENT CONTROLLER] Sending bulk reminders');
+
+      const result = await appointmentService.sendBulkReminders();
+
+      await auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE, {
+        metadata: { action: 'SEND_BULK_REMINDERS', count: result.successful }
+      })(req, res, () => { });
+
+      res.json({
+        success: true,
+        message: 'Gửi nhắc nhở hàng loạt thành công',
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getAppointmentStats(req, res, next) {
     try {
-      const { startDate, endDate, status } = req.query;
+      const query = req.query;
 
-      console.log('📊 [APPOINTMENT] Getting appointment stats');
+      console.log('🎯 [APPOINTMENT CONTROLLER] Getting appointment stats');
 
-      const stats = await appointmentService.getAppointmentStats({
-        startDate,
-        endDate,
-        status
-      });
+      const stats = await appointmentService.getAppointmentStats(query);
 
       res.json({
         success: true,
         data: stats
       });
-
     } catch (error) {
       next(error);
     }
   }
 
-  async getTodayAppointments(req, res, next) {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const appointments = await appointmentService.getAppointmentsByDateRange(
-      today, 
-      tomorrow
-    );
-    
-    res.json({
-      success: true,
-      message: 'Lấy lịch hẹn hôm nay thành công',
-      data: appointments
-    });
-  } catch (error) {
-    next(error);
-  }
-}
+  async exportAppointmentsPDF(req, res, next) {
+    try {
+      const query = req.query;
 
-async getUpcomingAppointments(req, res, next) {
-  try {
-    const { days = 7 } = req.query;
-    const today = new Date();
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + parseInt(days));
-    
-    const appointments = await appointmentService.getAppointmentsByDateRange(
-      today, 
-      endDate
-    );
-    
-    res.json({
-      success: true,
-      message: 'Lấy lịch hẹn sắp tới thành công',
-      data: appointments
-    });
-  } catch (error) {
-    next(error);
+      console.log('🎯 [APPOINTMENT CONTROLLER] Exporting PDF');
+
+      const pdf = await appointmentService.exportAppointmentsPDF(query);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename=appointments.pdf');
+      res.send(pdf);
+    } catch (error) {
+      next(error);
+    }
   }
-}
+
+  async exportAppointmentsExcel(req, res, next) {
+    try {
+      const query = req.query;
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Exporting Excel');
+
+      const excel = await appointmentService.exportAppointmentsExcel(query);
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=appointments.xlsx');
+      res.send(excel);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getAppointmentAccessLogs(req, res, next) {
+    try {
+      const { id } = req.params;
+
+      console.log('🎯 [APPOINTMENT CONTROLLER] Getting access logs for appointment:', id);
+
+      const logs = await appointmentService.getAppointmentAccessLogs(id);
+
+      res.json({
+        success: true,
+        data: logs
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new AppointmentController();

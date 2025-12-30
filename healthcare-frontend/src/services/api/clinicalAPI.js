@@ -1,72 +1,43 @@
-// 🩺 Clinical & Medical Records API
+// src/api/clinicalAPI.js - API Lâm sàng (Phiên bản đầy đủ 2025 - Liên kết: Create consultation → Add diagnosis → Prescription/Lab order)
 import axios from '../axios';
 
 const clinicalAPI = {
-  // Consultations
-  createConsultation: async (consultationData) => {
-    return await axios.post('/clinical/consultations', consultationData);
-  },
+  // ===== BUỔI KHÁM =====
+  createConsultation: async (patientId, data) => axios.post(`/api/patients/${patientId}/consultations`, data),
+  getConsultation: async (id) => axios.get(`/api/consultations/${id}`),
+  updateConsultation: async (id, data) => axios.put(`/api/consultations/${id}`, data),
+  completeConsultation: async (id) => axios.patch(`/api/consultations/${id}/complete`),
+  approveConsultation: async (id) => axios.patch(`/api/consultations/${id}/approve`),
 
-  getConsultation: async (id) => {
-    return await axios.get(`/clinical/consultations/${id}`);
-  },
+  recordSymptoms: async (consultationId, symptoms) => axios.post(`/api/consultations/${consultationId}/symptoms`, { symptoms }),
+  recordPhysicalExam: async (consultationId, exam) => axios.post(`/api/consultations/${consultationId}/physical-exam`, exam),
+  addDiagnosis: async (consultationId, diagnosis) => axios.post(`/api/consultations/${consultationId}/diagnoses`, diagnosis),
+  getPatientConsultations: async (patientId, params = {}) => axios.get(`/api/patients/${patientId}/consultations`, { params }),
 
-  updateConsultation: async (id, consultationData) => {
-    return await axios.put(`/clinical/consultations/${id}`, consultationData);
-  },
+  // ===== CHẨN ĐOÁN =====
+  searchICD10: async (query) => axios.get('/api/icd10/search', { params: { q: query } }),
+  getPatientDiagnoses: async (patientId, params = {}) => axios.get(`/api/patients/${patientId}/diagnoses`, { params }),
 
-  // Diagnoses
-  createDiagnosis: async (diagnosisData) => {
-    return await axios.post('/clinical/diagnoses', diagnosisData);
-  },
+  // ===== KẾ HOẠCH & GHI CHÚ =====
+  createTreatmentPlan: async (patientId, plan) => axios.post(`/api/patients/${patientId}/treatment-plans`, plan),
+  recordProgressNote: async (patientId, note) => axios.post(`/api/patients/${patientId}/progress-notes`, note),
+  recordNursingNote: async (patientId, note) => axios.post(`/api/patients/${patientId}/nursing-notes`, note),
 
-  getDiagnosis: async (id) => {
-    return await axios.get(`/clinical/diagnoses/${id}`);
-  },
+  // ===== HỒ SƠ =====
+  getMedicalRecord: async (patientId) => axios.get(`/api/patients/${patientId}/medical-record`),
+  exportMedicalRecordPDF: async (patientId) => axios.get(`/api/patients/${patientId}/medical-record/export/pdf`, { responseType: 'blob' }),
 
-  updateDiagnosis: async (id, diagnosisData) => {
-    return await axios.put(`/clinical/diagnoses/${id}`, diagnosisData);
-  },
+  // ===== DẤU HIỆU SINH TỒN =====
+  recordVitalSigns: async (patientId, vitals) => axios.post(`/api/patients/${patientId}/vital-signs`, vitals),
+  getVitalSignsHistory: async (patientId, params = {}) => axios.get(`/api/patients/${patientId}/vital-signs`, { params }),
+  getVitalSignsTrend: async (patientId, type, days = 90) => axios.get(`/api/patients/${patientId}/vital-signs/trend`, { params: { type, days } }),
 
-  // Medical Records
-  createMedicalRecord: async (recordData) => {
-    return await axios.post('/medical-records', recordData);
-  },
+  // ===== MẪU =====
+  getClinicalTemplates: async (specialty = '') => axios.get('/api/clinical/templates', { params: { specialty } }),
+  saveClinicalTemplate: async (template) => axios.post('/api/clinical/templates', template),
 
-  getMedicalRecord: async (id) => {
-    return await axios.get(`/medical-records/${id}`);
-  },
-
-  updateMedicalRecord: async (id, recordData) => {
-    return await axios.put(`/medical-records/${id}`, recordData);
-  },
-
-  getMedicalRecords: async (params) => {
-    return await axios.get('/medical-records', { params });
-  },
-
-  // Vital Signs
-  recordVitalSigns: async (recordId, vitalSignsData) => {
-    return await axios.post(`/medical-records/${recordId}/vital-signs`, vitalSignsData);
-  },
-
-  getVitalSigns: async (recordId) => {
-    return await axios.get(`/medical-records/${recordId}/vital-signs`);
-  },
-
-  // Progress Notes
-  addProgressNote: async (recordId, noteData) => {
-    return await axios.post(`/medical-records/${recordId}/progress-notes`, noteData);
-  },
-
-  getProgressNotes: async (recordId) => {
-    return await axios.get(`/medical-records/${recordId}/progress-notes`);
-  },
-
-  // ICD-10 Code Search
-  searchICD10: async (query) => {
-    return await axios.get('/clinical/icd10/search', { params: { q: query } });
-  },
+  // ===== AUDIT =====
+  getConsultationAccessLogs: async (consultationId) => axios.get(`/api/consultations/${consultationId}/access-logs`),
 };
 
 export default clinicalAPI;

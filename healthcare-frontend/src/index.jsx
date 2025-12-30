@@ -1,24 +1,20 @@
-// 🏥 Healthcare System - Main Application Entry
-import { ConfigProvider } from 'antd';
+// src/main.jsx hoặc src/index.jsx
+import App from '@/App';
+import '@/styles/index.css';
+import { App as AntdApp, ConfigProvider } from 'antd';
 import viVN from 'antd/locale/vi_VN';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import App from './App';
-import { AuthProvider } from './contexts/AuthContext';
-import './styles/index.css';
 import designSystem from './theme/designSystem';
 import './theme/globalStyles.css';
 
-// 🎨 Apply Professional Design System Theme
+// 🎨 Professional Medical Design System
 const { themeConfig, colors } = designSystem;
 
-// Enhanced theme configuration with professional medical design
 const theme = {
   ...themeConfig,
   token: {
     ...themeConfig.token,
-    // Professional medical colors
     colorPrimary: colors.primary[500],
     colorSuccess: colors.success[500],
     colorWarning: colors.warning[500],
@@ -28,18 +24,15 @@ const theme = {
     colorText: colors.text.primary,
     colorTextSecondary: colors.text.secondary,
     colorBorder: colors.border.default,
-    // Enhanced spacing and sizing
     borderRadius: 6,
     borderRadiusLG: 8,
     borderRadiusSM: 4,
     fontSize: 14,
     fontSizeLG: 16,
     fontSizeSM: 12,
-    // Control heights
     controlHeight: 32,
     controlHeightLG: 40,
     controlHeightSM: 24,
-    // Shadows
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.09)',
     boxShadowSecondary: '0 4px 12px rgba(0, 0, 0, 0.15)',
   },
@@ -68,15 +61,11 @@ const theme = {
     },
     Button: {
       borderRadius: 6,
-      controlHeight: 32,
-      controlHeightLG: 40,
-      controlHeightSM: 24,
       fontWeight: 500,
       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
     },
     Table: {
       headerBg: '#fafafa',
-      headerColor: colors.text.primary,
       headerBorderRadius: 6,
       rowHoverBg: colors.background.hover,
     },
@@ -87,21 +76,12 @@ const theme = {
   },
 };
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-
-root.render(
+ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true
-      }}
-    >
-      <ConfigProvider theme={theme} locale={viVN}>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </ConfigProvider>
-    </BrowserRouter>
+    <ConfigProvider theme={theme} locale={viVN}>
+      <AntdApp>
+        <App />
+      </AntdApp>
+    </ConfigProvider>
   </React.StrictMode>
 );

@@ -1,268 +1,264 @@
+// src/routes/appointment.routes.js
 const express = require('express');
 const router = express.Router();
 const appointmentController = require('../controllers/appointment.controller');
-const appointmentValidation = require('../validations/appointment.validation');
-const { validateBody, validateParams, validateQuery } = require('../middlewares/validation.middleware');
-const { 
-  requireRole, 
-  requirePermission, 
-  requirePatientDataAccess,
-  requireModuleAccess 
-} = require('../middlewares/rbac.middleware');
-const { ROLES, PERMISSIONS } = require('../constants/roles');
-const { authenticate } = require('../middlewares/auth.middleware');
+const { validate } = require('../middlewares/validation.middleware');
+const { schemas } = require('../validations/appointment.validation');
+const { authMiddleware, roleMiddleware } = require('../middlewares/auth.middleware');
+const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
+const { ROLES } = require('../constants/roles');
 
-// 🚨 THÊM IMPORT NÀY - FIX LỖI
-const medicalRecordController = require('../controllers/medicalRecord.controller');
-const medicalRecordValidation = require('../validations/medicalRecord.validation');
+// ==================================================================
+// QUẢN LÝ LỊCH HẸN - Dành cho tất cả vai trò liên quan
+// ==================================================================
 
-/**
- * APPOINTMENT ROUTES
- * Quản lý tất cả endpoints liên quan đến lịch hẹn
- */
-
-// APPLY AUTH MIDDLEWARE CHO TẤT CẢ ROUTES
-router.use(authenticate);
-
-// ✅ FIX: ĐẶT CÁC SPECIFIC ROUTES TRƯỚC DYNAMIC ROUTES
-
-// 🎯 TÌM KIẾM LỊCH HẸN NÂNG CAO - PHẢI TRƯỚC /:appointmentId
-router.get(
-  '/search/advanced',
-  requireRole(ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
-  validateQuery(appointmentValidation.searchAppointments),
-  appointmentController.searchAppointments
-);
-
-// 🎯 TÌM KIẾM HỒ SƠ THEO CHẨN ĐOÁN - PHẢI TRƯỚC /:appointmentId
-router.get(
-  '/search/diagnosis',
-  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  validateQuery(medicalRecordValidation.searchByDiagnosis),
-  medicalRecordController.searchMedicalRecordsByDiagnosis
-);
-
-// 🎯 THỐNG KÊ HỒ SƠ BỆNH ÁN - PHẢI TRƯỚC /:appointmentId
-router.get(
-  '/stats/overview',
-  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
-  requirePermission(PERMISSIONS.VIEW_REPORTS),
-  validateQuery(medicalRecordValidation.getStats),
-  medicalRecordController.getMedicalRecordsStats
-);
-
-// 🎯 TỰ ĐỘNG GỬI NHẮC NHỞ - PHẢI TRƯỚC /:appointmentId
-router.post(
-  '/reminders/send-scheduled',
-  requireRole(ROLES.HOSPITAL_ADMIN, ROLES.SUPER_ADMIN),
-  requirePermission(PERMISSIONS.SYSTEM_CONFIG),
-  appointmentController.sendScheduledReminders
-);
-
-// 🎯 LẤY LỊCH LÀM VIỆC - PHẢI TRƯỚC /:appointmentId
-router.get(
-  '/schedules/doctor/:id',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW_SCHEDULE),
-  validateQuery(appointmentValidation.getDoctorSchedule),
-  appointmentController.getDoctorSchedule
-);
-
-// 🎯 CẬP NHẬT LỊCH LÀM VIỆC - PHẢI TRƯỚC /:appointmentId
-router.put(
-  '/schedules/:id',
-  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
-  requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
-  validateBody(appointmentValidation.updateSchedule),
-  appointmentController.updateSchedule
-);
-
-// 🎯 TẠO LỊCH LÀM VIỆC - PHẢI TRƯỚC /:appointmentId
-router.post(
-  '/schedules',
-  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
-  requirePermission(PERMISSIONS.APPOINTMENT_CREATE),
-  validateBody(appointmentValidation.createSchedule),
-  appointmentController.createSchedule
-);
-
-// 🎯 LẤY LỊCH HẸN THEO DEPARTMENT - PHẢI TRƯỚC /:appointmentId
-router.get(
-  '/department/:id',
-  requireRole(ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN, ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
-  validateQuery(appointmentValidation.getDoctorSchedule),
-  appointmentController.getDepartmentAppointments
-);
-
-// 🎯 LẤY CÁC SLOT THỜI GIAN KHẢ DỤNG - PHẢI TRƯỚC /:appointmentId
-router.get(
-  '/available-slots',
-  requireRole(ROLES.RECEPTIONIST, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
-  validateQuery(appointmentValidation.getAvailableSlots),
-  appointmentController.getAvailableSlots
-);
-
-// 🎯 THỐNG KÊ LỊCH HẸN - PHẢI TRƯỚC /:appointmentId
-router.get(
-  '/stats',
-  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
-  requirePermission(PERMISSIONS.VIEW_REPORTS),
-  validateQuery(appointmentValidation.getAppointmentStats),
-  appointmentController.getAppointmentStats
-);
-
-// 🎯 LẤY LỊCH HẸN CỦA BỆNH NHÂN - PHẢI TRƯỚC /:appointmentId
-router.get(
-  '/patient/:id',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
-  requirePatientDataAccess('patientId'),
-  validateQuery(appointmentValidation.getPatientAppointments),
-  appointmentController.getPatientAppointments
-);
-
-// 🎯 LẤY LỊCH SỬ PHẪU THUẬT - PHẢI TRƯỚC /:appointmentId
-router.get(
-  '/patient/:id/surgical-history',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
-  medicalRecordController.getSurgicalHistory
-);
-
-// 🎯 LẤY TIỀN SỬ SẢN KHOA - PHẢI TRƯỚC /:appointmentId
-router.get(
-  '/patient/:id/obstetric-history',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.VIEW_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
-  medicalRecordController.getObstetricHistory
-);
-
-// 🎯 THÊM THÔNG TIN PHẪU THUẬT - PHẢI TRƯỚC /:appointmentId
-router.post(
-  '/patient/:id/surgical-history',
-  requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.UPDATE_MEDICAL_RECORDS),
-  requirePatientDataAccess('patientId'),
-  validateBody(medicalRecordValidation.addSurgicalHistory),
-  medicalRecordController.addSurgicalHistory
-);
-
-// 🎯 GHI NHẬN PHÁT HIỆN LÂM SÀNG - PHẢI TRƯỚC /:appointmentId
-router.post(
-  '/clinical-findings',
-  requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS.CREATE_MEDICAL_RECORDS),
-  validateBody(medicalRecordValidation.recordClinicalFindings),
-  medicalRecordController.recordClinicalFindings
-);
-
-// 🎯 LẤY LỊCH HẸN CỦA BÁC SĨ - PHẢI TRƯỚC /:appointmentId
-router.get(
-  '/doctor/:id',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
-  validateQuery(appointmentValidation.getDoctorAppointments),
-  appointmentController.getDoctorAppointments
-);
-
-// TẠO LỊCH HẸN
-router.post(
-  '/',
-  requireRole(ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_CREATE),
-  validateBody(appointmentValidation.createAppointment),
+// Tạo lịch hẹn
+router.post('/',
+  authMiddleware,
+  roleMiddleware([ROLES.PATIENT, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.createAppointment, 'body'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_CREATE),
   appointmentController.createAppointment
 );
 
-// LẤY TẤT CẢ LỊCH HẸN
-router.get(
-  '/',
-  requireRole(ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN, ROLES.SUPER_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
-  appointmentController.getAllAppointments
+// Lấy tất cả lịch hẹn
+router.get('/',
+  authMiddleware,
+  roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getAppointments, 'query'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW),
+  appointmentController.getAppointments
 );
 
-// ✅ LẤY LỊCH HẸN THEO ID (DYNAMIC ROUTE - ĐẶT CUỐI CÙNG)
-router.get(
-  '/:id',
-  requireRole(ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
-  appointmentController.getAppointmentById
-);
+// 🎯 SPECIFIC ROUTES MUST COME BEFORE /:id (IMPORTANT!)
 
-// 🎯 CẬP NHẬT LỊCH HẸN
-router.put(
-  '/:id',
-  requireRole(ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
-  validateBody(appointmentValidation.updateAppointment),
-  appointmentController.updateAppointment
-);
-
-// 🎯 CHECK-IN LỊCH HẸN
-router.patch(
-  '/:id/check-in',
-  requireRole(ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
-  appointmentController.checkInAppointment
-);
-
-// 🎯 HOÀN THÀNH LỊCH HẸN
-router.patch(
-  '/:id/complete',
-  requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
-  validateBody(appointmentValidation.completeAppointment),
-  appointmentController.completeAppointment
-);
-
-// 🎯 HỦY LỊCH HẹN
-router.post(
-  '/:id/cancel',
-  requireRole(ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_CANCEL),
-  validateBody(appointmentValidation.cancelAppointment),
-  appointmentController.cancelAppointment
-);
-
-// 🎯 ĐẶT LẠI LỊCH HẸN
-router.post(
-  '/:id/reschedule',
-  requireRole(ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.PATIENT, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
-  validateBody(appointmentValidation.rescheduleAppointment),
-  appointmentController.rescheduleAppointment
-);
-
-// 🎯 GỬI THÔNG BÁO NHẮC LỊCH HẸN
-router.post(
-  '/:id/remind',
-  requireRole(ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_UPDATE),
-  validateBody(appointmentValidation.sendReminder),
-  appointmentController.sendAppointmentReminder
-);
-
-// 🎯 THÊM ROUTE THIẾU - Today's appointments
-router.get(
-  '/today',
-  requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
+// Lấy lịch hẹn hôm nay
+router.get('/today',
+  authMiddleware,
+  validate(schemas.getTodayAppointments, 'query'),
+  roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.CLINICAL_ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.NURSE, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT]),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW),
   appointmentController.getTodayAppointments
 );
 
-// 🎯 THÊM ROUTE THIẾU - Upcoming appointments
-router.get(
-  '/upcoming',
-  requireRole(ROLES.DOCTOR, ROLES.PATIENT, ROLES.NURSE, ROLES.RECEPTIONIST),
-  requirePermission(PERMISSIONS.APPOINTMENT_VIEW),
+// Lấy lịch hẹn sắp tới
+router.get('/upcoming',
+  authMiddleware,
+  validate(schemas.getUpcomingAppointments, 'query'),
+  roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.CLINICAL_ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.NURSE, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT]),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW),
   appointmentController.getUpcomingAppointments
+);
+
+// Lấy slot thời gian khả dụng
+router.get('/available-slots',
+  authMiddleware,
+  roleMiddleware([ROLES.PATIENT, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getAvailableSlots, 'query'),
+  appointmentController.getAvailableSlots
+);
+
+// Lấy thống kê lịch hẹn
+router.get('/stats',
+  authMiddleware,
+  roleMiddleware([ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT, ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.CLINICAL_ADMIN]),
+  validate(schemas.getAppointmentStats, 'query'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW),
+  appointmentController.getAppointmentStats
+);
+
+// Export lịch hẹn (PDF)
+router.get('/export/pdf',
+  authMiddleware,
+  roleMiddleware([ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.exportAppointments, 'query'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW),
+  appointmentController.exportAppointmentsPDF
+);
+
+// Export lịch hẹn (Excel)
+router.get('/export/excel',
+  authMiddleware,
+  roleMiddleware([ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.exportAppointments, 'query'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW),
+  appointmentController.exportAppointmentsExcel
+);
+
+// Lấy lịch làm việc của bác sĩ
+router.get('/schedules/doctor/:doctorId',
+  authMiddleware,
+  roleMiddleware([ROLES.PATIENT, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getDoctorSchedule, 'params'),
+  validate(schemas.getDoctorSchedule, 'query'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW),
+  appointmentController.getDoctorSchedule
+);
+
+// Lấy lịch hẹn của bác sĩ
+router.get('/doctor/:doctorId',
+  authMiddleware,
+  roleMiddleware([ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW),
+  appointmentController.getDoctorAppointments
+);
+
+// Lấy lịch hẹn của bệnh nhân
+router.get('/patient/:patientId',
+  authMiddleware,
+  roleMiddleware([ROLES.PATIENT, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getPatientAppointments, 'params'),
+  validate(schemas.getAppointments, 'query'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW),
+  appointmentController.getPatientAppointments
+);
+
+// 🎯 GENERIC ROUTES COME AFTER SPECIFIC ONES
+
+// Lấy lịch hẹn theo ID
+router.get('/:id',
+  authMiddleware,
+  roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.PATIENT, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getAppointmentById, 'params'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_VIEW),
+  appointmentController.getAppointmentById
+);
+
+// Cập nhật lịch hẹn
+router.put('/:id',
+  authMiddleware,
+  roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getAppointmentById, 'params'),
+  validate(schemas.updateAppointment, 'body'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE),
+  appointmentController.updateAppointment
+);
+
+// Hủy lịch hẹn (confirm cancel)
+router.patch('/:id/cancel',
+  authMiddleware,
+  roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getAppointmentById, 'params'),
+  validate(schemas.cancelAppointment, 'body'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_CANCEL),
+  appointmentController.cancelAppointment
+);
+
+// Yêu cầu hủy lịch hẹn (cho bệnh nhân)
+router.post('/:id/cancel-request',
+  authMiddleware,
+  roleMiddleware([ROLES.PATIENT]),
+  validate(schemas.getAppointmentById, 'params'),
+  validate(schemas.requestCancelAppointment, 'body'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_REQUEST_CANCEL),
+  appointmentController.requestCancelAppointment
+);
+
+// Duyệt yêu cầu hủy
+router.patch('/:id/cancel-request/approve',
+  authMiddleware,
+  roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.DEPARTMENT_HEAD, ROLES.CLINICAL_ADMIN, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getAppointmentById, 'params'),
+  validate(schemas.approveCancelRequest, 'body'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_APPROVE_CANCEL),
+  appointmentController.approveCancelRequest
+);
+
+// Đặt lại lịch hẹn
+router.patch('/:id/reschedule',
+  authMiddleware,
+  roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getAppointmentById, 'params'),
+  validate(schemas.rescheduleAppointment, 'body'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE),
+  appointmentController.rescheduleAppointment
+);
+
+// Check-in lịch hẹn
+router.patch('/:id/check-in',
+  authMiddleware,
+  roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.RECEPTIONIST, ROLES.NURSE, ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getAppointmentById, 'params'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE),
+  appointmentController.checkInAppointment
+);
+
+// Hoàn thành lịch hẹn
+router.patch('/:id/complete',
+  authMiddleware,
+  roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getAppointmentById, 'params'),
+  validate(schemas.completeAppointment, 'body'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE),
+  appointmentController.completeAppointment
+);
+
+// Đánh dấu no-show
+router.patch('/:id/no-show',
+  authMiddleware,
+  roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.RECEPTIONIST, ROLES.NURSE, ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getAppointmentById, 'params'),
+  validate(schemas.noShowAppointment, 'body'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE),
+  appointmentController.noShowAppointment
+);
+
+
+
+
+
+// Tạo lịch làm việc bác sĩ
+router.post('/schedules',
+  authMiddleware,
+  roleMiddleware([ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.createDoctorSchedule, 'body'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_CREATE),
+  appointmentController.createDoctorSchedule
+);
+
+// Cập nhật lịch làm việc bác sĩ
+router.put('/schedules/:scheduleId',
+  authMiddleware,
+  roleMiddleware([ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.updateDoctorSchedule, 'params'),
+  validate(schemas.updateDoctorSchedule, 'body'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE),
+  appointmentController.updateDoctorSchedule
+);
+
+// Xóa lịch làm việc bác sĩ
+router.delete('/schedules/:scheduleId',
+  authMiddleware,
+  roleMiddleware([ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.deleteDoctorSchedule, 'params'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_DELETE),
+  appointmentController.deleteDoctorSchedule
+);
+
+// Gửi nhắc nhở cho một lịch hẹn
+router.post('/:id/reminder',
+  authMiddleware,
+  roleMiddleware([ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN]),
+  validate(schemas.getAppointmentById, 'params'),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE),
+  appointmentController.sendReminder
+);
+
+// Gửi nhắc nhở hàng loạt
+router.post('/reminders/bulk',
+  authMiddleware,
+  roleMiddleware([ROLES.HOSPITAL_ADMIN]),
+  auditLog(AUDIT_ACTIONS.APPOINTMENT_UPDATE),
+  appointmentController.sendBulkReminders
+);
+
+// Lấy access logs của lịch hẹn
+router.get('/:id/access-logs',
+  authMiddleware,
+  roleMiddleware([ROLES.HOSPITAL_ADMIN, ROLES.SUPER_ADMIN]),
+  validate(schemas.getAppointmentById, 'params'),
+  auditLog(AUDIT_ACTIONS.SYSTEM_VIEW_AUDIT_LOG),
+  appointmentController.getAppointmentAccessLogs
 );
 
 module.exports = router;

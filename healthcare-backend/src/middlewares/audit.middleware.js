@@ -55,6 +55,16 @@ const AUDIT_ACTIONS = Object.freeze({
   APPOINTMENT_CREATE: 'APPOINTMENT_CREATE',
   APPOINTMENT_UPDATE: 'APPOINTMENT_UPDATE',
   APPOINTMENT_CANCEL: 'APPOINTMENT_CANCEL',
+
+  // HÀNG ĐỢI
+  QUEUE_VIEW: 'QUEUE_VIEW',
+  QUEUE_ADD: 'QUEUE_ADD',
+  QUEUE_CALL_NEXT: 'QUEUE_CALL_NEXT',
+  QUEUE_SKIP: 'QUEUE_SKIP',
+  QUEUE_RECALL: 'QUEUE_RECALL',
+  QUEUE_COMPLETE: 'QUEUE_COMPLETE',
+  QUEUE_STATS: 'QUEUE_STATS',
+  QUEUE_WAIT_TIME: 'QUEUE_WAIT_TIME',
   
   // 💊 PRESCRIPTIONS
   PRESCRIPTION_VIEW: 'PRESCRIPTION_VIEW',
@@ -74,7 +84,21 @@ const AUDIT_ACTIONS = Object.freeze({
   BILL_UPDATE: 'BILL_UPDATE',
   PAYMENT_PROCESS: 'PAYMENT_PROCESS',
   
-  // 🚨 EMERGENCY ACCESS
+  // � NOTIFICATIONS
+  NOTIFICATION_VIEW: 'NOTIFICATION_VIEW',
+  NOTIFICATION_UPDATE: 'NOTIFICATION_UPDATE',
+  NOTIFICATION_SEND: 'NOTIFICATION_SEND',
+    // 🛏️ BED MANAGEMENT
+  BED_CREATE: 'BED_CREATE',
+  BED_UPDATE: 'BED_UPDATE',
+  BED_DELETE: 'BED_DELETE',
+  BED_ASSIGN: 'BED_ASSIGN',
+  BED_TRANSFER: 'BED_TRANSFER',
+  BED_DISCHARGE: 'BED_DISCHARGE',
+  ROOM_CREATE: 'ROOM_CREATE',
+  ROOM_UPDATE: 'ROOM_UPDATE',
+  ROOM_DELETE: 'ROOM_DELETE',
+    // �🚨 EMERGENCY ACCESS
   EMERGENCY_ACCESS: 'EMERGENCY_ACCESS',
   
   // ⚠️ SECURITY EVENTS
@@ -125,8 +149,15 @@ function auditLog(action, options = {}) {
       // 🎯 GHI LOG BẤT ĐỒNG BỘ (KHÔNG ẢNH HƯỞNG ĐẾN RESPONSE)
       process.nextTick(async () => {
         try {
+          // ✅ Đảm bảo action luôn có giá trị
+          if (!action) {
+            console.warn('⚠️ [AUDIT] Action không được cung cấp cho audit log');
+            return;
+          }
+
           const finalAuditData = {
             ...auditData,
+            action, // ✅ Đảm bảo action được set từ parameter
             responseTime,
             statusCode: res.statusCode,
             responseSize: Buffer.byteLength(data || '', 'utf8'),
@@ -325,15 +356,37 @@ async function manualAuditLog(auditData) {
       return;
     }
 
+    // Normalize user data
+    const userId = auditData.user?._id || auditData.userId;
+    const userRole = auditData.user?.role || auditData.userRole;
+    const userEmail = auditData.user?.email || auditData.userEmail;
+    const userName = auditData.user?.name || auditData.userName;
+
     const logEntry = {
-      ...auditData,
+      action: auditData.action,
+      userId,
+      userRole,
+      userEmail,
+      userName,
+      resource: auditData.resource,
+      resourceId: auditData.resourceId,
+      ipAddress: auditData.ipAddress,
+      userAgent: auditData.userAgent,
+      httpMethod: auditData.httpMethod,
+      endpoint: auditData.endpoint,
+      oldData: auditData.oldData,
+      newData: auditData.newData,
+      changes: auditData.changes,
+      metadata: auditData.metadata,
+      status: auditData.status || 'SUCCESS',
+      errorMessage: auditData.errorMessage,
       timestamp: new Date(),
     };
 
     await AuditLog.create(logEntry);
-    console.log('🔍 MANUAL AUDIT LOG:', {
+    console.log('✅ MANUAL AUDIT LOG:', {
       action: auditData.action,
-      user: auditData.user?.email,
+      user: userEmail,
       timestamp: logEntry.timestamp,
     });
 

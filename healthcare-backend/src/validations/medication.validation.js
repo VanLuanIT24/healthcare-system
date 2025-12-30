@@ -4,9 +4,13 @@
  */
 
 const Joi = require('joi');
+const { commonSchemas } = require('../middlewares/validation.middleware');
 
-const medicationValidation = {
-  // Lấy danh sách thuốc
+const schemas = {
+  // ===== PARAMS =====
+  medicationIdParam: Joi.object({ id: commonSchemas.objectId.required() }),
+
+  // ===== QUERIES =====
   getMedications: Joi.object({
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(100).default(20),
@@ -17,9 +21,23 @@ const medicationValidation = {
     stockStatus: Joi.string().valid('LOW', 'OUT', 'NORMAL', 'ALL').optional(),
     sortBy: Joi.string().valid('name', 'genericName', 'createdAt', 'stock.current', 'pricing.sellingPrice').default('name'),
     sortOrder: Joi.string().valid('asc', 'desc').default('asc')
-  }),
+  }).unknown(true),
 
-  // Tạo thuốc mới
+  searchMedications: Joi.object({
+    q: Joi.string().min(1).max(200).required(),
+    limit: Joi.number().integer().min(1).max(50).default(10)
+  }).unknown(true),
+
+  getLowStock: Joi.object({
+    page: Joi.number().integer().min(1).default(1),
+    limit: Joi.number().integer().min(1).max(100).default(20)
+  }).unknown(true),
+
+  getExpiringSoon: Joi.object({}).unknown(true),
+  getMedicationUsageStats: Joi.object({}).unknown(true),
+  exportInventoryExcel: Joi.object({}).unknown(true),
+
+  // ===== BODIES =====
   createMedication: Joi.object({
     medicationId: Joi.string().max(50).optional(),
     name: Joi.string().required().max(200).trim(),
@@ -72,7 +90,6 @@ const medicationValidation = {
     status: Joi.string().valid('ACTIVE', 'DISCONTINUED', 'OUT_OF_STOCK', 'RECALLED').default('ACTIVE')
   }),
 
-  // Cập nhật thuốc
   updateMedication: Joi.object({
     name: Joi.string().max(200).trim().optional(),
     genericName: Joi.string().max(200).trim().optional(),
@@ -122,44 +139,26 @@ const medicationValidation = {
       stepTherapy: Joi.boolean().optional()
     }).optional(),
     status: Joi.string().valid('ACTIVE', 'DISCONTINUED', 'OUT_OF_STOCK', 'RECALLED').optional()
-  }).min(1), // Ít nhất 1 field để update
+  }).min(1),
 
-  // Cập nhật tồn kho
-  updateStock: Joi.object({
+  adjustStock: Joi.object({
     quantity: Joi.number().integer().positive().required(),
     type: Joi.string().valid('IN', 'OUT').required(),
     note: Joi.string().max(500).optional()
   }),
 
-  // Tìm kiếm
-  searchMedications: Joi.object({
-    q: Joi.string().min(1).max(200).required(),
-    limit: Joi.number().integer().min(1).max(50).default(10)
+  restockMedication: Joi.object({
+    quantity: Joi.number().integer().positive().required(),
+    batchNumber: Joi.string().optional(),
+    expiryDate: Joi.date().optional(),
+    note: Joi.string().max(500).optional()
   }),
 
-  // Lấy thuốc sắp hết
-  getLowStock: Joi.object({
-    page: Joi.number().integer().min(1).default(1),
-    limit: Joi.number().integer().min(1).max(100).default(20)
-  }),
-
-  // 🎯 LẤY BÁO CÁO TỒN KHO
-  getInventory: Joi.object({
-    page: Joi.number().integer().min(1).default(1),
-    limit: Joi.number().integer().min(1).max(100).default(20),
-    category: Joi.string().max(100).optional(),
-    status: Joi.string().valid('ACTIVE', 'INACTIVE', 'DISCONTINUED').optional(),
-    sortBy: Joi.string().valid('name', 'category', 'currentStock', 'totalValue').default('name'),
-    sortOrder: Joi.string().valid('asc', 'desc').default('asc')
-  }),
-
-  // Lấy theo ID (param)
-  medicationId: Joi.object({
-    id: Joi.string().regex(/^[0-9a-fA-F]{24}$/).required()
-      .messages({
-        'string.pattern.base': 'ID thuốc không hợp lệ'
-      })
+  writeOffMedication: Joi.object({
+    quantity: Joi.number().integer().positive().required(),
+    reason: Joi.string().max(500).optional(),
+    note: Joi.string().max(500).optional()
   })
 };
 
-module.exports = medicationValidation;
+module.exports = { schemas };

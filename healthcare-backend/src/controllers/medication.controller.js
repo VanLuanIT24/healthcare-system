@@ -1,624 +1,229 @@
-/**
- * MEDICATION CONTROLLER
- * Xử lý quản lý thuốc và kho dược phẩm
- */
-
-const Medication = require('../models/medication.model');
-const moment = require('moment');
+// src/controllers/medication.controller.js
+const medicationService = require('../services/medication.service');
+const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
 
 class MedicationController {
-  /**
-   * Lấy danh sách thuốc với phân trang và tìm kiếm
-   * GET /api/medications
-   */
-  static async getMedications(req, res) {
+  async getMedications(req, res, next) {
     try {
-      const {
-        page = 1,
-        limit = 20,
-        keyword = '',
-        category,
-        status,
-        type,
-        stockStatus, // 'LOW', 'OUT', 'NORMAL', 'ALL'
-        sortBy = 'name',
-        sortOrder = 'asc'
-      } = req.query;
-
-      const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
-      const skip = (pageNum - 1) * limitNum;
-
-      // 🔍 XÂY DỰNG QUERY
-      const query = {};
-
-      // Tìm kiếm theo từ khóa
-      if (keyword && keyword.trim()) {
-        query.$or = [
-          { name: new RegExp(keyword, 'i') },
-          { genericName: new RegExp(keyword, 'i') },
-          { brandName: new RegExp(keyword, 'i') },
-          { medicationId: new RegExp(keyword, 'i') }
-        ];
-      }
-
-      // Lọc theo category
-      if (category) {
-        query.category = category;
-      }
-
-      // Lọc theo status
-      if (status) {
-        query.status = status;
-      }
-
-      // Lọc theo type
-      if (type) {
-        query.type = type;
-      }
-
-      // Lọc theo tình trạng tồn kho
-      if (stockStatus) {
-        switch (stockStatus) {
-          case 'LOW':
-            query.$expr = { $lte: ['$stock.current', '$stock.reorderLevel'] };
-            break;
-          case 'OUT':
-            query['stock.current'] = { $lte: 0 };
-            break;
-          case 'NORMAL':
-            query.$expr = { $gt: ['$stock.current', '$stock.reorderLevel'] };
-            break;
-        }
-      }
-
-      // 📊 THỰC HIỆN QUERY
-      const [medications, total] = await Promise.all([
-        Medication.find(query)
-          .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-          .skip(skip)
-          .limit(limitNum)
-          .lean(),
-        Medication.countDocuments(query)
-      ]);
-
-      // 🎯 FORMAT DỮ LIỆU
-      const formattedMedications = medications.map(med => ({
-        ...med,
-        isLowStock: med.stock.current <= med.stock.reorderLevel,
-        isOutOfStock: med.stock.current <= 0,
-        stockPercentage: med.stock.maximum > 0 
-          ? ((med.stock.current / med.stock.maximum) * 100).toFixed(1)
-          : 0
-      }));
+      const filters = req.query;
+      const result = await medicationService.getMedications(filters);
 
       res.json({
         success: true,
-        data: formattedMedications,
-        pagination: {
-          currentPage: pageNum,
-          totalPages: Math.ceil(total / limitNum),
-          totalItems: total,
-          limit: limitNum,
-          hasNextPage: pageNum < Math.ceil(total / limitNum),
-          hasPrevPage: pageNum > 1
-        }
+        data: result.items,
+        pagination: result.pagination,
+        summary: result.summary
       });
     } catch (error) {
-      console.error('❌ Get medications error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Không thể lấy danh sách thuốc',
-        message: error.message
-      });
+      next(error);
     }
   }
 
-  /**
-   * Lấy thông tin chi tiết một loại thuốc
-   * GET /api/medications/:id
-   */
-  static async getMedicationById(req, res) {
+  async searchMedications(req, res, next) {
+    try {
+      const { q, ...filters } = req.query;
+      const results = await medicationService.searchMedications(q, filters);
+
+      res.json({
+        success: true,
+        data: results
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getMedicationById(req, res, next) {
     try {
       const { id } = req.params;
+      const medication = await medicationService.getMedicationById(id);
 
-      const medication = await Medication.findById(id).lean();
-
-      if (!medication) {
-        return res.status(404).json({
-          success: false,
-          error: 'Không tìm thấy thuốc'
-        });
-      }
-
-      // Thêm thông tin tính toán
-      const enhancedMedication = {
-        ...medication,
-        isLowStock: medication.stock.current <= medication.stock.reorderLevel,
-        isOutOfStock: medication.stock.current <= 0,
-        stockPercentage: medication.stock.maximum > 0 
-          ? ((medication.stock.current / medication.stock.maximum) * 100).toFixed(1)
-          : 0,
-        daysUntilRestock: medication.stock.lastRestocked 
-          ? moment().diff(moment(medication.stock.lastRestocked), 'days')
-          : null
-      };
+      await auditLog(AUDIT_ACTIONS.MEDICATION_VIEW, { resourceId: id })(req, res, () => {});
 
       res.json({
         success: true,
-        data: enhancedMedication
+        data: medication
       });
     } catch (error) {
-      console.error('❌ Get medication by ID error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Không thể lấy thông tin thuốc',
-        message: error.message
-      });
+      next(error);
     }
   }
 
-  /**
-   * Lấy thống kê kho thuốc
-   * GET /api/medications/stats
-   */
-  static async getMedicationStats(req, res) {
+  async createMedication(req, res, next) {
     try {
-      const [
-        totalMedications,
-        activeMedications,
-        lowStockCount,
-        outOfStockCount,
-        categories,
-        recentlyAdded
-      ] = await Promise.all([
-        // Tổng số thuốc
-        Medication.countDocuments(),
-        
-        // Thuốc đang active
-        Medication.countDocuments({ status: 'ACTIVE' }),
-        
-        // Thuốc sắp hết (low stock)
-        Medication.countDocuments({
-          $expr: { $lte: ['$stock.current', '$stock.reorderLevel'] },
-          status: 'ACTIVE'
-        }),
-        
-        // Thuốc hết hàng
-        Medication.countDocuments({
-          'stock.current': { $lte: 0 },
-          status: 'ACTIVE'
-        }),
-        
-        // Thống kê theo danh mục
-        Medication.aggregate([
-          { $match: { status: 'ACTIVE' } },
-          {
-            $group: {
-              _id: '$category',
-              count: { $sum: 1 },
-              totalStock: { $sum: '$stock.current' },
-              totalValue: { $sum: { $multiply: ['$stock.current', '$pricing.sellingPrice'] } }
-            }
-          },
-          { $sort: { count: -1 } }
-        ]),
-        
-        // Thuốc mới thêm gần đây (7 ngày)
-        Medication.countDocuments({
-          createdAt: { $gte: moment().subtract(7, 'days').toDate() }
-        })
-      ]);
+      const data = req.body;
+      const createdBy = req.user._id;
 
-      // Tính tổng giá trị kho
-      const inventoryValue = await Medication.aggregate([
-        { $match: { status: 'ACTIVE' } },
-        {
-          $group: {
-            _id: null,
-            totalValue: {
-              $sum: {
-                $multiply: ['$stock.current', '$pricing.sellingPrice']
-              }
-            }
-          }
-        }
-      ]);
+      const medication = await medicationService.createMedication(data, createdBy);
 
-      res.json({
-        success: true,
-        data: {
-          overview: {
-            totalMedications,
-            activeMedications,
-            lowStockCount,
-            outOfStockCount,
-            recentlyAdded,
-            inventoryValue: inventoryValue[0]?.totalValue || 0
-          },
-          categories: categories.map(cat => ({
-            name: cat._id,
-            count: cat.count,
-            totalStock: cat.totalStock,
-            totalValue: cat.totalValue || 0
-          })),
-          alerts: {
-            lowStock: lowStockCount,
-            outOfStock: outOfStockCount,
-            needsAttention: lowStockCount + outOfStockCount
-          }
-        }
-      });
-    } catch (error) {
-      console.error('❌ Get medication stats error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Không thể lấy thống kê',
-        message: error.message
-      });
-    }
-  }
-
-  /**
-   * Tạo thuốc mới
-   * POST /api/medications
-   */
-  static async createMedication(req, res) {
-    try {
-      const medicationData = req.body;
-
-      // Tạo medication ID tự động nếu không có
-      if (!medicationData.medicationId) {
-        const count = await Medication.countDocuments();
-        medicationData.medicationId = `MED${String(count + 1).padStart(6, '0')}`;
-      }
-
-      // Kiểm tra trùng medication ID
-      const existing = await Medication.findOne({ medicationId: medicationData.medicationId });
-      if (existing) {
-        return res.status(400).json({
-          success: false,
-          error: 'Mã thuốc đã tồn tại'
-        });
-      }
-
-      // Thêm thông tin người tạo
-      medicationData.createdBy = req.user.userId;
-
-      const medication = new Medication(medicationData);
-      await medication.save();
+      await auditLog(AUDIT_ACTIONS.MEDICATION_CREATE, { resourceId: medication._id })(req, res, () => {});
 
       res.status(201).json({
         success: true,
-        message: 'Tạo thuốc mới thành công',
+        message: 'Thêm thuốc mới thành công',
         data: medication
       });
     } catch (error) {
-      console.error('❌ Create medication error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Không thể tạo thuốc mới',
-        message: error.message
-      });
+      next(error);
     }
   }
 
-  /**
-   * Cập nhật thông tin thuốc
-   * PUT /api/medications/:id
-   */
-  static async updateMedication(req, res) {
+  async updateMedication(req, res, next) {
     try {
       const { id } = req.params;
-      const updateData = req.body;
+      const data = req.body;
+      const updatedBy = req.user._id;
 
-      // Không cho phép cập nhật medication ID
-      delete updateData.medicationId;
-      delete updateData.createdBy;
+      const medication = await medicationService.updateMedication(id, data, updatedBy);
 
-      const medication = await Medication.findByIdAndUpdate(
-        id,
-        { $set: updateData },
-        { new: true, runValidators: true }
-      );
-
-      if (!medication) {
-        return res.status(404).json({
-          success: false,
-          error: 'Không tìm thấy thuốc'
-        });
-      }
+      await auditLog(AUDIT_ACTIONS.MEDICATION_UPDATE, { resourceId: id })(req, res, () => {});
 
       res.json({
         success: true,
-        message: 'Cập nhật thuốc thành công',
+        message: 'Cập nhật thông tin thuốc thành công',
         data: medication
       });
     } catch (error) {
-      console.error('❌ Update medication error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Không thể cập nhật thuốc',
-        message: error.message
-      });
+      next(error);
     }
   }
 
-  /**
-   * Cập nhật tồn kho
-   * POST /api/medications/:id/stock
-   */
-  static async updateStock(req, res) {
+  async adjustStock(req, res, next) {
     try {
       const { id } = req.params;
-      const { quantity, type, note } = req.body; // type: 'IN' hoặc 'OUT'
+      const { quantity, reason } = req.body;
+      const adjustedBy = req.user._id;
 
-      const medication = await Medication.findById(id);
+      const result = await medicationService.adjustStock(id, quantity, reason, adjustedBy);
 
-      if (!medication) {
-        return res.status(404).json({
-          success: false,
-          error: 'Không tìm thấy thuốc'
-        });
-      }
-
-      // Cập nhật tồn kho
-      try {
-        medication.updateStock(quantity, type);
-      } catch (stockError) {
-        return res.status(400).json({
-          success: false,
-          error: stockError.message
-        });
-      }
-
-      // Cập nhật ngày nhập kho nếu là nhập hàng
-      if (type === 'IN') {
-        medication.stock.lastRestocked = new Date();
-      }
-
-      // Cập nhật status dựa trên tồn kho
-      if (medication.stock.current <= 0) {
-        medication.status = 'OUT_OF_STOCK';
-      } else if (medication.status === 'OUT_OF_STOCK') {
-        medication.status = 'ACTIVE';
-      }
-
-      await medication.save();
+      await auditLog(AUDIT_ACTIONS.INVENTORY_ADJUST, { resourceId: id, metadata: { quantity, reason } })(req, res, () => {});
 
       res.json({
         success: true,
-        message: `${type === 'IN' ? 'Nhập' : 'Xuất'} kho thành công`,
-        data: {
-          medication: medication,
-          stockInfo: {
-            currentStock: medication.stock.current,
-            isLowStock: medication.stock.current <= medication.stock.reorderLevel,
-            isOutOfStock: medication.stock.current <= 0
-          }
-        }
+        message: 'Điều chỉnh tồn kho thành công',
+        data: result
       });
     } catch (error) {
-      console.error('❌ Update stock error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Không thể cập nhật tồn kho',
-        message: error.message
-      });
+      next(error);
     }
   }
 
-  /**
-   * Lấy danh sách thuốc sắp hết
-   * GET /api/medications/low-stock
-   */
-  static async getLowStockMedications(req, res) {
-    try {
-      const { page = 1, limit = 20 } = req.query;
-      const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
-      const skip = (pageNum - 1) * limitNum;
-
-      const medications = await Medication.find({
-        $expr: { $lte: ['$stock.current', '$stock.reorderLevel'] },
-        status: 'ACTIVE'
-      })
-        .sort({ 'stock.current': 1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean();
-
-      const total = await Medication.countDocuments({
-        $expr: { $lte: ['$stock.current', '$stock.reorderLevel'] },
-        status: 'ACTIVE'
-      });
-
-      res.json({
-        success: true,
-        data: medications.map(med => ({
-          ...med,
-          shortage: med.stock.reorderLevel - med.stock.current,
-          urgencyLevel: med.stock.current <= 0 ? 'CRITICAL' : 
-                       med.stock.current <= med.stock.minimum ? 'HIGH' : 'MEDIUM'
-        })),
-        pagination: {
-          currentPage: pageNum,
-          totalPages: Math.ceil(total / limitNum),
-          totalItems: total,
-          limit: limitNum
-        }
-      });
-    } catch (error) {
-      console.error('❌ Get low stock medications error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Không thể lấy danh sách thuốc sắp hết',
-        message: error.message
-      });
-    }
-  }
-
-  /**
-   * Xóa thuốc (soft delete - chuyển status)
-   * DELETE /api/medications/:id
-   */
-  static async deleteMedication(req, res) {
+  async restockMedication(req, res, next) {
     try {
       const { id } = req.params;
+      const batchData = req.body;
+      const restockedBy = req.user._id;
 
-      const medication = await Medication.findByIdAndUpdate(
-        id,
-        { status: 'DISCONTINUED' },
-        { new: true }
-      );
+      const result = await medicationService.restockMedication(id, batchData, restockedBy);
 
-      if (!medication) {
-        return res.status(404).json({
-          success: false,
-          error: 'Không tìm thấy thuốc'
-        });
-      }
+      await auditLog(AUDIT_ACTIONS.INVENTORY_RESTOCK, { resourceId: id })(req, res, () => {});
 
       res.json({
         success: true,
-        message: 'Đã ngừng sử dụng thuốc',
-        data: medication
+        message: 'Nhập kho thành công',
+        data: result
       });
     } catch (error) {
-      console.error('❌ Delete medication error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Không thể xóa thuốc',
-        message: error.message
-      });
+      next(error);
     }
   }
 
-  /**
-   * Tìm kiếm thuốc
-   * GET /api/medications/search
-   */
-  static async searchMedications(req, res) {
+  async writeOffMedication(req, res, next) {
     try {
-      const { q, limit = 10 } = req.query;
+      const { id } = req.params;
+      const { quantity, reason } = req.body;
+      const writtenOffBy = req.user._id;
 
-      if (!q || q.trim().length < 2) {
-        return res.json({
-          success: true,
-          data: []
-        });
-      }
+      const result = await medicationService.writeOffMedication(id, quantity, reason, writtenOffBy);
 
-      const medications = await Medication.find({
-        $or: [
-          { name: new RegExp(q, 'i') },
-          { genericName: new RegExp(q, 'i') },
-          { brandName: new RegExp(q, 'i') },
-          { medicationId: new RegExp(q, 'i') }
-        ],
-        status: 'ACTIVE'
-      })
-        .limit(parseInt(limit))
-        .select('medicationId name genericName brandName stock pricing type')
-        .lean();
+      await auditLog(AUDIT_ACTIONS.INVENTORY_WRITEOFF, { resourceId: id, metadata: { quantity, reason } })(req, res, () => {});
 
       res.json({
         success: true,
-        data: medications.map(med => ({
-          ...med,
-          available: med.stock.current > 0,
-          lowStock: med.stock.current <= med.stock.reorderLevel
-        }))
+        message: 'Xuất hủy thành công',
+        data: result
       });
     } catch (error) {
-      console.error('❌ Search medications error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Không thể tìm kiếm thuốc',
-        message: error.message
-      });
+      next(error);
     }
   }
 
-  /**
-   * 🎯 LẤY BÁO CÁO TỒN KHO
-   */
-  static async getMedicationInventory(req, res) {
+  async getLowStock(req, res, next) {
     try {
-      const {
-        page = 1,
-        limit = 20,
-        category,
-        status, // ACTIVE, INACTIVE, DISCONTINUED
-        sortBy = 'name',
-        sortOrder = 'asc'
-      } = req.query;
-
-      const pageNum = parseInt(page);
-      const limitNum = parseInt(limit);
-      const skip = (pageNum - 1) * limitNum;
-
-      // 🔍 XÂY DỰNG QUERY
-      const query = { deletedAt: { $exists: false } };
-
-      if (category) {
-        query.category = category;
-      }
-
-      if (status) {
-        query.status = status;
-      }
-
-      // Lấy tổng số bản ghi
-      const total = await Medication.countDocuments(query);
-
-      // Lấy dữ liệu có phân trang
-      const inventory = await Medication.find(query)
-        .select('medicationId name genericName brandName category stock pricing expiryDate status')
-        .sort({ [sortBy]: sortOrder === 'desc' ? -1 : 1 })
-        .skip(skip)
-        .limit(limitNum)
-        .lean();
-
-      // Tính toán chi tiết tồn kho
-      const inventoryReport = inventory.map(med => ({
-        medicationId: med.medicationId,
-        name: med.name,
-        genericName: med.genericName,
-        brandName: med.brandName,
-        category: med.category,
-        currentStock: med.stock?.current || 0,
-        minimumStock: med.stock?.minimumLevel || 0,
-        reorderLevel: med.stock?.reorderLevel || 0,
-        maximumStock: med.stock?.maximumLevel || 0,
-        unitPrice: med.pricing?.unitPrice || 0,
-        totalValue: (med.stock?.current || 0) * (med.pricing?.unitPrice || 0),
-        status: med.stock?.current <= med.stock?.minimumLevel ? 'CRITICAL' :
-                med.stock?.current <= med.stock?.reorderLevel ? 'LOW' : 'NORMAL',
-        expiryDate: med.expiryDate,
-        medicationStatus: med.status
-      }));
-
+      const alerts = await medicationService.getLowStockAlerts();
       res.json({
         success: true,
-        data: inventoryReport,
-        pagination: {
-          page: pageNum,
-          limit: limitNum,
-          total,
-          pages: Math.ceil(total / limitNum),
-          totalValue: inventoryReport.reduce((sum, item) => sum + item.totalValue, 0)
-        }
+        data: alerts,
+        count: alerts.length
       });
     } catch (error) {
-      console.error('❌ Get medication inventory error:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Không thể lấy báo cáo tồn kho',
-        message: error.message
+      next(error);
+    }
+  }
+
+  async getExpiringSoon(req, res, next) {
+    try {
+      const { days = 60 } = req.query;
+      const alerts = await medicationService.getExpiringMedications(parseInt(days));
+      res.json({
+        success: true,
+        data: alerts,
+        count: alerts.length
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getRecalledMedications(req, res, next) {
+    try {
+      const recalls = await medicationService.getRecalledMedications();
+      res.json({
+        success: true,
+        data: recalls
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getInventoryValue(req, res, next) {
+    try {
+      const value = await medicationService.getInventoryValue();
+      res.json({
+        success: true,
+        data: value
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getMedicationUsageStats(req, res, next) {
+    try {
+      const filters = req.query;
+      const stats = await medicationService.getMedicationUsageStats(filters);
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async exportInventoryExcel(req, res, next) {
+    try {
+      const filters = req.query;
+      const buffer = await medicationService.exportInventoryExcel(filters);
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename="TonKhoThuoc.xlsx"');
+      res.send(buffer);
+    } catch (error) {
+      next(error);
     }
   }
 }
 
-module.exports = MedicationController;
+module.exports = new MedicationController();
