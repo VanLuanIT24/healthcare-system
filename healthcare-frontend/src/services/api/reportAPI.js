@@ -4,19 +4,19 @@ import axios from '../axios';
 const reportAPI = {
   // ===== BÁOO CÁO LÂM SÀNG =====
   getClinicalReport: async (params = {}) => 
-    axios.get('/api/reports/clinical', { params }),
+    axios.get('/reports/clinical', { params }),
   
   // ===== BÁOO CÁO TÀI CHÍNH =====
   getFinancialReport: async (params = {}) => 
-    axios.get('/api/reports/financial', { params }),
+    axios.get('/reports/financial', { params }),
   
   // ===== BÁOO CÁO DƯỢC =====
   getPharmacyReport: async (params = {}) => 
-    axios.get('/api/reports/pharmacy', { params }),
+    axios.get('/reports/pharmacy', { params }),
   
   // ===== BÁOO CÁO NHÂN SỰ =====
   getHRReport: async (params = {}) => 
-    axios.get('/api/reports/hr', { params }),
+    axios.get('/reports/hr', { params }),
 
   // ===== EXPORTED METHODS (LEGACY) =====
   getPatientReport: (params) => axios.get('/reports/patients', { params }),

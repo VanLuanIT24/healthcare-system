@@ -211,9 +211,9 @@ app.use('/api/admin', (req, res, next) => {
   console.log(`🎯 [ADMIN ROUTE] ${req.method} ${req.path} (full: ${req.originalUrl})`);
   next();
 });
-app.use('/api/admin', adminRoutes); // 🆕 ADMIN ROUTES
+app.use('/api/admin', dashboardRoutes); // 🆕 DASHBOARD STATS ROUTES (Moved up to prevent conflict with /users/:id)
 app.use('/api/admin/doctors', doctorRoutes); // 🆕 DOCTOR MANAGEMENT ROUTES
-app.use('/admin', dashboardRoutes); // 🆕 DASHBOARD STATS ROUTES
+app.use('/api/admin', adminRoutes); // 🆕 ADMIN ROUTES
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/queue', queueRoutes);
 app.use('/api/medical-records', medicalRecordRoutes);

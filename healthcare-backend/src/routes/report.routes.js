@@ -11,28 +11,28 @@ router.use(authenticate);
 // ===== BÁOO CÁO LÂM SÀNG =====
 router.get(
   '/clinical',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   reportController.getClinicalReport
 );
 
 // ===== BÁOO CÁO TÀI CHÍNH =====
 router.get(
   '/financial',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   reportController.getFinancialReport
 );
 
 // ===== BÁOO CÁO DƯỢC =====
 router.get(
   '/pharmacy',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   reportController.getPharmacyReport
 );
 
 // ===== BÁOO CÁO NHÂN SỰ =====
 router.get(
   '/hr',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   reportController.getHRReport
 );
 

@@ -1,6 +1,6 @@
 // src/pages/admin/beds/BedForm.jsx
 import AdminLayout from '@/components/layout/admin/AdminLayout';
-import adminAPI from '@/services/api/adminAPI';
+import adminAPI from '@/services/api/admin/adminAPI';
 import bedAPI from '@/services/api/bedAPI';
 import { Button, Card, Checkbox, Col, Form, Input, InputNumber, message, Row, Select, Space, Spin } from 'antd';
 import { useEffect, useState } from 'react';

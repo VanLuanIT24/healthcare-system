@@ -1,6 +1,6 @@
 import axios from '../axios';
 
-const API_URL = '/api/admin/departments';
+const API_URL = '/admin/departments';
 
 // Department Management API
 export const departmentAPI = {

@@ -1,6 +1,6 @@
 // src/pages/admin/departments/DepartmentForm.jsx
 import AdminLayout from '@/components/layout/admin/AdminLayout';
-import adminAPI from '@/services/api/adminAPI';
+import adminAPI from '@/services/api/admin/adminAPI';
 import axios from '@/services/axios';
 import { Button, Card, Col, Form, Input, message, Row, Select, Space, Spin, TimePicker } from 'antd';
 import dayjs from 'dayjs';

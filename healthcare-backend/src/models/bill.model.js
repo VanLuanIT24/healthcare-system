@@ -14,6 +14,11 @@ const billSchema = new mongoose.Schema({
   },
   
   // Thông tin hóa đơn
+  department: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Department',
+    required: true
+  },
   issueDate: {
     type: Date,
     default: Date.now

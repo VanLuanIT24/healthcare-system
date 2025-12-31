@@ -22,6 +22,11 @@ class BillingService {
       throw new AppError('Không tìm thấy bệnh nhân', 404);
     }
 
+    // Require department
+    if (!billData.department || !mongoose.Types.ObjectId.isValid(billData.department)) {
+      throw new AppError('Thiếu hoặc sai department khi tạo hóa đơn', 400);
+    }
+
     // Tính toán chi tiết từ services
     let subtotal = 0;
     let totalDiscount = 0;
@@ -59,6 +64,7 @@ class BillingService {
     const newBill = new Bill({
       billId,
       patientId,
+      department: billData.department,
       issueDate: new Date(),
       dueDate: billData.dueDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 ngày mặc định
       billType: billData.billType,

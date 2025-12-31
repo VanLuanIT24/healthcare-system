@@ -5,6 +5,7 @@ import {
     BellOutlined,
     CalendarOutlined,
     DashboardOutlined,
+    DownOutlined,
     ExperimentOutlined,
     FileTextOutlined,
     HeartOutlined,
@@ -18,13 +19,15 @@ import {
     UserOutlined,
 } from '@ant-design/icons';
 import { Avatar, Badge, Breadcrumb, Button, Dropdown, Layout, Menu } from 'antd';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 
 const { Header, Sider, Content } = Layout;
 
 const DashboardLayout = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
   const { user, logout } = useAuth();
   const { unreadCount } = useNotification();
   const navigate = useNavigate();
@@ -110,6 +113,20 @@ const DashboardLayout = () => {
       onClick: logout,
     },
   ];
+
+  // Đóng menu khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [userMenuOpen]);
 
   // Generate breadcrumb items
   const getBreadcrumbItems = () => {
@@ -274,12 +291,12 @@ const DashboardLayout = () => {
             </Badge>
 
             {/* User Dropdown */}
-            <Dropdown
-              menu={{ items: userMenuItems }}
-              placement="bottomRight"
-              trigger={['click']}
-            >
-              <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors">
+            <div className="relative" ref={userMenuRef}>
+              <Button
+                type="text"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+              >
                 <Avatar 
                   src={user?.avatar} 
                   icon={<UserOutlined />}
@@ -288,8 +305,43 @@ const DashboardLayout = () => {
                 <span className="hidden md:inline text-gray-700 font-medium">
                   {user?.fullName}
                 </span>
-              </div>
-            </Dropdown>
+              </Button>
+
+              {/* Dropdown Menu */}
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-1 animate-in fade-in slide-in-from-top-1">
+                  <button
+                    onClick={() => { navigate('/patient/profile'); setUserMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors text-sm"
+                  >
+                    <UserOutlined className="text-base" />
+                    <span>Hồ Sơ Cá Nhân</span>
+                  </button>
+                  <button
+                    onClick={() => { navigate('/patient/settings'); setUserMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors text-sm"
+                  >
+                    <SettingOutlined className="text-base" />
+                    <span>Cài Đặt</span>
+                  </button>
+                  <div className="border-t border-gray-200 my-1" />
+                  <button
+                    onClick={() => { navigate('/'); setUserMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50 flex items-center gap-2 text-gray-700 hover:text-blue-600 transition-colors text-sm"
+                  >
+                    <HomeOutlined className="text-base" />
+                    <span>Về Trang Chủ</span>
+                  </button>
+                  <button
+                    onClick={() => { logout(); setUserMenuOpen(false); }}
+                    className="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-2 text-red-500 hover:text-red-600 transition-colors text-sm"
+                  >
+                    <LogoutOutlined className="text-base" />
+                    <span>Đăng Xuất</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </Header>
 

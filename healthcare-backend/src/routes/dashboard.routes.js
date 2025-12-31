@@ -11,35 +11,35 @@ router.use(authenticate);
 // Thống kê users
 router.get(
   '/users/stats',
-  requirePermission(PERMISSIONS['USER.VIEW']),
+  requirePermission(PERMISSIONS['USER_VIEW']),
   dashboardController.getUsersStats
 );
 
 // Thống kê appointments
 router.get(
   '/appointments/stats',
-  requirePermission(PERMISSIONS['APPOINTMENT.VIEW']),
+  requirePermission(PERMISSIONS['APPOINTMENT_VIEW']),
   dashboardController.getAppointmentsStats
 );
 
 // Thống kê departments
 router.get(
   '/departments/stats',
-  requirePermission(PERMISSIONS['DEPARTMENT.VIEW']),
+  requirePermission(PERMISSIONS['DEPARTMENT_VIEW']),
   dashboardController.getDepartmentsStats
 );
 
 // Overview reports
 router.get(
   '/reports/overview',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   dashboardController.getReportsOverview
 );
 
 // Recent appointments
 router.get(
   '/appointments/recent',
-  requirePermission(PERMISSIONS['APPOINTMENT.VIEW']),
+  requirePermission(PERMISSIONS['APPOINTMENT_VIEW']),
   dashboardController.getRecentAppointments
 );
 

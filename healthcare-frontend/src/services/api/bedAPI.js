@@ -1,6 +1,6 @@
 import axios from '../axios';
 
-const API_URL = '/api/v1/admin/beds';
+const API_URL = '/v1/admin/beds';
 
 export const bedAPI = {
   // Get all beds with filters

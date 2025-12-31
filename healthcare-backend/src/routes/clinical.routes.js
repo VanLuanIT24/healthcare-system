@@ -14,7 +14,7 @@ router.use(authenticate);
 router.post(
   '/patients/:patientId/consultations',
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS['CONSULTATION.CREATE']),
+  requirePermission(PERMISSIONS['CONSULTATION_CREATE']),
   validate(schemas.createConsultation, 'body'),
   clinicalController.createConsultation
 );
@@ -23,7 +23,7 @@ router.post(
 router.get(
   '/consultations/:id',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS['CONSULTATION.VIEW']),
+  requirePermission(PERMISSIONS['CONSULTATION_VIEW']),
   validate(schemas.consultationIdParam, 'params'),
   clinicalController.getConsultation
 );
@@ -32,7 +32,7 @@ router.get(
 router.put(
   '/consultations/:id',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS['CONSULTATION.UPDATE']),
+  requirePermission(PERMISSIONS['CONSULTATION_UPDATE']),
   validate(schemas.consultationIdParam, 'params'),
   validate(schemas.updateConsultation, 'body'),
   clinicalController.updateConsultation
@@ -42,7 +42,7 @@ router.put(
 router.patch(
   '/consultations/:id/complete',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS['CONSULTATION.UPDATE']),
+  requirePermission(PERMISSIONS['CONSULTATION_UPDATE']),
   validate(schemas.consultationIdParam, 'params'),
   clinicalController.completeConsultation
 );
@@ -51,7 +51,7 @@ router.patch(
 router.patch(
   '/consultations/:id/approve',
   requireRole(ROLES.HOSPITAL_ADMIN, ROLES.DEPARTMENT_HEAD),
-  requirePermission(PERMISSIONS['CONSULTATION.UPDATE']),
+  requirePermission(PERMISSIONS['CONSULTATION_UPDATE']),
   validate(schemas.consultationIdParam, 'params'),
   clinicalController.approveConsultation
 );
@@ -60,7 +60,7 @@ router.patch(
 router.post(
   '/consultations/:consultationId/symptoms',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
-  requirePermission(PERMISSIONS['CONSULTATION.UPDATE']),
+  requirePermission(PERMISSIONS['CONSULTATION_UPDATE']),
   validate(schemas.consultationIdParam, 'params'),
   validate(schemas.recordSymptoms, 'body'),
   clinicalController.recordSymptoms
@@ -70,7 +70,7 @@ router.post(
 router.post(
   '/consultations/:consultationId/physical-exam',
   requireRole(ROLES.DOCTOR),
-  requirePermission(PERMISSIONS['CONSULTATION.UPDATE']),
+  requirePermission(PERMISSIONS['CONSULTATION_UPDATE']),
   validate(schemas.consultationIdParam, 'params'),
   validate(schemas.recordPhysicalExam, 'body'),
   clinicalController.recordPhysicalExam
@@ -80,7 +80,7 @@ router.post(
 router.post(
   '/consultations/:consultationId/diagnoses',
   requireRole(ROLES.DOCTOR),
-   requirePermission(PERMISSIONS['DIAGNOSIS.CREATE']),
+   requirePermission(PERMISSIONS['DIAGNOSIS_CREATE']),
   validate(schemas.consultationIdParam, 'params'),
   validate(schemas.addDiagnosis, 'body'),
   clinicalController.addDiagnosis
@@ -90,7 +90,7 @@ router.post(
 router.get(
   '/patients/:patientId/consultations',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS['CONSULTATION.VIEW']),
+  requirePermission(PERMISSIONS['CONSULTATION_VIEW']),
   validate(schemas.patientIdParam, 'params'),
   validate(schemas.getPatientConsultations, 'query'),
   clinicalController.getPatientConsultations
@@ -100,7 +100,7 @@ router.get(
 router.get(
   '/icd10/search',
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
-  requirePermission(PERMISSIONS['DIAGNOSIS.VIEW']),
+  requirePermission(PERMISSIONS['DIAGNOSIS_VIEW']),
   validate(schemas.searchICD10, 'query'),
   clinicalController.searchICD10
 );
@@ -109,7 +109,7 @@ router.get(
 router.get(
   '/patients/:patientId/diagnoses',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-  requirePermission(PERMISSIONS['DIAGNOSIS.VIEW']),
+  requirePermission(PERMISSIONS['DIAGNOSIS_VIEW']),
   validate(schemas.patientIdParam, 'params'),
   validate(schemas.getPatientDiagnoses, 'query'),
   clinicalController.getPatientDiagnoses
@@ -119,7 +119,7 @@ router.get(
 router.post(
   '/patients/:patientId/treatment-plans',
   requireRole(ROLES.DOCTOR),
-   requirePermission(PERMISSIONS['TREATMENT.CREATE_PLANS']),
+   requirePermission(PERMISSIONS['TREATMENT_CREATE_PLANS']),
   validate(schemas.patientIdParam, 'params'),
   validate(schemas.createTreatmentPlan, 'body'),
   clinicalController.createTreatmentPlan
@@ -129,7 +129,7 @@ router.post(
 router.post(
   '/patients/:patientId/progress-notes',
   requireRole(ROLES.DOCTOR),
-   requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
+   requirePermission(PERMISSIONS['MEDICAL_UPDATE_RECORDS']),
   validate(schemas.patientIdParam, 'params'),
   validate(schemas.recordProgressNote, 'body'),
   clinicalController.recordProgressNote
@@ -139,7 +139,7 @@ router.post(
 router.post(
   '/patients/:patientId/nursing-notes',
   requireRole(ROLES.NURSE),
-   requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
+   requirePermission(PERMISSIONS['MEDICAL_UPDATE_RECORDS']),
   validate(schemas.patientIdParam, 'params'),
   validate(schemas.recordNursingNote, 'body'),
   clinicalController.recordNursingNote
@@ -149,7 +149,7 @@ router.post(
 router.get(
   '/patients/:patientId/medical-record',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-   requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
+   requirePermission(PERMISSIONS['MEDICAL_VIEW_RECORDS']),
   validate(schemas.patientIdParam, 'params'),
   clinicalController.getMedicalRecord
 );
@@ -158,7 +158,7 @@ router.get(
 router.get(
   '/patients/:patientId/medical-record/export/pdf',
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
-   requirePermission(PERMISSIONS['MEDICAL.EXPORT_RECORDS']),
+   requirePermission(PERMISSIONS['MEDICAL_EXPORT_RECORDS']),
   validate(schemas.patientIdParam, 'params'),
   clinicalController.exportMedicalRecordPDF
 );
@@ -167,7 +167,7 @@ router.get(
 router.post(
   '/patients/:patientId/vital-signs',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
-   requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
+   requirePermission(PERMISSIONS['MEDICAL_UPDATE_RECORDS']),
   validate(schemas.patientIdParam, 'params'),
   validate(schemas.recordVitalSigns, 'body'),
   clinicalController.recordVitalSigns
@@ -177,7 +177,7 @@ router.post(
 router.get(
   '/patients/:patientId/vital-signs',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
-   requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
+   requirePermission(PERMISSIONS['MEDICAL_VIEW_RECORDS']),
   validate(schemas.patientIdParam, 'params'),
   validate(schemas.getVitalSignsHistory, 'query'),
   clinicalController.getVitalSignsHistory
@@ -187,7 +187,7 @@ router.get(
 router.get(
   '/patients/:patientId/vital-signs/trend',
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
-   requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
+   requirePermission(PERMISSIONS['MEDICAL_VIEW_RECORDS']),
   validate(schemas.patientIdParam, 'params'),
   validate(schemas.getVitalSignsTrend, 'query'),
   clinicalController.getVitalSignsTrend
@@ -197,7 +197,7 @@ router.get(
 router.get(
   '/clinical/templates',
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
-   requirePermission(PERMISSIONS['MEDICAL.VIEW_RECORDS']),
+   requirePermission(PERMISSIONS['MEDICAL_VIEW_RECORDS']),
   validate(schemas.getClinicalTemplates, 'query'),
   clinicalController.getClinicalTemplates
 );
@@ -206,7 +206,7 @@ router.get(
 router.post(
   '/clinical/templates',
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
-   requirePermission(PERMISSIONS['MEDICAL.UPDATE_RECORDS']),
+   requirePermission(PERMISSIONS['MEDICAL_UPDATE_RECORDS']),
   validate(schemas.saveClinicalTemplate, 'body'),
   clinicalController.saveClinicalTemplate
 );
@@ -215,7 +215,7 @@ router.post(
 router.get(
   '/consultations/:consultationId/access-logs',
   requireRole(ROLES.HOSPITAL_ADMIN),
-   requirePermission(PERMISSIONS['SYSTEM.VIEW_AUDIT_LOG']),
+   requirePermission(PERMISSIONS['SYSTEM_VIEW_AUDIT_LOG']),
   validate(schemas.consultationIdParam, 'params'),
   clinicalController.getConsultationAccessLogs
 );

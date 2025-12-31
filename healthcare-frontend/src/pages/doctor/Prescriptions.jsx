@@ -6,6 +6,7 @@ import {
   EditOutlined,
   EyeOutlined,
   LoadingOutlined,
+  MinusCircleOutlined,
 } from '@ant-design/icons';
 import {
   Button,
@@ -190,12 +191,66 @@ const Prescriptions = () => {
   const handleSubmit = async (values) => {
     try {
       setLoading(true);
+
+      // Validate required fields
+      if (!values.patientId) {
+        message.error('Vui lòng chọn bệnh nhân');
+        setLoading(false);
+        return;
+      }
+
+      if (!values.diagnosis || values.diagnosis.trim() === '') {
+        message.error('Vui lòng nhập chẩn đoán');
+        setLoading(false);
+        return;
+      }
+
+      if (!values.medicines || values.medicines.trim() === '') {
+        message.error('Vui lòng thêm thông tin thuốc');
+        setLoading(false);
+        return;
+      }
+
+      // Parse medicines string into array format
+      // Format per line: "Medicine Name, Dosage, Frequency, Duration"
+      const medicinesText = values.medicines.trim();
+      const medicinesArray = medicinesText
+        .split('\n')
+        .filter(line => line.trim())
+        .map((line, index) => {
+          // Parse each medicine line
+          const parts = line.split(',').map(p => p.trim()).filter(p => p);
+
+          // Extract values with fallbacks
+          const medicineName = parts[0] || `Medicine ${index + 1}`;
+          const medicineDosage = parts[1] || '500mg';
+          const medicineFrequency = parts[2] || '2 times daily';
+          const medicineDuration = parts[3] || '7';
+
+          return {
+            name: medicineName,
+            dosage: medicineDosage,
+            frequency: medicineFrequency,
+            duration: medicineDuration,
+            instructions: line
+          };
+        });
+
+      if (medicinesArray.length === 0) {
+        message.error('Vui lòng thêm ít nhất 1 loại thuốc');
+        setLoading(false);
+        return;
+      }
+
+      // Build prescription data matching backend schema
       const prescriptionData = {
-        ...values,
-        // Format medicines if it's a string from TextArea (legacy UI support)
-        // In a real app we'd use a dynamic form for medicines
-        issueDate: dayjs(),
+        patientId: values.patientId,
+        diagnosis: values.diagnosis,
+        medications: medicinesArray,
+        notes: values.notes || '',
       };
+
+      console.log('Sending prescription data:', prescriptionData);
 
       if (isEditMode) {
         await prescriptionAPI.updatePrescription(selectedPrescription._id, prescriptionData);
@@ -208,8 +263,31 @@ const Prescriptions = () => {
       form.resetFields();
       loadPrescriptions();
     } catch (error) {
-      console.error('Error saving prescription:', error);
-      message.error(error.response?.data?.message || 'Lỗi khi lưu đơn thuốc');
+      console.error('===== PRESCRIPTION ERROR DEBUG =====');
+      console.error('error:', error);
+      console.error('error.response:', error.response);
+      console.error('error.response?.status:', error.response?.status);
+      console.error('error.response?.data:', error.response?.data);
+      console.error('JSON:', JSON.stringify(error.response?.data, null, 2));
+
+      let errorMessage = 'Lỗi khi lưu đơn thuốc';
+      const errorData = error.response?.data;
+
+      // Kiểm tra lỗi validation từ backend
+      if (errorData?.error?.details && Array.isArray(errorData.error.details)) {
+        console.error('Validation details:', errorData.error.details);
+        errorMessage = errorData.error.details[0]?.message || errorData.error.message || errorMessage;
+      } else if (errorData?.error?.message) {
+        errorMessage = errorData.error.message;
+      } else if (errorData?.message) {
+        errorMessage = errorData.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      console.error('Final errorMessage:', errorMessage);
+      message.error(errorMessage);
+      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -459,24 +537,136 @@ const Prescriptions = () => {
               </Select>
             </Form.Item>
 
-            <Divider>Thông tin thuốc</Divider>
+            <Divider>Thông tin đơn thuốc</Divider>
 
-            {/* Medicines */}
+            {/* Diagnosis */}
             <Form.Item
-              label="Danh sách thuốc"
-              name="medicines"
+              label="Chẩn đoán"
+              name="diagnosis"
               rules={[
                 {
                   required: true,
-                  message: 'Vui lòng thêm thuốc',
+                  message: 'Vui lòng nhập chẩn đoán',
                 },
               ]}
             >
               <Input.TextArea
-                placeholder="Ví dụ: Paracetamol 500mg, 3 lần/ngày, 5 ngày&#10;Vitamin C 1000mg, 1 lần/ngày, 10 ngày"
-                rows={4}
+                placeholder="Ví dụ: Viêm phế quản cấp..."
+                rows={2}
               />
             </Form.Item>
+
+            <Form.Item
+              label="Ngày kê đơn"
+              name="issueDate"
+              initialValue={dayjs()}
+            >
+              <DatePicker format="DD/MM/YYYY HH:mm" showTime style={{ width: '100%' }} />
+            </Form.Item>
+
+            <Divider>Thông tin thuốc</Divider>
+
+            {/* Medicines Form List */}
+            <Form.List name="medicationsList">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <Card
+                      size="small"
+                      key={key}
+                      style={{ marginBottom: 16, background: '#fafafa' }}
+                      extra={
+                        <MinusCircleOutlined
+                          onClick={() => remove(name)}
+                          style={{ color: 'red', cursor: 'pointer' }}
+                        />
+                      }
+                    >
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'name']}
+                            label="Tên thuốc"
+                            rules={[{ required: true, message: 'Nhập tên thuốc' }]}
+                          >
+                            <Input placeholder="Tên thuốc (VD: Paracetamol)" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'dosage']}
+                            label="Liều lượng"
+                          >
+                            <Input placeholder="VD: 500mg" />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      <Row gutter={16}>
+                        <Col span={8}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'totalQuantity']}
+                            label="Số lượng"
+                          >
+                            <InputNumber min={1} placeholder="SL" style={{ width: '100%' }} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={8}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'duration']}
+                            label="Thời gian"
+                          >
+                            <Input type="number" placeholder="Số ngày" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={8}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'durationUnit']}
+                            label="Đơn vị"
+                            initialValue="days"
+                          >
+                            <Select>
+                              <Select.Option value="days">Ngày</Select.Option>
+                              <Select.Option value="weeks">Tuần</Select.Option>
+                              <Select.Option value="months">Tháng</Select.Option>
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'frequency']}
+                            label="Tần suất"
+                          >
+                            <Input placeholder="VD: 2 lần/ngày" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'instructions']}
+                            label="Cách dùng/Ghi chú"
+                          >
+                            <Input placeholder="VD: Uống sau ăn" />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </Card>
+                  ))}
+                  <Form.Item>
+                    <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                      Thêm thuốc
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
 
             <Form.Item
               label="Ghi chú"
@@ -485,20 +675,6 @@ const Prescriptions = () => {
               <Input.TextArea
                 placeholder="Ghi chú thêm (ví dụ: uống sau ăn, tránh thực phẩm nào...)"
                 rows={3}
-              />
-            </Form.Item>
-
-            <Form.Item
-              label="Trạng thái"
-              name="status"
-              initialValue="active"
-            >
-              <Select
-                options={[
-                  { label: '✅ Đang sử dụng', value: 'active' },
-                  { label: '✓ Hoàn thành', value: 'completed' },
-                  { label: '✕ Hủy', value: 'cancelled' },
-                ]}
               />
             </Form.Item>
           </Form>

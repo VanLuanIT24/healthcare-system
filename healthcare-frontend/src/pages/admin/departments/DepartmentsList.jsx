@@ -1,6 +1,6 @@
 // src/pages/admin/departments/DepartmentsList.jsx
 import AdminLayout from '@/components/layout/admin/AdminLayout';
-import adminAPI from '@/services/api/adminAPI';
+import adminAPI from '@/services/api/admin/adminAPI';
 import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import { Button, Card, Col, Empty, Input, Popconfirm, Progress, Row, Select, Skeleton, Space, Statistic, Table, Tag, message } from 'antd';
 import { useEffect, useState } from 'react';

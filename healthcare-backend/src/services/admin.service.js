@@ -465,7 +465,10 @@ class AdminService {
       Bill.aggregate([
         {
           $match: {
-            department: departmentId,
+            $or: [
+              { department: departmentId },
+              { department: { $exists: false } }
+            ],
             createdAt: { $gte: start.toDate(), $lte: end.toDate() },
             status: { $in: ['PAID', 'PARTIAL'] }
           }

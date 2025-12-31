@@ -103,6 +103,53 @@ textarea::-moz-selection {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
+/* ============================================
+   USER DROPDOWN MENU STYLES
+   ============================================ */
+.user-dropdown-menu .ant-dropdown-menu {
+  padding: 8px !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+  min-width: 220px !important;
+  border: 1px solid #f0f0f0;
+}
+
+.user-dropdown-menu .ant-dropdown-menu-item {
+  padding: 10px 16px !important;
+  border-radius: 8px !important;
+  margin: 2px 0 !important;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.user-dropdown-menu .ant-dropdown-menu-item:hover {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%) !important;
+  transform: translateX(4px);
+}
+
+.user-dropdown-menu .ant-dropdown-menu-item .anticon {
+  font-size: 16px !important;
+  margin-right: 12px !important;
+  color: #1890ff;
+}
+
+.user-dropdown-menu .ant-dropdown-menu-item-danger {
+  color: #ff4d4f !important;
+}
+
+.user-dropdown-menu .ant-dropdown-menu-item-danger:hover {
+  background: linear-gradient(135deg, #fff2f0 0%, #ffccc7 100%) !important;
+}
+
+.user-dropdown-menu .ant-dropdown-menu-item-danger .anticon {
+  color: #ff4d4f !important;
+}
+
+.user-dropdown-menu .ant-dropdown-menu-item-divider {
+  margin: 8px 0 !important;
+  background-color: #f0f0f0 !important;
+}
+
 .ant-card-head {
   border-bottom: 1px solid #f0f0f0;
 }

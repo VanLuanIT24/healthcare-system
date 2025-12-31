@@ -1,7 +1,7 @@
 // src/services/api/doctorScheduleAPI.js
 import axios from '../axios';
 
-const API_URL = '/api/doctor-schedules';
+const API_URL = '/doctor-schedules';
 
 export const doctorScheduleAPI = {
   // Lấy danh sách lịch làm việc

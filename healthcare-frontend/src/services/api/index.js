@@ -1,5 +1,5 @@
 // src/api/index.js - Phiên bản cuối cùng (sau khi gộp)
-import adminAPI from './adminAPI';
+import adminAPI from './admin/adminAPI';
 import appointmentAPI from './appointmentAPI';
 import authAPI from './authAPI';
 import bedManagementAPI from './bedManagementAPI';

@@ -20,7 +20,7 @@ router.use(authenticate);
 // Lấy danh sách phòng (PHẢI TRƯỚC /:id để không bị nhầm)
 router.get(
   '/rooms',
-  requirePermission(PERMISSIONS['BED.VIEW']),
+  requirePermission(PERMISSIONS['BED_VIEW']),
   validate(bedValidation.bedQuery, 'query'),
   bedController.getRooms
 );
@@ -28,7 +28,7 @@ router.get(
 // Tạo giường mới
 router.post(
   '/',
-  requirePermission(PERMISSIONS['BED.MANAGE']),
+  requirePermission(PERMISSIONS['BED_MANAGE']),
   validate(bedValidation.body, 'body'),
   bedController.createBed
 );
@@ -36,7 +36,7 @@ router.post(
 // Tạo phòng mới
 router.post(
   '/rooms',
-  requirePermission(PERMISSIONS['BED.MANAGE']),
+  requirePermission(PERMISSIONS['BED_MANAGE']),
   validate(bedValidation.body, 'body'),
   bedController.createRoom
 );
@@ -44,7 +44,7 @@ router.post(
 // Lấy danh sách giường
 router.get(
   '/',
-  requirePermission(PERMISSIONS['BED.VIEW']),
+  requirePermission(PERMISSIONS['BED_VIEW']),
   validate(bedValidation.bedQuery, 'query'),
   bedController.getBeds
 );
@@ -52,7 +52,7 @@ router.get(
 // Lấy giường theo ID (PHẢI SAU các route cụ thể)
 router.get(
   '/:id',
-  requirePermission(PERMISSIONS['BED.VIEW']),
+  requirePermission(PERMISSIONS['BED_VIEW']),
   validate(bedValidation.params, 'params'),
   bedController.getBedById
 );
@@ -60,7 +60,7 @@ router.get(
 // Cập nhật trạng thái giường
 router.patch(
   '/:bedId/status',
-  requirePermission(PERMISSIONS['BED.UPDATE']),
+  requirePermission(PERMISSIONS['BED_UPDATE']),
   validate(bedValidation.params, 'params'),
   validate(bedValidation.statusBody, 'body'),
   bedController.updateBedStatus
@@ -69,7 +69,7 @@ router.patch(
 // Phân bổ giường
 router.post(
   '/:bedId/assign',
-  requirePermission(PERMISSIONS['BED.ASSIGN']),
+  requirePermission(PERMISSIONS['BED_ASSIGN']),
   validate(bedValidation.params, 'params'),
   validate(bedValidation.assignBody, 'body'),
   bedController.assignBed
@@ -78,7 +78,7 @@ router.post(
 // Chuyển giường
 router.patch(
   '/:bedId/transfer',
-  requirePermission(PERMISSIONS['BED.TRANSFER']),
+  requirePermission(PERMISSIONS['BED_TRANSFER']),
   validate(bedValidation.params, 'params'),
   validate(bedValidation.transferBody, 'body'),
   bedController.transferBed
@@ -87,7 +87,7 @@ router.patch(
 // Giải phóng giường
 router.patch(
   '/:bedId/discharge',
-  requirePermission(PERMISSIONS['BED.DISCHARGE']),
+  requirePermission(PERMISSIONS['BED_DISCHARGE']),
   validate(bedValidation.params, 'params'),
   validate(bedValidation.dischargeBody, 'body'),
   bedController.dischargeFromBed
@@ -96,14 +96,14 @@ router.patch(
 // Lấy tỷ lệ chiếm dụng
 router.get(
   '/occupancy',
-  requirePermission(PERMISSIONS['BED.VIEW_STATS']),
+  requirePermission(PERMISSIONS['BED_VIEW_STATS']),
   bedController.getOccupancyRate
 );
 
 // Lấy giường khả dụng
 router.get(
   '/available',
-  requirePermission(PERMISSIONS['BED.VIEW']),
+  requirePermission(PERMISSIONS['BED_VIEW']),
   validate(bedValidation.bedQuery, 'query'),
   bedController.getAvailableBeds
 );
@@ -111,7 +111,7 @@ router.get(
 // Lấy thống kê giường
 router.get(
   '/stats',
-  requirePermission(PERMISSIONS['BED.VIEW_STATS']),
+  requirePermission(PERMISSIONS['BED_VIEW_STATS']),
   bedController.getBedStats
 );
 

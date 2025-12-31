@@ -11,65 +11,65 @@ router.use(authenticate);
 // ===== CẤUU HÌNH HỆ THỐNG =====
 router.get(
   '/',
-  requirePermission(PERMISSIONS['SYSTEM.CONFIG']),
+  requirePermission(PERMISSIONS['SYSTEM_CONFIG']),
   settingsController.getSystemSettings
 );
 
 router.put(
   '/',
-  requirePermission(PERMISSIONS['SYSTEM.CONFIG']),
+  requirePermission(PERMISSIONS['SYSTEM_CONFIG']),
   settingsController.updateSystemSettings
 );
 
 // ===== QUẢN LÝ VAI TRÒ & QUYỀN =====
 router.get(
   '/roles',
-  requirePermission(PERMISSIONS['SYSTEM.CONFIG']),
+  requirePermission(PERMISSIONS['SYSTEM_CONFIG']),
   settingsController.getRoles
 );
 
 router.put(
   '/roles/:roleId/permissions',
-  requirePermission(PERMISSIONS['SYSTEM.CONFIG']),
+  requirePermission(PERMISSIONS['SYSTEM_CONFIG']),
   settingsController.updateRolePermissions
 );
 
 // ===== NHẬT KÝ HOẠT ĐỘNG =====
 router.get(
   '/audit-logs',
-  requirePermission(PERMISSIONS['SYSTEM.VIEW_AUDIT_LOG']),
+  requirePermission(PERMISSIONS['SYSTEM_VIEW_AUDIT_LOG']),
   settingsController.getAuditLogs
 );
 
 router.get(
   '/audit-logs/stats',
-  requirePermission(PERMISSIONS['SYSTEM.VIEW_AUDIT_LOG']),
+  requirePermission(PERMISSIONS['SYSTEM_VIEW_AUDIT_LOG']),
   settingsController.getAuditLogsStats
 );
 
 // ===== SAO LƯU & PHỤC HỒI =====
 router.post(
   '/backup',
-  requirePermission(PERMISSIONS['SYSTEM.BACKUP_DATA']),
+  requirePermission(PERMISSIONS['SYSTEM_BACKUP_DATA']),
   settingsController.createBackup
 );
 
 router.get(
   '/backups',
-  requirePermission(PERMISSIONS['SYSTEM.BACKUP_DATA']),
+  requirePermission(PERMISSIONS['SYSTEM_BACKUP_DATA']),
   settingsController.listBackups
 );
 
 router.post(
   '/backups/restore',
-  requirePermission(PERMISSIONS['SYSTEM.BACKUP_DATA']),
+  requirePermission(PERMISSIONS['SYSTEM_BACKUP_DATA']),
   settingsController.restoreBackup
 );
 
 // ===== KIỂM TRA SỨC KHỎE HỆ THỐNG =====
 router.get(
   '/system-health',
-  requirePermission(PERMISSIONS['SYSTEM.CONFIG']),
+  requirePermission(PERMISSIONS['SYSTEM_CONFIG']),
   settingsController.getSystemHealth
 );
 

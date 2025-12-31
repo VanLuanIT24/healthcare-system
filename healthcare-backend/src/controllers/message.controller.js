@@ -52,9 +52,8 @@ class MessageController {
             // Create message
             const message = await messageService.sendMessage(senderId, conversation._id, text, type);
 
-            // Update participants roles to be sure
-            conversation.participants = participants;
-            await conversation.save();
+            // conversation.save() removed to avoid VersionError. 
+            // participants are set on create. messageService updates lastMessage.
 
             res.status(201).json({
                 success: true,

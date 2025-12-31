@@ -2,7 +2,7 @@
 import axios from '../../axios';
 
 const adminAPI = {
-  // Dashboard Stats - FROM /admin ENDPOINT
+  // Dashboard Stats
   getUsersStats: async () => {
     return await axios.get('/admin/users/stats');
   },
@@ -16,63 +16,63 @@ const adminAPI = {
   },
 
   getRecentNotifications: async (limit = 10) => {
-    return await axios.get(`/api/notifications?limit=${limit}`);
+    return await axios.get(`/notifications?limit=${limit}`);
   },
 
   getReportsOverview: async () => {
     return await axios.get('/admin/reports/overview');
   },
 
-  // Users Management - FROM /api/admin ENDPOINT
+  // Users Management
   getUsers: async (params = {}) => {
-    return await axios.get('/api/admin/users', { params });
+    return await axios.get('/admin/users', { params });
   },
 
   getDeletedUsers: async (params = {}) => {
-    return await axios.get('/api/admin/users/deleted', { params });
+    return await axios.get('/admin/users/deleted', { params });
   },
 
   getUserDetail: async (userId) => {
-    return await axios.get(`/api/admin/users/${userId}`);
+    return await axios.get(`/admin/users/${userId}`);
   },
 
   updateUser: async (userId, userData) => {
-    return await axios.put(`/api/admin/users/${userId}`, userData);
+    return await axios.put(`/admin/users/${userId}`, userData);
   },
 
   updateUserRole: async (userId, role) => {
-    return await axios.patch(`/api/admin/users/${userId}/role`, { role });
+    return await axios.patch(`/admin/users/${userId}/role`, { role });
   },
 
   disableUser: async (userId) => {
-    return await axios.patch(`/api/admin/users/${userId}/disable`);
+    return await axios.patch(`/admin/users/${userId}/disable`);
   },
 
   createUser: async (userData) => {
-    return await axios.post('/api/admin/users', userData);
+    return await axios.post('/admin/users', userData);
   },
 
   enableUser: async (userId) => {
-    return await axios.patch(`/api/admin/users/${userId}/enable`);
+    return await axios.patch(`/admin/users/${userId}/enable`);
   },
 
   deleteUser: async (userId, reason = '') => {
-    return await axios.delete(`/api/admin/users/${userId}`, { 
+    return await axios.delete(`/admin/users/${userId}`, { 
       data: { reason } 
     });
   },
 
   restoreUser: async (userId) => {
-    return await axios.post(`/api/admin/users/${userId}/restore`);
+    return await axios.post(`/admin/users/${userId}/restore`);
   },
 
   // Reference Data
   getRoles: async () => {
-    return await axios.get('/api/admin/roles');
+    return await axios.get('/admin/roles');
   },
 
   getDepartments: async () => {
-    return await axios.get('/api/admin/departments');
+    return await axios.get('/admin/departments');
   },
 };
 

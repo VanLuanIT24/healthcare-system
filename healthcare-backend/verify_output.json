@@ -1,0 +1,82 @@
+{
+  "status": 201,
+  "body": {
+    "success": true,
+    "message": "Tạo đơn thuốc thành công",
+    "data": {
+      "prescriptionId": "PRL64RL1HX",
+      "patientId": {
+        "personalInfo": {
+          "address": {
+            "street": "Test St",
+            "city": "Test City"
+          },
+          "firstName": "Temp",
+          "lastName": "Pat",
+          "dateOfBirth": "1990-01-01T00:00:00.000Z",
+          "gender": "MALE",
+          "phone": "0987654321"
+        },
+        "_id": "6954b84f6855897d5e91fa1f",
+        "fullName": "Temp Pat",
+        "age": 35,
+        "isAccountLocked": false,
+        "profilePictureUrl": null,
+        "id": "6954b84f6855897d5e91fa1f"
+      },
+      "doctorId": {
+        "personalInfo": {
+          "firstName": "Bác sĩ 1",
+          "lastName": "Trần",
+          "dateOfBirth": "1981-02-15T00:00:00.000Z",
+          "gender": "FEMALE",
+          "phone": "0900000001"
+        },
+        "professionalInfo": {
+          "licenseNumber": "MD-000001",
+          "specialization": "PEDIATRICS",
+          "department": "6952cce3153d6ca7d574c3d4",
+          "qualifications": [],
+          "yearsOfExperience": 6
+        },
+        "_id": "6938b3bbc8858b32dac53fc2",
+        "fullName": "Bác sĩ 1 Trần",
+        "age": 44,
+        "isAccountLocked": false,
+        "profilePictureUrl": null,
+        "id": "6938b3bbc8858b32dac53fc2"
+      },
+      "issueDate": "2025-12-31T05:44:48.149Z",
+      "validityDays": 30,
+      "medications": [
+        {
+          "name": "Paracetamol Free Text",
+          "refills": {
+            "allowed": 0,
+            "used": 0
+          },
+          "instructions": "Take after food",
+          "warnings": [],
+          "coverageStatus": "PENDING",
+          "_id": "6954b8506d0ce8c0b5b3b4a7",
+          "id": "6954b8506d0ce8c0b5b3b4a7"
+        }
+      ],
+      "status": "ACTIVE",
+      "drugInteractionsChecked": false,
+      "notes": "Test notes",
+      "createdBy": "6938b3bbc8858b32dac53fc2",
+      "_id": "6954b8506d0ce8c0b5b3b4a6",
+      "dispenseHistory": [],
+      "interactionsFound": [],
+      "createdAt": "2025-12-31T05:44:48.159Z",
+      "updatedAt": "2025-12-31T05:44:48.159Z",
+      "__v": 0,
+      "isValid": true,
+      "totalMedications": 1,
+      "dispensedMedications": 0,
+      "id": "6954b8506d0ce8c0b5b3b4a6"
+    },
+    "warnings": null
+  }
+}

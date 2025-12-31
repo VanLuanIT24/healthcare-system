@@ -39,7 +39,7 @@ router.use(authenticate);
  */
 router.get(
   '/',
-  requirePermission(PERMISSIONS['BILL.VIEW']), // Hoặc mở rộng cho DOCTOR, NURSE nếu cần
+  requirePermission(PERMISSIONS['BILL_VIEW']), // Hoặc mở rộng cho DOCTOR, NURSE nếu cần
   asyncHandler(async (req, res) => {
     const {
       category,
@@ -120,7 +120,7 @@ router.get(
  */
 router.get(
   '/categories',
-  requirePermission(PERMISSIONS['BILL.VIEW']),
+  requirePermission(PERMISSIONS['BILL_VIEW']),
   asyncHandler(async (req, res) => {
     const categories = await Service.distinct('category', { isActive: true });
 
@@ -151,7 +151,7 @@ router.get(
  */
 router.get(
   '/:id',
-  requirePermission(PERMISSIONS['BILL.VIEW']),
+  requirePermission(PERMISSIONS['BILL_VIEW']),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 
@@ -189,7 +189,7 @@ router.get(
  */
 router.post(
   '/',
-  requirePermission(PERMISSIONS['SERVICE.MANAGE']), // Tạo permission mới nếu cần
+  requirePermission(PERMISSIONS['SERVICE_MANAGE']), // Tạo permission mới nếu cần
   asyncHandler(async (req, res) => {
     const data = req.body;
 
@@ -238,7 +238,7 @@ router.post(
  */
 router.put(
   '/:id',
-  requirePermission(PERMISSIONS['SERVICE.MANAGE']),
+  requirePermission(PERMISSIONS['SERVICE_MANAGE']),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
     const data = req.body;
@@ -283,7 +283,7 @@ router.put(
  */
 router.delete(
   '/:id',
-  requirePermission(PERMISSIONS['SERVICE.MANAGE']),
+  requirePermission(PERMISSIONS['SERVICE_MANAGE']),
   asyncHandler(async (req, res) => {
     const { id } = req.params;
 

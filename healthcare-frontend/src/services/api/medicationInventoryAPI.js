@@ -1,7 +1,7 @@
 // src/services/api/medicationInventoryAPI.js
 import axios from '../axios';
 
-const API_URL = '/api/v1/admin/medications';
+const API_URL = '/v1/admin/medications';
 
 export const medicationInventoryAPI = {
   // Get all medications
@@ -66,7 +66,7 @@ export const medicationInventoryAPI = {
 
   // Get medications by department (for prescriptions)
   getMedicationsByDepartment: (departmentId) => {
-    return axios.get(`/api/v1/admin/departments/${departmentId}/medications`);
+    return axios.get(`/v1/admin/departments/${departmentId}/medications`);
   },
 
   // Adjust stock (for manual adjustment)

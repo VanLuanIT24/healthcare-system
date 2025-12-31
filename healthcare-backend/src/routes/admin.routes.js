@@ -30,7 +30,7 @@ router.get(
 // ✅ POST /users route
 router.post(
   '/users',
-  requirePermission(PERMISSIONS['USER.CREATE']),
+  requirePermission(PERMISSIONS['USER_CREATE']),
   validate(adminValidation.createUser, 'body'),
   adminController.createUser
 );
@@ -38,7 +38,7 @@ router.post(
 // Lấy danh sách users
 router.get(
   '/users',
-  requirePermission(PERMISSIONS['USER.VIEW']),
+  requirePermission(PERMISSIONS['USER_VIEW']),
   validate(adminValidation.query, 'query'),
   adminController.getUsers
 );
@@ -46,7 +46,7 @@ router.get(
 // Lấy users đã xóa
 router.get(
   '/users/deleted',
-  requirePermission(PERMISSIONS['USER.VIEW']),
+  requirePermission(PERMISSIONS['USER_VIEW']),
   validate(adminValidation.query, 'query'),
   adminController.getDeletedUsers
 );
@@ -54,7 +54,7 @@ router.get(
 // Lấy user theo ID
 router.get(
   '/users/:id',
-  requirePermission(PERMISSIONS['USER.VIEW']),
+  requirePermission(PERMISSIONS['USER_VIEW']),
   validate(adminValidation.params, 'params'),
   adminController.getUserById
 );
@@ -63,7 +63,7 @@ router.get(
 router.put(
   '/users/:id',
   uploadMiddleware.single('avatar'),
-  requirePermission(PERMISSIONS['USER.UPDATE']),
+  requirePermission(PERMISSIONS['USER_UPDATE']),
   validate(adminValidation.params, 'params'),
   validate(adminValidation.updateUser, 'body'),
   adminController.updateUser
@@ -72,7 +72,7 @@ router.put(
 // Cập nhật role
 router.patch(
   '/users/:id/role',
-  requirePermission(PERMISSIONS['USER.UPDATE']),
+  requirePermission(PERMISSIONS['USER_UPDATE']),
   validate(adminValidation.params, 'params'),
   validate(adminValidation.updateRole, 'body'),
   adminController.updateUserRole
@@ -81,7 +81,7 @@ router.patch(
 // Vô hiệu hóa user
 router.patch(
   '/users/:id/disable',
-  requirePermission(PERMISSIONS['USER.DISABLE']),
+  requirePermission(PERMISSIONS['USER_DISABLE']),
   validate(adminValidation.params, 'params'),
   adminController.disableUser
 );
@@ -89,7 +89,7 @@ router.patch(
 // Kích hoạt user
 router.patch(
   '/users/:id/enable',
-  requirePermission(PERMISSIONS['USER.ENABLE']),
+  requirePermission(PERMISSIONS['USER_ENABLE']),
   validate(adminValidation.params, 'params'),
   adminController.enableUser
 );
@@ -97,7 +97,7 @@ router.patch(
 // Khôi phục user
 router.post(
   '/users/:id/restore',
-  requirePermission(PERMISSIONS['USER.RESTORE']),
+  requirePermission(PERMISSIONS['USER_RESTORE']),
   validate(adminValidation.params, 'params'),
   adminController.restoreUser
 );
@@ -105,7 +105,7 @@ router.post(
 // Xóa user
 router.delete(
   '/users/:id',
-  requirePermission(PERMISSIONS['USER.DELETE']),
+  requirePermission(PERMISSIONS['USER_DELETE']),
   validate(adminValidation.params, 'params'),
   adminController.deleteUser
 );
@@ -113,7 +113,7 @@ router.delete(
 // Tìm kiếm users
 router.get(
   '/users/search',
-  requirePermission(PERMISSIONS['USER.VIEW']),
+  requirePermission(PERMISSIONS['USER_VIEW']),
   validate(adminValidation.search, 'query'),
   adminController.searchUsers
 );
@@ -121,7 +121,7 @@ router.get(
 // Users theo role
 router.get(
   '/users/by-role',
-  requirePermission(PERMISSIONS['USER.VIEW']),
+  requirePermission(PERMISSIONS['USER_VIEW']),
   validate(adminValidation.byRole, 'query'),
   adminController.getUsersByRole
 );
@@ -129,22 +129,15 @@ router.get(
 // Users theo department
 router.get(
   '/users/by-department',
-  requirePermission(PERMISSIONS['USER.VIEW']),
+  requirePermission(PERMISSIONS['USER_VIEW']),
   validate(adminValidation.byDepartment, 'query'),
   adminController.getUsersByDepartment
-);
-
-// Thống kê users
-router.get(
-  '/users/stats',
-  requirePermission(PERMISSIONS['USER.VIEW']),
-  adminController.getUserStats
 );
 
 // Lấy danh sách departments
 router.get(
   '/departments',
-  requirePermission(PERMISSIONS['DEPARTMENT.VIEW']),
+  requirePermission(PERMISSIONS['DEPARTMENT_VIEW']),
   validate(adminValidation.query, 'query'),
   adminController.getDepartments
 );
@@ -152,7 +145,7 @@ router.get(
 // Lấy department theo ID
 router.get(
   '/departments/:id',
-  requirePermission(PERMISSIONS['DEPARTMENT.VIEW']),
+  requirePermission(PERMISSIONS['DEPARTMENT_VIEW']),
   validate(adminValidation.params, 'params'),
   adminController.getDepartmentById
 );
@@ -160,7 +153,7 @@ router.get(
 // Tạo department
 router.post(
   '/departments',
-  requirePermission(PERMISSIONS['DEPARTMENT.CREATE']),
+  requirePermission(PERMISSIONS['DEPARTMENT_CREATE']),
   validate(adminValidation.departmentBody, 'body'),
   adminController.createDepartment
 );
@@ -168,7 +161,7 @@ router.post(
 // Cập nhật department
 router.put(
   '/departments/:id',
-  requirePermission(PERMISSIONS['DEPARTMENT.UPDATE']),
+  requirePermission(PERMISSIONS['DEPARTMENT_UPDATE']),
   validate(adminValidation.params, 'params'),
   validate(adminValidation.departmentBody, 'body'),
   adminController.updateDepartment
@@ -177,7 +170,7 @@ router.put(
 // Xóa department
 router.delete(
   '/departments/:id',
-  requirePermission(PERMISSIONS['DEPARTMENT.DELETE']),
+  requirePermission(PERMISSIONS['DEPARTMENT_DELETE']),
   validate(adminValidation.params, 'params'),
   adminController.deleteDepartment
 );
@@ -185,7 +178,7 @@ router.delete(
 // Users trong department
 router.get(
   '/departments/:departmentId/users',
-  requirePermission(PERMISSIONS['DEPARTMENT.VIEW']),
+  requirePermission(PERMISSIONS['DEPARTMENT_VIEW']),
   validate(adminValidation.departmentParams, 'params'),
   validate(adminValidation.query, 'query'),
   adminController.getUsersInDepartment
@@ -194,7 +187,7 @@ router.get(
 // Gán trưởng khoa
 router.post(
   '/departments/:departmentId/head',
-  requirePermission(PERMISSIONS['DEPARTMENT.UPDATE']),
+  requirePermission(PERMISSIONS['DEPARTMENT_UPDATE']),
   validate(adminValidation.departmentParams, 'params'),
   validate(adminValidation.assignHead, 'body'),
   adminController.assignHeadToDepartment
@@ -203,7 +196,7 @@ router.post(
 // Thống kê department
 router.get(
   '/departments/:departmentId/stats',
-  requirePermission(PERMISSIONS['DEPARTMENT.VIEW']),
+  requirePermission(PERMISSIONS['DEPARTMENT_VIEW']),
   validate(adminValidation.departmentParams, 'params'),
   adminController.getDepartmentStats
 );
@@ -211,7 +204,7 @@ router.get(
 // Lịch hẹn department
 router.get(
   '/departments/:departmentId/appointments',
-  requirePermission(PERMISSIONS['DEPARTMENT.VIEW']),
+  requirePermission(PERMISSIONS['DEPARTMENT_VIEW']),
   validate(adminValidation.departmentParams, 'params'),
   validate(adminValidation.query, 'query'),
   adminController.getDepartmentAppointments
@@ -220,7 +213,7 @@ router.get(
 // Doanh thu department
 router.get(
   '/departments/:departmentId/revenue',
-  requirePermission(PERMISSIONS['DEPARTMENT.VIEW']),
+  requirePermission(PERMISSIONS['DEPARTMENT_VIEW']),
   validate(adminValidation.departmentParams, 'params'),
   validate(adminValidation.query, 'query'),
   adminController.getDepartmentRevenue
@@ -229,7 +222,7 @@ router.get(
 // Lịch làm việc department
 router.get(
   '/departments/:departmentId/schedule',
-  requirePermission(PERMISSIONS['DEPARTMENT.VIEW']),
+  requirePermission(PERMISSIONS['DEPARTMENT_VIEW']),
   validate(adminValidation.departmentParams, 'params'),
   validate(adminValidation.query, 'query'),
   adminController.getDepartmentSchedule
@@ -238,7 +231,7 @@ router.get(
 // Báo cáo patient census
 router.get(
   '/reports/clinical/patient-census',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getPatientCensusReport
 );
@@ -246,7 +239,7 @@ router.get(
 // Báo cáo diagnosis statistics
 router.get(
   '/reports/clinical/diagnosis-stats',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getDiagnosisStatistics
 );
@@ -254,7 +247,7 @@ router.get(
 // Báo cáo disease trend
 router.get(
   '/reports/clinical/disease-trend',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getDiseaseTrendReport
 );
@@ -262,7 +255,7 @@ router.get(
 // Báo cáo readmission
 router.get(
   '/reports/clinical/readmission',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getReadmissionReport
 );
@@ -270,7 +263,7 @@ router.get(
 // Báo cáo treatment outcome
 router.get(
   '/reports/clinical/treatment-outcomes',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getTreatmentOutcomeReport
 );
@@ -278,7 +271,7 @@ router.get(
 // Báo cáo revenue
 router.get(
   '/reports/financial/revenue',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getRevenueReport
 );
@@ -286,7 +279,7 @@ router.get(
 // Báo cáo revenue by department
 router.get(
   '/reports/financial/by-department',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getRevenueByDepartment
 );
@@ -294,7 +287,7 @@ router.get(
 // Báo cáo revenue by doctor
 router.get(
   '/reports/financial/by-doctor',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getRevenueByDoctor
 );
@@ -302,7 +295,7 @@ router.get(
 // Báo cáo AR aging
 router.get(
   '/reports/financial/ar-aging',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getARAgingReport
 );
@@ -310,7 +303,7 @@ router.get(
 // Báo cáo insurance claim
 router.get(
   '/reports/financial/insurance-claims',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getInsuranceClaimReport
 );
@@ -318,7 +311,7 @@ router.get(
 // Báo cáo outstanding bills
 router.get(
   '/reports/financial/outstanding',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getOutstandingBillsReport
 );
@@ -326,7 +319,7 @@ router.get(
 // Báo cáo medication usage
 router.get(
   '/reports/pharmacy/medication-usage',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getMedicationUsageReport
 );
@@ -334,7 +327,7 @@ router.get(
 // Báo cáo top prescribed
 router.get(
   '/reports/pharmacy/top-prescribed',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getTopPrescribedMedications
 );
@@ -342,7 +335,7 @@ router.get(
 // Báo cáo inventory value
 router.get(
   '/reports/pharmacy/inventory-value',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getInventoryValueReport
 );
@@ -350,7 +343,7 @@ router.get(
 // Báo cáo stock movement
 router.get(
   '/reports/pharmacy/stock-movement',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getStockMovementReport
 );
@@ -358,7 +351,7 @@ router.get(
 // Báo cáo expiring medication
 router.get(
   '/reports/pharmacy/expiring',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getExpiringMedicationReport
 );
@@ -366,7 +359,7 @@ router.get(
 // Báo cáo staff attendance
 router.get(
   '/reports/hr/attendance',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getStaffAttendanceReport
 );
@@ -374,7 +367,7 @@ router.get(
 // Báo cáo doctor workload
 router.get(
   '/reports/hr/doctor-workload',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getDoctorWorkloadReport
 );
@@ -382,7 +375,7 @@ router.get(
 // Báo cáo staff performance
 router.get(
   '/reports/hr/performance',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getStaffPerformanceReport
 );
@@ -390,7 +383,7 @@ router.get(
 // Báo cáo user activity
 router.get(
   '/reports/system/user-activity',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getUserActivityReport
 );
@@ -398,7 +391,7 @@ router.get(
 // Báo cáo audit log
 router.get(
   '/reports/system/audit-logs',
-  requirePermission(PERMISSIONS['SYSTEM.VIEW_AUDIT_LOG']),
+  requirePermission(PERMISSIONS['SYSTEM_VIEW_AUDIT_LOG']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getAuditLogReport
 );
@@ -406,7 +399,7 @@ router.get(
 // Báo cáo login history
 router.get(
   '/reports/system/login-history',
-  requirePermission(PERMISSIONS['SYSTEM.VIEW_AUDIT_LOG']),
+  requirePermission(PERMISSIONS['SYSTEM_VIEW_AUDIT_LOG']),
   validate(adminValidation.reportQuery, 'query'),
   adminController.getLoginHistoryReport
 );
@@ -414,7 +407,7 @@ router.get(
 // Xuất báo cáo PDF
 router.get(
   '/reports/:type/export/pdf',
-  requirePermission(PERMISSIONS['REPORT.EXPORT']),
+  requirePermission(PERMISSIONS['REPORT_EXPORT']),
   validate(adminValidation.typeParams, 'params'),
   validate(adminValidation.reportQuery, 'query'),
   adminController.exportReportToPDF
@@ -423,7 +416,7 @@ router.get(
 // Xuất báo cáo Excel
 router.get(
   '/reports/:type/export/excel',
-  requirePermission(PERMISSIONS['REPORT.EXPORT']),
+  requirePermission(PERMISSIONS['REPORT_EXPORT']),
   validate(adminValidation.typeParams, 'params'),
   validate(adminValidation.reportQuery, 'query'),
   adminController.exportReportToExcel
@@ -432,14 +425,14 @@ router.get(
 // Lấy template báo cáo
 router.get(
   '/reports/templates',
-  requirePermission(PERMISSIONS['REPORT.VIEW']),
+  requirePermission(PERMISSIONS['REPORT_VIEW']),
   adminController.getReportTemplates
 );
 
 // Lưu template
 router.post(
   '/reports/templates',
-  requirePermission(PERMISSIONS['REPORT.GENERATE']),
+  requirePermission(PERMISSIONS['REPORT_GENERATE']),
   validate(adminValidation.templateBody, 'body'),
   adminController.saveReportTemplate
 );
@@ -447,7 +440,7 @@ router.post(
 // Cập nhật template
 router.put(
   '/reports/templates/:id',
-  requirePermission(PERMISSIONS['REPORT.GENERATE']),
+  requirePermission(PERMISSIONS['REPORT_GENERATE']),
   validate(adminValidation.params, 'params'),
   validate(adminValidation.templateBody, 'body'),
   adminController.updateReportTemplate
@@ -456,7 +449,7 @@ router.put(
 // Xóa template
 router.delete(
   '/reports/templates/:id',
-  requirePermission(PERMISSIONS['REPORT.GENERATE']),
+  requirePermission(PERMISSIONS['REPORT_GENERATE']),
   validate(adminValidation.params, 'params'),
   adminController.deleteReportTemplate
 );
@@ -464,7 +457,7 @@ router.delete(
 // Thực thi custom report
 router.post(
   '/reports/custom/:templateId/run',
-  requirePermission(PERMISSIONS['REPORT.GENERATE']),
+  requirePermission(PERMISSIONS['REPORT_GENERATE']),
   validate(adminValidation.params, 'params'),
   validate(adminValidation.customReportBody, 'body'),
   adminController.executeCustomReport
@@ -473,7 +466,7 @@ router.post(
 // Lấy audit logs hệ thống
 router.get(
   '/audit-logs',
-  requirePermission(PERMISSIONS['SYSTEM.VIEW_AUDIT_LOG']),
+  requirePermission(PERMISSIONS['SYSTEM_VIEW_AUDIT_LOG']),
   validate(adminValidation.auditQuery, 'query'),
   adminController.getSystemAuditLogs
 );
@@ -481,7 +474,7 @@ router.get(
 // Lấy audit logs của user
 router.get(
   '/audit-logs/user/:userId',
-  requirePermission(PERMISSIONS['SYSTEM.VIEW_AUDIT_LOG']),
+  requirePermission(PERMISSIONS['SYSTEM_VIEW_AUDIT_LOG']),
   validate(adminValidation.userParams, 'params'),
   validate(adminValidation.auditQuery, 'query'),
   adminController.getUserAuditLogs
@@ -490,14 +483,14 @@ router.get(
 // Lấy config hệ thống
 router.get(
   '/config',
-  requirePermission(PERMISSIONS['SYSTEM.CONFIG']),
+  requirePermission(PERMISSIONS['SYSTEM_CONFIG']),
   adminController.getSystemConfig
 );
 
 // Cập nhật config
 router.put(
   '/config',
-  requirePermission(PERMISSIONS['SYSTEM.CONFIG']),
+  requirePermission(PERMISSIONS['SYSTEM_CONFIG']),
   validate(adminValidation.configBody, 'body'),
   adminController.updateSystemConfig
 );
@@ -505,14 +498,14 @@ router.put(
 // Lấy hospital info
 router.get(
   '/hospital-info',
-  requirePermission(PERMISSIONS['SYSTEM.CONFIG']),
+  requirePermission(PERMISSIONS['SYSTEM_CONFIG']),
   adminController.getHospitalInfo
 );
 
 // Cập nhật hospital info
 router.put(
   '/hospital-info',
-  requirePermission(PERMISSIONS['SYSTEM.CONFIG']),
+  requirePermission(PERMISSIONS['SYSTEM_CONFIG']),
   validate(adminValidation.hospitalBody, 'body'),
   adminController.updateHospitalInfo
 );
@@ -520,21 +513,21 @@ router.put(
 // Trigger backup
 router.post(
   '/backup',
-  requirePermission(PERMISSIONS['SYSTEM.BACKUP_DATA']),
+  requirePermission(PERMISSIONS['SYSTEM_BACKUP_DATA']),
   adminController.triggerBackup
 );
 
 // Lấy list backup
 router.get(
   '/backups',
-  requirePermission(PERMISSIONS['SYSTEM.BACKUP_DATA']),
+  requirePermission(PERMISSIONS['SYSTEM_BACKUP_DATA']),
   adminController.getBackupList
 );
 
 // Restore backup
 router.post(
   '/restore/:backupId',
-  requirePermission(PERMISSIONS['SYSTEM.BACKUP_DATA']),
+  requirePermission(PERMISSIONS['SYSTEM_BACKUP_DATA']),
   validate(adminValidation.params, 'params'),
   adminController.restoreBackup
 );

@@ -24,7 +24,7 @@ const prescriptionSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  
+
   // Thông tin đơn thuốc
   issueDate: {
     type: Date,
@@ -34,13 +34,13 @@ const prescriptionSchema = new mongoose.Schema({
     type: Number,
     default: 30
   },
-  
+
   // Danh sách thuốc
   medications: [{
     medicationId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Medication',
-      required: true
+      required: false
     },
     name: {
       type: String,
@@ -67,7 +67,7 @@ const prescriptionSchema = new mongoose.Schema({
     },
     totalQuantity: {
       type: Number,
-      required: true
+      required: false
     },
     refills: {
       allowed: {
@@ -91,7 +91,7 @@ const prescriptionSchema = new mongoose.Schema({
       patientCost: Number
     }
   }],
-  
+
   // Phát thuốc
   dispenseHistory: [{
     date: {
@@ -111,14 +111,14 @@ const prescriptionSchema = new mongoose.Schema({
     expiryDate: Date,
     notes: String
   }],
-  
+
   // Quản lý trạng thái
   status: {
     type: String,
     enum: ['DRAFT', 'ACTIVE', 'DISPENSED', 'COMPLETED', 'CANCELLED', 'EXPIRED'],
     default: 'DRAFT'
   },
-  
+
   // Kiểm tra tương tác thuốc
   drugInteractionsChecked: {
     type: Boolean,
@@ -134,18 +134,18 @@ const prescriptionSchema = new mongoose.Schema({
     description: String,
     recommendation: String
   }],
-  
+
   // Phê duyệt
   approvedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   },
   approvalDate: Date,
-  
+
   // Ghi chú
   notes: String,
   specialInstructions: String,
-  
+
   // Metadata
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
@@ -165,23 +165,23 @@ prescriptionSchema.index({ status: 1 });
 prescriptionSchema.index({ 'medications.medicationId': 1 });
 
 // Virtuals
-prescriptionSchema.virtual('isValid').get(function() {
+prescriptionSchema.virtual('isValid').get(function () {
   if (this.status !== 'ACTIVE') return false;
   const expiryDate = new Date(this.issueDate);
   expiryDate.setDate(expiryDate.getDate() + this.validityDays);
   return new Date() <= expiryDate;
 });
 
-prescriptionSchema.virtual('totalMedications').get(function() {
+prescriptionSchema.virtual('totalMedications').get(function () {
   return this.medications.length;
 });
 
-prescriptionSchema.virtual('dispensedMedications').get(function() {
+prescriptionSchema.virtual('dispensedMedications').get(function () {
   return this.dispenseHistory.length;
 });
 
 // Methods
-prescriptionSchema.methods.dispenseMedication = function(medicationId, quantity, dispensedBy, batchInfo = {}) {
+prescriptionSchema.methods.dispenseMedication = function (medicationId, quantity, dispensedBy, batchInfo = {}) {
   const medication = this.medications.id(medicationId);
   if (!medication) {
     throw new Error('Medication not found in prescription');
@@ -205,46 +205,46 @@ prescriptionSchema.methods.dispenseMedication = function(medicationId, quantity,
   // Update status if all medications are dispensed
   const totalPrescribed = this.medications.reduce((sum, med) => sum + med.totalQuantity, 0);
   const totalDispensedAll = this.dispenseHistory.reduce((sum, d) => sum + d.quantity, 0);
-  
+
   if (totalDispensedAll >= totalPrescribed) {
     this.status = 'DISPENSED';
   }
 };
 
-prescriptionSchema.methods.canRefill = function(medicationId) {
+prescriptionSchema.methods.canRefill = function (medicationId) {
   const medication = this.medications.id(medicationId);
   if (!medication) return false;
-  
+
   return medication.refills.used < medication.refills.allowed;
 };
 
-prescriptionSchema.methods.refillMedication = function(medicationId, quantity) {
+prescriptionSchema.methods.refillMedication = function (medicationId, quantity) {
   if (!this.canRefill(medicationId)) {
     throw new Error('No refills available for this medication');
   }
 
   const medication = this.medications.id(medicationId);
   medication.refills.used += 1;
-  
+
   // Add to original total quantity for dispensing
   medication.totalQuantity += quantity;
 };
 
 // Statics
-prescriptionSchema.statics.findActivePrescriptions = function(patientId) {
+prescriptionSchema.statics.findActivePrescriptions = function (patientId) {
   return this.find({
     patientId,
     status: 'ACTIVE'
   }).populate('doctorId medications.medicationId');
 };
 
-prescriptionSchema.statics.findByMedication = function(medicationName) {
+prescriptionSchema.statics.findByMedication = function (medicationName) {
   return this.find({
     'medications.name': new RegExp(medicationName, 'i')
   });
 };
 
-prescriptionSchema.statics.getPharmacyOrders = function(status) {
+prescriptionSchema.statics.getPharmacyOrders = function (status) {
   const query = {};
   if (status) {
     query.status = status;

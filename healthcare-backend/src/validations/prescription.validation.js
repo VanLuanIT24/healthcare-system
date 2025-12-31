@@ -17,6 +17,7 @@ const schemas = {
     medications: Joi.array().items(
       Joi.object({
         medicationId: commonSchemas.objectId.optional(),
+        name: Joi.string().optional(), // Allow free-text name
         dosage: Joi.alternatives().try(
           Joi.string(),
           Joi.object({
@@ -51,7 +52,9 @@ const schemas = {
     ).min(1).optional(),
     notes: Joi.string().max(1000).optional(),
     specialInstructions: Joi.string().max(500).optional(),
-    validityDays: Joi.number().integer().min(1).max(90).default(30)
+    specialInstructions: Joi.string().max(500).optional(),
+    validityDays: Joi.number().integer().min(1).max(90).default(30),
+    issueDate: Joi.date().max('now').optional() // Allow past/current date, maybe not future? Let's just say optional date.
   }),
 
   updatePrescription: Joi.object({

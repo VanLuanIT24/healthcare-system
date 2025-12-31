@@ -64,7 +64,7 @@ router.get(
 
 router.get(
   '/:id/print',
-  requireRole(ROLES.DOCTOR, ROLES.PHARMACIST),
+  requireRole(ROLES.DOCTOR, ROLES.PHARMACIST, ROLES.PATIENT),
   validate(schemas.prescriptionIdParam, 'params'),
   prescriptionController.printPrescription
 );

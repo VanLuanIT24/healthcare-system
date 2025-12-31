@@ -61,7 +61,7 @@ const PERMISSIONS = Object.freeze({
   'USER_CREATE': 'USER.CREATE',
   'USER_UPDATE': 'USER.UPDATE',
   'USER_DELETE': 'USER.DELETE',
-  'USER_DISABLE': 'USER_DISABLE', // Wait, let me check if this should be dot too
+  'USER_DISABLE': 'USER.DISABLE', // Fixed: should be dot, matches usage in routes
   'USER_ENABLE': 'USER.ENABLE',
   'USER_RESTORE': 'USER.RESTORE',
   'USER_ASSIGN_DEPARTMENT': 'USER.ASSIGN_DEPARTMENT',

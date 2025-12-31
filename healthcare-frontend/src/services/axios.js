@@ -3,7 +3,7 @@ import { message } from 'antd';
 import axios from 'axios';
 
 // ✅ FIX: URL đúng cho cả dev và production
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 // ✅ Environment check for logging
 const isDev = import.meta.env.DEV;

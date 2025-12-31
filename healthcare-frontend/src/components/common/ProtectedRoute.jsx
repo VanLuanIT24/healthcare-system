@@ -24,14 +24,14 @@ const ProtectedRoute = ({ children, requiredRoles = [] }) => {
     // Normalize role to lowercase for comparison
     const userRole = (user?.role || 'guest').toLowerCase();
     const normalizedRequiredRoles = requiredRoles.map(r => r.toLowerCase());
-    
+
     console.log('🔐 ProtectedRoute - Checking access:', {
       userRole,
-      userObject: user,
+      userObject: JSON.stringify(user),
       requiredRoles: normalizedRequiredRoles,
       hasAccess: normalizedRequiredRoles.includes(userRole)
     });
-    
+
     if (!normalizedRequiredRoles.includes(userRole)) {
       console.warn(`❌ ProtectedRoute - User role '${userRole}' not in required roles:`, normalizedRequiredRoles);
       return <Navigate to="/403" replace />;
