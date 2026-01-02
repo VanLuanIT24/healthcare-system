@@ -5,26 +5,27 @@ import ThemeToggle from '@/components/effect/ThemeToggle';
 import { useAuth } from '@/contexts/AuthContext';
 import authAPI from '@/services/api/authAPI';
 import {
-    ArrowRightOutlined,
-    CalendarOutlined,
-    EyeInvisibleOutlined,
-    EyeTwoTone,
-    FacebookOutlined,
-    GoogleOutlined,
-    IdcardOutlined,
-    LockOutlined,
-    MailOutlined,
-    PhoneOutlined,
-    RocketOutlined,
-    UserOutlined
+  ArrowRightOutlined,
+  CalendarOutlined,
+  EyeInvisibleOutlined,
+  EyeTwoTone,
+  FacebookOutlined,
+  GoogleOutlined,
+  IdcardOutlined,
+  LockOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  RocketOutlined,
+  UserOutlined
 } from '@ant-design/icons';
-import { Button, Checkbox, DatePicker, Divider, FloatButton, Form, Input, message, Select } from 'antd';
+import { Button, Checkbox, DatePicker, Divider, FloatButton, Form, Input, message } from 'antd';
 import locale from 'antd/es/date-picker/locale/vi_VN';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
-const { Option } = Select;
+
 
 const RegisterPage = () => {
   const [form] = Form.useForm();
@@ -50,12 +51,12 @@ const RegisterPage = () => {
         await new Promise(resolve => setTimeout(resolve, 400));
         setActiveStep(i);
       }
-      
+
       // Chuẩn bị dữ liệu đăng ký với role mặc định là "Guest"
       const fullNameParts = values.fullName.trim().split(/\s+/);
       const firstName = fullNameParts[0] || '';
       const lastName = fullNameParts.slice(1).join(' ') || fullNameParts[0] || '';
-      
+
       const registerData = {
         email: values.email,
         password: values.password,
@@ -72,16 +73,16 @@ const RegisterPage = () => {
 
       // Gửi request đăng ký
       const response = await authAPI.register(registerData);
-      
+
       console.log('✅ Register Response:', response);
       console.log('✅ Response status:', response.status);
       console.log('✅ Response data:', response.data);
       setLoading(false);
-      
+
       // Handle axios response object { status: 201, data: { success: true, message: '...', data: { user: {...} } } }
       let user;
       let successMessage;
-      
+
       // Cách 1: response.data?.data?.user (nếu axios trả về response object)
       if (response?.data?.data?.user) {
         user = response.data.data.user;
@@ -97,12 +98,12 @@ const RegisterPage = () => {
         user = response.data.user;
         successMessage = response.data?.message || 'Bạn đã đăng ký thành công. Hãy đăng nhập để sử dụng dịch vụ healthcare';
       }
-      
+
       const isSuccess = (response.status === 201 || response.status === 200 || response?.data?.success === true) && user;
-      
+
       if (isSuccess) {
         console.log('🎉 Register Success:', { user, successMessage });
-        
+
         // ✅ Hiển thị thông báo thành công 3 giây, sau đó tự chuyển hướng
         message.success({
           content: (
@@ -124,7 +125,7 @@ const RegisterPage = () => {
           duration: 3,
           className: 'success-message'
         });
-        
+
         // ✅ Chuyển hướng sau 3 giây
         setTimeout(() => {
           console.log('🔄 Redirecting to login...');
@@ -137,23 +138,23 @@ const RegisterPage = () => {
     } catch (error) {
       console.error('❌ Register Error:', error);
       console.error('❌ Error Response:', error.response?.data);
-      
+
       // Xử lý error từ server
       const errorResponse = error.response?.data;
       const errorData = errorResponse?.error || errorResponse;
       const errorMessage = errorData?.message || errorResponse?.message || error.message || 'Đăng ký thất bại. Vui lòng thử lại.';
       const details = errorData?.details || [];
-      
+
       // Tạo thông báo lỗi chi tiết
       const errorContent = (
         <div>
           <p style={{ marginBottom: '12px', fontWeight: 500 }}>⚠️ {errorMessage}</p>
-          
+
           {/* Hiển thị chi tiết lỗi validation */}
           {details && details.length > 0 && (
-            <div style={{ 
-              backgroundColor: 'rgba(255, 77, 79, 0.1)', 
-              padding: '12px', 
+            <div style={{
+              backgroundColor: 'rgba(255, 77, 79, 0.1)',
+              padding: '12px',
               borderRadius: '6px',
               borderLeft: '4px solid #ff4d4f',
               marginBottom: '12px'
@@ -168,7 +169,7 @@ const RegisterPage = () => {
               ))}
             </div>
           )}
-          
+
           {/* Hiển thị dữ liệu nhận được */}
           {errorData?.receivedData && (
             <details style={{ marginTop: '12px', fontSize: '12px', cursor: 'pointer' }}>
@@ -191,7 +192,7 @@ const RegisterPage = () => {
           )}
         </div>
       );
-      
+
       message.error({
         content: errorContent,
         duration: 6,
@@ -238,12 +239,12 @@ const RegisterPage = () => {
     <div className="min-h-screen flex relative overflow-hidden">
       {/* Floating Elements Background */}
       {showParticles && <ParticlesBackground />}
-      
+
       {/* Animated Background Gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-white to-cyan-50 animate-gradient" />
-      
+
       {/* Left - Enhanced Image Section */}
-      <motion.div 
+      <motion.div
         className="hidden lg:flex lg:w-1/2 relative"
         initial={{ x: -50 }}
         animate={{ x: 0 }}
@@ -266,7 +267,7 @@ const RegisterPage = () => {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-green-600/80 via-teal-600/70 to-cyan-800/90" />
         </div>
-        
+
         <div className="relative z-20 flex flex-col justify-center p-12 text-white">
           <motion.div
             variants={containerVariants}
@@ -278,18 +279,18 @@ const RegisterPage = () => {
                 <Logo size="lg" showText={true} />
               </div>
             </motion.div>
-            
-            <motion.h1 
+
+            <motion.h1
               className="text-5xl font-bold mb-6 leading-tight"
               variants={itemVariants}
             >
-              Bắt đầu hành trình <br /> 
+              Bắt đầu hành trình <br />
               <span className="bg-gradient-to-r from-green-300 to-cyan-300 bg-clip-text text-transparent">
                 sức khỏe của bạn
               </span>
             </motion.h1>
-            
-            <motion.p 
+
+            <motion.p
               className="text-green-100/90 text-lg mb-12 leading-relaxed"
               variants={itemVariants}
             >
@@ -297,7 +298,7 @@ const RegisterPage = () => {
             </motion.p>
 
             {/* Registration Progress */}
-            <motion.div 
+            <motion.div
               className="mb-8"
               variants={itemVariants}
             >
@@ -312,8 +313,8 @@ const RegisterPage = () => {
                   >
                     <div className={`
                       w-10 h-10 rounded-full flex items-center justify-center mb-2
-                      ${activeStep >= index 
-                        ? 'bg-gradient-to-r from-green-400 to-teal-400 text-white' 
+                      ${activeStep >= index
+                        ? 'bg-gradient-to-r from-green-400 to-teal-400 text-white'
                         : 'bg-white/20 text-white/60'
                       }
                       transition-all duration-300
@@ -325,7 +326,7 @@ const RegisterPage = () => {
                 ))}
               </div>
               <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                <motion.div 
+                <motion.div
                   className="h-full bg-gradient-to-r from-green-400 to-teal-400 rounded-full"
                   initial={{ width: "0%" }}
                   animate={{ width: `${(activeStep / 2) * 100}%` }}
@@ -334,7 +335,7 @@ const RegisterPage = () => {
               </div>
             </motion.div>
 
-            <motion.div 
+            <motion.div
               className="space-y-6"
               variants={itemVariants}
             >
@@ -361,13 +362,13 @@ const RegisterPage = () => {
             </motion.div>
 
             {/* Stats Bar */}
-            <motion.div 
+            <motion.div
               className="mt-12 pt-8 border-t border-white/20"
               variants={itemVariants}
             >
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <motion.div 
+                  <motion.div
                     className="text-2xl font-bold"
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
@@ -407,7 +408,7 @@ const RegisterPage = () => {
             <span className="text-2xl">👨‍⚕️</span>
           </div>
         </motion.div>
-        
+
         <motion.div
           className="absolute bottom-1/3 left-1/4"
           variants={floatingIconVariants}
@@ -422,12 +423,12 @@ const RegisterPage = () => {
         {/* Decorative Elements */}
         <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-gradient-to-r from-green-400/10 to-cyan-400/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-emerald-400/5 to-teal-400/5 rounded-full blur-3xl" />
-        
+
         <motion.div
           initial={{ opacity: 0, x: 50, scale: 0.95 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
-          transition={{ 
-            type: "spring", 
+          transition={{
+            type: "spring",
             stiffness: 100,
             damping: 20
           }}
@@ -435,8 +436,8 @@ const RegisterPage = () => {
         >
           <motion.div
             className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border border-white/20"
-            whileHover={{ 
-              boxShadow: "0 20px 60px rgba(16, 185, 129, 0.15)" 
+            whileHover={{
+              boxShadow: "0 20px 60px rgba(16, 185, 129, 0.15)"
             }}
             transition={{ type: "spring", stiffness: 300 }}
           >
@@ -448,12 +449,12 @@ const RegisterPage = () => {
             </div>
 
             {/* Header */}
-            <motion.div 
+            <motion.div
               className="text-center mb-8"
               initial={{ y: -20 }}
               animate={{ y: 0 }}
             >
-              <motion.div 
+              <motion.div
                 className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl mb-4 shadow-lg"
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.5 }}
@@ -465,8 +466,8 @@ const RegisterPage = () => {
               </h2>
               <p className="text-gray-500 mt-2">
                 Đã có tài khoản?{' '}
-                <Link 
-                  to="/login" 
+                <Link
+                  to="/login"
                   className="text-green-600 hover:text-green-700 font-semibold hover:underline inline-flex items-center gap-1"
                 >
                   Đăng nhập ngay <ArrowRightOutlined className="text-xs rotate-180" />
@@ -510,9 +511,9 @@ const RegisterPage = () => {
                     rules={[
                       { required: true, message: '❌ Họ và tên không được để trống' },
                       { min: 3, message: '❌ Họ và tên phải có ít nhất 3 ký tự' },
-                      { 
-                        pattern: /^[a-zA-Z\u00c0-\u1eff\s]+$/, 
-                        message: '❌ Họ và tên chỉ được chứa chữ cái và khoảng trắng' 
+                      {
+                        pattern: /^[a-zA-Z\u00c0-\u1eff\s]+$/,
+                        message: '❌ Họ và tên chỉ được chứa chữ cái và khoảng trắng'
                       }
                     ]}
                   >
@@ -570,16 +571,15 @@ const RegisterPage = () => {
                     label={<span className="font-semibold text-gray-700">Giới tính</span>}
                     rules={[{ required: true, message: '❌ Vui lòng chọn giới tính' }]}
                   >
-                    <Select
-                      size="large"
+                    <CustomSelect
                       placeholder="Chọn giới tính"
-                      className="rounded-xl h-12"
-                      suffixIcon={<IdcardOutlined />}
-                    >
-                      <Option value="male">Nam</Option>
-                      <Option value="female">Nữ</Option>
-                      <Option value="other">Khác</Option>
-                    </Select>
+                      options={[
+                        { label: 'Nam', value: 'male' },
+                        { label: 'Nữ', value: 'female' },
+                        { label: 'Khác', value: 'other' }
+                      ]}
+                    />
+
                   </Form.Item>
                 </motion.div>
 
@@ -736,7 +736,7 @@ const RegisterPage = () => {
             </motion.div>
 
             {/* Footer */}
-            <motion.p 
+            <motion.p
               className="text-center text-gray-500 text-sm mt-8 pt-6 border-t border-gray-200"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -754,7 +754,7 @@ const RegisterPage = () => {
           </motion.div>
 
           {/* Feature Highlights */}
-          <motion.div 
+          <motion.div
             className="mt-8 grid grid-cols-3 gap-3"
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}

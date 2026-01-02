@@ -18,12 +18,13 @@ import {
   Spin,
   Switch,
   Form,
-  Select,
   Divider,
   TimePicker,
   Tag,
   message,
 } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import { useEffect, useState } from 'react';
@@ -45,8 +46,8 @@ const Settings = () => {
     messageNotifications: true,
 
     // Schedule
-    defaultStartTime: '08:00',
-    defaultEndTime: '17:00',
+    defaultStartTime: dayjs('08:00', 'HH:mm'),
+    defaultEndTime: dayjs('17:00', 'HH:mm'),
     workingDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
 
     // Language & Theme
@@ -225,7 +226,7 @@ const Settings = () => {
                   name="workingDays"
                   label="Các ngày làm việc"
                 >
-                  <Select
+                  <CustomSelect
                     mode="multiple"
                     options={[
                       { label: 'Thứ hai', value: 'Monday' },
@@ -237,6 +238,7 @@ const Settings = () => {
                       { label: 'Chủ nhật', value: 'Sunday' },
                     ]}
                   />
+
                 </Form.Item>
               </Col>
             </Row>
@@ -258,13 +260,14 @@ const Settings = () => {
                   name="language"
                   label="Ngôn ngữ"
                 >
-                  <Select
+                  <CustomSelect
                     options={[
                       { label: '🇻🇳 Tiếng Việt', value: 'vi' },
                       { label: '🇬🇧 English', value: 'en' },
                       { label: '🇮🇳 日本語', value: 'ja' },
                     ]}
                   />
+
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
@@ -272,13 +275,14 @@ const Settings = () => {
                   name="theme"
                   label="Chế độ"
                 >
-                  <Select
+                  <CustomSelect
                     options={[
                       { label: '☀️ Sáng', value: 'light' },
                       { label: '🌙 Tối', value: 'dark' },
                       { label: '🔄 Tự động', value: 'auto' },
                     ]}
                   />
+
                 </Form.Item>
               </Col>
             </Row>

@@ -1,19 +1,20 @@
 // src/pages/admin/users/UsersList.jsx
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import adminAPI from '@/services/api/admin/adminAPI';
-import { 
-  DeleteOutlined, 
-  EyeOutlined, 
-  PlusOutlined, 
+import {
+  DeleteOutlined,
+  EyeOutlined,
+  PlusOutlined,
   SearchOutlined,
   EditOutlined,
   SwapOutlined,
   LockOutlined,
   UnlockOutlined
 } from '@ant-design/icons';
-import { Button, Card, Col, Input, Row, Select, Skeleton, Space, Table, Tag, Modal, message } from 'antd';
+import { Button, Card, Col, Input, Row, Skeleton, Space, Table, Tag, Modal, message } from 'antd';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const UsersList = () => {
   const [users, setUsers] = useState([]);
@@ -36,7 +37,7 @@ const UsersList = () => {
       // Format mới: response.data.data = { items, total, page, limit, pages }
       const data = response?.data?.data || {};
       const items = data?.items || [];
-      
+
       setUsers(items);
       setPagination({
         current: page,
@@ -95,7 +96,8 @@ const UsersList = () => {
       DOCTOR: 'blue',
       NURSE: 'cyan',
       PATIENT: 'green',
-      RECEPTIONIST: 'purple'
+      RECEPTIONIST: 'purple',
+      CONSULTANT_SUPPORT: 'lime'
     };
     return roleColors[role] || 'default';
   };
@@ -154,46 +156,46 @@ const UsersList = () => {
       fixed: 'right',
       render: (_, record) => (
         <Space wrap size="small">
-          <Button 
-            type="primary" 
-            size="small" 
+          <Button
+            type="primary"
+            size="small"
             icon={<EyeOutlined />}
             onClick={() => navigate(`/admin/users/${record._id}`)}
             style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', border: 'none' }}
           >
             Xem
           </Button>
-          <Button 
-            size="small" 
+          <Button
+            size="small"
             icon={<EditOutlined />}
             onClick={() => navigate(`/admin/users/${record._id}/edit`)}
             style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', border: 'none', color: '#fff' }}
           >
             Sửa
           </Button>
-          <Button 
-            size="small" 
+          <Button
+            size="small"
             icon={<SwapOutlined />}
             onClick={() => navigate(`/admin/users/${record._id}/change-role`)}
             style={{ background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', border: 'none', color: '#fff' }}
           >
             Role
           </Button>
-          <Button 
-            size="small" 
+          <Button
+            size="small"
             icon={record?.status === 'ACTIVE' ? <LockOutlined /> : <UnlockOutlined />}
             onClick={() => handleToggleStatus(record._id, record?.status)}
             danger={record?.status === 'ACTIVE'}
-            style={record?.status === 'ACTIVE' ? 
+            style={record?.status === 'ACTIVE' ?
               { background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)', border: 'none', color: '#fff' } :
               { background: 'linear-gradient(135deg, #51cf66 0%, #37b24d 100%)', border: 'none', color: '#fff' }
             }
           >
             {record?.status === 'ACTIVE' ? 'Khóa' : 'Mở'}
           </Button>
-          <Button 
-            danger 
-            size="small" 
+          <Button
+            danger
+            size="small"
             icon={<DeleteOutlined />}
             onClick={() => handleDelete(record._id)}
             style={{ background: 'linear-gradient(135deg, #fa5252 0%, #d9480f 100%)', border: 'none', color: '#fff' }}
@@ -209,7 +211,7 @@ const UsersList = () => {
     <AdminLayout>
       <div className="space-y-4" style={{ padding: '20px' }}>
         {/* Header with Gradient */}
-        <div 
+        <div
           style={{
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
             padding: '30px',
@@ -223,8 +225,8 @@ const UsersList = () => {
           }}
         >
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>👥 Danh sách người dùng</h1>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/admin/users/create')}
             size="large"
@@ -235,8 +237,8 @@ const UsersList = () => {
         </div>
 
         {/* Filters */}
-        <Card 
-          style={{ 
+        <Card
+          style={{
             borderRadius: '12px',
             borderTop: '4px solid #667eea',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
@@ -253,10 +255,10 @@ const UsersList = () => {
               />
             </Col>
             <Col xs={24} sm={12} lg={6}>
-              <Select
+              <CustomSelect
                 placeholder="👤 Lọc theo role"
                 allowClear
-                value={filters.role || undefined}
+                value={filters.role}
                 onChange={(value) => setFilters({ ...filters, role: value })}
                 options={[
                   { label: '🔴 SUPER_ADMIN', value: 'SUPER_ADMIN' },
@@ -264,16 +266,16 @@ const UsersList = () => {
                   { label: '🔵 DOCTOR', value: 'DOCTOR' },
                   { label: '🩺 NURSE', value: 'NURSE' },
                   { label: '🟢 PATIENT', value: 'PATIENT' },
-                  { label: '📞 RECEPTIONIST', value: 'RECEPTIONIST' }
+                  { label: '📞 RECEPTIONIST', value: 'RECEPTIONIST' },
+                  { label: '💻 CONSULTANT_SUPPORT', value: 'CONSULTANT_SUPPORT' }
                 ]}
-                style={{ borderRadius: '8px' }}
               />
             </Col>
             <Col xs={24} sm={12} lg={6}>
-              <Select
+              <CustomSelect
                 placeholder="📊 Lọc theo trạng thái"
                 allowClear
-                value={filters.status || undefined}
+                value={filters.status}
                 onChange={(value) => setFilters({ ...filters, status: value })}
                 options={[
                   { label: '✅ ACTIVE', value: 'ACTIVE' },
@@ -281,7 +283,6 @@ const UsersList = () => {
                   { label: '⛔ SUSPENDED', value: 'SUSPENDED' },
                   { label: '🔒 LOCKED', value: 'LOCKED' }
                 ]}
-                style={{ borderRadius: '8px' }}
               />
             </Col>
           </Row>
@@ -289,8 +290,8 @@ const UsersList = () => {
 
         {/* Table */}
         <Skeleton loading={loading} active paragraph={{ rows: 10 }}>
-          <Card 
-            style={{ 
+          <Card
+            style={{
               borderRadius: '12px',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
               overflow: 'hidden'

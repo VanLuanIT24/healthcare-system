@@ -29,7 +29,6 @@ import {
   Input,
   Modal,
   Row,
-  Select,
   Space,
   Spin,
   Typography,
@@ -41,9 +40,9 @@ import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const { Title, Text, Paragraph } = Typography;
-const { Option } = Select;
 
 const DoctorProfile = () => {
   const [form] = Form.useForm();
@@ -243,7 +242,7 @@ const DoctorProfile = () => {
                             {user.personalInfo?.gender || 'N/A'}
                           </Descriptions.Item>
                           <Descriptions.Item label="Ngày sinh">
-                            {user.personalInfo?.dateOfBirth 
+                            {user.personalInfo?.dateOfBirth
                               ? dayjs(user.personalInfo.dateOfBirth).format('DD/MM/YYYY')
                               : 'N/A'}
                           </Descriptions.Item>
@@ -347,13 +346,17 @@ const DoctorProfile = () => {
                               <Row gutter={[16, 16]}>
                                 <Col xs={24} sm={12}>
                                   <Form.Item label="Giới tính" name="gender">
-                                    <Select placeholder="Chọn giới tính">
-                                      <Option value="male">Nam</Option>
-                                      <Option value="female">Nữ</Option>
-                                      <Option value="other">Khác</Option>
-                                    </Select>
+                                    <CustomSelect
+                                      placeholder="Chọn giới tính"
+                                      options={[
+                                        { label: 'Nam', value: 'male' },
+                                        { label: 'Nữ', value: 'female' },
+                                        { label: 'Khác', value: 'other' }
+                                      ]}
+                                    />
                                   </Form.Item>
                                 </Col>
+
                                 <Col xs={24} sm={12}>
                                   <Form.Item label="Ngày sinh" name="dateOfBirth">
                                     <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />

@@ -2,7 +2,9 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import appointmentAPI from '@/services/api/appointmentAPI';
 import { DownloadOutlined, FileExcelOutlined, FileOutlined } from '@ant-design/icons';
-import { Button, Card, Col, DatePicker, Divider, Form, Modal, Row, Select, message } from 'antd';
+import { Button, Card, Col, DatePicker, Divider, Form, Modal, Row, message } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import dayjs from 'dayjs';
 import { useState } from 'react';
 
@@ -190,13 +192,14 @@ const ExportAppointments = () => {
               label="Trạng thái (tùy chọn)"
               name="status"
             >
-              <Select
+              <CustomSelect
                 placeholder="Chọn trạng thái (xuất tất cả nếu không chọn)"
                 allowClear
                 value={status}
                 onChange={setStatus}
                 options={statusOptions}
               />
+
             </Form.Item>
 
             <Divider />

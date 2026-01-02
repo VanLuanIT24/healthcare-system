@@ -376,7 +376,7 @@ class DoctorController {
   async deleteDoctor(req, res, next) {
     try {
       const { doctorId } = req.params;
-      const { reason } = req.body;
+      const reason = req.body?.reason || '';
       const deleter = req.user;
 
       console.log('🎯 [DOCTOR CONTROLLER] Deleting doctor:', doctorId);
@@ -398,13 +398,26 @@ class DoctorController {
         throw new AppError('Không tìm thấy bác sĩ', 404, ERROR_CODES.USER_NOT_FOUND);
       }
 
-      await auditLog(AUDIT_ACTIONS.USER_DELETE, {
-        metadata: {
-          deletedUserId: doctorId,
-          reason,
-          deletedBy: deleter._id
-        }
-      })(req, res, () => {});
+      // Log audit manually without blocking response
+      try {
+        await manualAuditLog({
+          action: AUDIT_ACTIONS.USER_DELETE,
+          user: deleter,
+          resource: 'Doctor',
+          resourceId: doctorId,
+          metadata: {
+            deletedUserId: doctorId,
+            reason,
+            deletedBy: deleter._id
+          },
+          ipAddress: req.ip,
+          userAgent: req.get('User-Agent'),
+          httpMethod: req.method,
+          endpoint: req.originalUrl
+        });
+      } catch (auditError) {
+        console.error('Audit log error:', auditError);
+      }
 
       res.json({
         success: true,

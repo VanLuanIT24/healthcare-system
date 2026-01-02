@@ -23,6 +23,10 @@ const adminAPI = {
     return await axios.get('/admin/reports/overview');
   },
 
+  getRecentAppointments: async (limit = 10) => {
+    return await axios.get(`/admin/appointments/recent?limit=${limit}`);
+  },
+
   // Users Management
   getUsers: async (params = {}) => {
     return await axios.get('/admin/users', { params });

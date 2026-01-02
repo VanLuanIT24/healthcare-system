@@ -5,37 +5,36 @@ import { departmentAPI } from '@/services/api/departmentAPI';
 import { doctorAPI } from '@/services/api/doctorAPI';
 import { doctorScheduleAPI } from '@/services/api/doctorScheduleAPI';
 import {
-    CalendarOutlined,
-    ClockCircleOutlined,
-    DeleteOutlined,
-    EditOutlined,
-    PlusOutlined,
-    SaveOutlined,
-    ScheduleOutlined
+  CalendarOutlined,
+  ClockCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  SaveOutlined,
+  ScheduleOutlined
 } from '@ant-design/icons';
 import {
-    Alert,
-    Button,
-    Card,
-    Col,
-    DatePicker,
-    Empty,
-    Form,
-    Input,
-    InputNumber,
-    Modal,
-    Popconfirm,
-    Row,
-    Select,
-    Space,
-    Spin,
-    Table,
-    Tabs,
-    Tag,
-    TimePicker,
-    Typography,
-    message
+  Alert,
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Empty,
+  Form,
+  Input,
+  InputNumber,
+  Row,
+  Space,
+  Spin,
+  Table,
+  Tabs,
+  Tag,
+  TimePicker,
+  Typography,
+  message
 } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import { useEffect, useState } from 'react';
@@ -67,13 +66,13 @@ const DoctorWorkSchedule = () => {
   const [specialSchedules, setSpecialSchedules] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  
+
   // Modal states
   const [regularModalVisible, setRegularModalVisible] = useState(false);
   const [specialModalVisible, setSpecialModalVisible] = useState(false);
   const [leaveModalVisible, setLeaveModalVisible] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
-  
+
   const [regularForm] = Form.useForm();
   const [specialForm] = Form.useForm();
   const [leaveForm] = Form.useForm();
@@ -86,7 +85,7 @@ const DoctorWorkSchedule = () => {
           doctorAPI.getDoctors({ limit: 999 }),
           departmentAPI.getDepartments()
         ]);
-        
+
         setDoctors(doctorsRes?.data?.data || []);
         setDepartments(deptsRes?.data?.data || deptsRes?.data || []);
       } catch (error) {
@@ -127,7 +126,7 @@ const DoctorWorkSchedule = () => {
   const handleCreateRegularSchedule = async (values) => {
     try {
       setSaving(true);
-      
+
       const scheduleData = {
         doctorId: selectedDoctor,
         scheduleType: 'REGULAR',
@@ -168,7 +167,7 @@ const DoctorWorkSchedule = () => {
   const handleCreateSpecialSchedule = async (values) => {
     try {
       setSaving(true);
-      
+
       const scheduleData = {
         doctorId: selectedDoctor,
         scheduleType: 'SPECIAL',
@@ -200,7 +199,7 @@ const DoctorWorkSchedule = () => {
   const handleCreateLeave = async (values) => {
     try {
       setSaving(true);
-      
+
       const scheduleData = {
         doctorId: selectedDoctor,
         scheduleType: 'LEAVE',
@@ -239,7 +238,7 @@ const DoctorWorkSchedule = () => {
     regularForm.setFieldsValue({
       dayOfWeek: schedule.dayOfWeek,
       workTime: [dayjs(schedule.startTime, 'HH:mm'), dayjs(schedule.endTime, 'HH:mm')],
-      breakTime: schedule.breakStart && schedule.breakEnd 
+      breakTime: schedule.breakStart && schedule.breakEnd
         ? [dayjs(schedule.breakStart, 'HH:mm'), dayjs(schedule.breakEnd, 'HH:mm')]
         : undefined,
       slotDuration: schedule.slotDuration,
@@ -256,7 +255,7 @@ const DoctorWorkSchedule = () => {
   const handleBulkCreate = async () => {
     try {
       setSaving(true);
-      
+
       // Tạo lịch mặc định cho các ngày trong tuần (T2-T6)
       const defaultSchedules = [1, 2, 3, 4, 5].map(day => ({
         dayOfWeek: day,
@@ -305,7 +304,7 @@ const DoctorWorkSchedule = () => {
       title: 'Nghỉ trưa',
       key: 'breakTime',
       render: (_, record) => (
-        record.breakStart && record.breakEnd 
+        record.breakStart && record.breakEnd
           ? <Text type="secondary">{record.breakStart} - {record.breakEnd}</Text>
           : <Text type="secondary">-</Text>
       )
@@ -340,9 +339,9 @@ const DoctorWorkSchedule = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button 
-            type="text" 
-            icon={<EditOutlined />} 
+          <Button
+            type="text"
+            icon={<EditOutlined />}
             onClick={() => handleEditRegular(record)}
           />
           <Popconfirm
@@ -370,7 +369,7 @@ const DoctorWorkSchedule = () => {
       dataIndex: 'scheduleType',
       key: 'scheduleType',
       render: (type) => (
-        type === 'LEAVE' 
+        type === 'LEAVE'
           ? <Tag color="red">Nghỉ</Tag>
           : <Tag color="orange">Lịch đặc biệt</Tag>
       )
@@ -379,7 +378,7 @@ const DoctorWorkSchedule = () => {
       title: 'Thời gian',
       key: 'time',
       render: (_, record) => (
-        record.scheduleType === 'LEAVE' 
+        record.scheduleType === 'LEAVE'
           ? <Text type="secondary">Cả ngày</Text>
           : <Text>{record.startTime} - {record.endTime}</Text>
       )
@@ -417,23 +416,18 @@ const DoctorWorkSchedule = () => {
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} md={12}>
               <Text strong>Chọn Bác Sĩ</Text>
-              <Select
+              <CustomSelect
                 style={{ width: '100%', marginTop: '8px' }}
                 placeholder="Tìm bác sĩ..."
                 value={selectedDoctor}
                 onChange={setSelectedDoctor}
                 showSearch
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  option?.children?.toLowerCase?.().includes(input.toLowerCase())
-                }
-              >
-                {doctors.map(doctor => (
-                  <Select.Option key={doctor._id} value={doctor._id}>
-                    {doctor.personalInfo?.firstName} {doctor.personalInfo?.lastName}
-                  </Select.Option>
-                ))}
-              </Select>
+                options={doctors.map(doctor => ({
+                  label: `${doctor.personalInfo?.firstName} ${doctor.personalInfo?.lastName}`,
+                  value: doctor._id
+                }))}
+              />
+
             </Col>
             {selectedDoctor && (
               <Col xs={24} md={12}>
@@ -507,7 +501,7 @@ const DoctorWorkSchedule = () => {
         {/* Bảng lịch */}
         {selectedDoctor ? (
           <Spin spinning={loading}>
-            <Tabs 
+            <Tabs
               defaultActiveKey="regular"
               items={[
                 {
@@ -578,13 +572,14 @@ const DoctorWorkSchedule = () => {
               label="Ngày trong tuần"
               rules={[{ required: true, message: 'Vui lòng chọn ngày' }]}
             >
-              <Select placeholder="Chọn ngày">
-                {DAYS_OF_WEEK.map(day => (
-                  <Select.Option key={day.value} value={day.value}>
-                    {day.label}
-                  </Select.Option>
-                ))}
-              </Select>
+              <CustomSelect
+                placeholder="Chọn ngày"
+                options={DAYS_OF_WEEK.map(day => ({
+                  label: day.label,
+                  value: day.value
+                }))}
+              />
+
             </Form.Item>
 
             <Form.Item
@@ -637,23 +632,28 @@ const DoctorWorkSchedule = () => {
               </Col>
               <Col span={12}>
                 <Form.Item name="consultationType" label="Loại khám">
-                  <Select>
-                    <Select.Option value="IN_PERSON">Trực tiếp</Select.Option>
-                    <Select.Option value="ONLINE">Online</Select.Option>
-                    <Select.Option value="BOTH">Cả hai</Select.Option>
-                  </Select>
+                  <CustomSelect
+                    options={[
+                      { label: 'Trực tiếp', value: 'IN_PERSON' },
+                      { label: 'Online', value: 'ONLINE' },
+                      { label: 'Cả hai', value: 'BOTH' },
+                    ]}
+                  />
+
                 </Form.Item>
               </Col>
             </Row>
 
             <Form.Item name="departmentId" label="Khoa">
-              <Select placeholder="Chọn khoa" allowClear>
-                {departments.map(dept => (
-                  <Select.Option key={dept._id} value={dept._id}>
-                    {dept.name}
-                  </Select.Option>
-                ))}
-              </Select>
+              <CustomSelect
+                placeholder="Chọn khoa"
+                allowClear
+                options={departments.map(dept => ({
+                  label: dept.name,
+                  value: dept._id
+                }))}
+              />
+
             </Form.Item>
 
             <Form.Item name="notes" label="Ghi chú">

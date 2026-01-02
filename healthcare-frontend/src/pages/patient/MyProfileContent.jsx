@@ -2,13 +2,15 @@
 import { useAuth } from '@/contexts/AuthContext';
 import authAPI from '@/services/api/authAPI';
 import { CameraOutlined, LockOutlined, LogoutOutlined } from '@ant-design/icons';
-import { App, Avatar, Button, Col, DatePicker, Divider, Form, Input, Modal, Row, Select, Space, Spin, Typography, Upload } from 'antd';
+import { App, Avatar, Button, Col, DatePicker, Divider, Form, Input, Modal, Row, Space, Spin, Typography, Upload } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
+
 
 const MyProfileContent = () => {
   const [form] = Form.useForm();
@@ -25,12 +27,12 @@ const MyProfileContent = () => {
       setUser(contextUser);
       const profilePicture = contextUser.personalInfo?.profilePicture;
       if (profilePicture) {
-        const avatarUrl = profilePicture.startsWith('http') 
-          ? profilePicture 
+        const avatarUrl = profilePicture.startsWith('http')
+          ? profilePicture
           : `http://localhost:5000/uploads/profiles/${profilePicture}`;
         setAvatar(avatarUrl);
       }
-      
+
       form.setFieldsValue({
         email: contextUser.email,
         firstName: contextUser.personalInfo?.firstName,
@@ -46,7 +48,7 @@ const MyProfileContent = () => {
     setLoading(true);
     try {
       console.log('💾 MyProfileContent - Saving profile:', values);
-      
+
       const profileData = {
         personalInfo: {
           firstName: values.firstName,
@@ -56,15 +58,15 @@ const MyProfileContent = () => {
           dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null,
         }
       };
-      
+
       console.log('📤 MyProfileContent - Sending to API:', profileData);
-      
+
       const result = await updateContextProfile(profileData);
-      
+
       if (result.success) {
         setUser(contextUser);
         form.setFieldsValue(values);
-        
+
         message.success('✅ Cập nhật hồ sơ thành công!');
         setIsEditing(false);
         console.log('✅ MyProfileContent - Profile updated successfully');
@@ -108,17 +110,17 @@ const MyProfileContent = () => {
     try {
       setLoading(true);
       console.log('📤 MyProfileContent - Uploading avatar:', file.name);
-      
+
       const response = await authAPI.uploadAvatar(file);
       console.log('✅ Avatar upload response:', response);
-      
+
       if (response?.data?.success) {
         let avatarUrl = response?.data?.data?.profilePictureUrl;
-        
+
         if (avatarUrl && !avatarUrl.startsWith('http')) {
           avatarUrl = `http://localhost:5000${avatarUrl}`;
         }
-        
+
         if (avatarUrl) {
           console.log('🖼️ Setting avatar URL:', avatarUrl);
           setAvatar(avatarUrl);
@@ -130,7 +132,7 @@ const MyProfileContent = () => {
             }
           }));
         }
-        
+
         message.success('✅ Tải lên ảnh đại diện thành công!');
         console.log('✅ Avatar uploaded successfully');
       } else {
@@ -236,11 +238,15 @@ const MyProfileContent = () => {
                     label="Giới tính"
                     name="gender"
                   >
-                    <Select placeholder="Chọn giới tính">
-                      <Option value="male">Nam</Option>
-                      <Option value="female">Nữ</Option>
-                      <Option value="other">Khác</Option>
-                    </Select>
+                    <CustomSelect
+                      placeholder="Chọn giới tính"
+                      options={[
+                        { label: 'Nam', value: 'male' },
+                        { label: 'Nữ', value: 'female' },
+                        { label: 'Khác', value: 'other' },
+                      ]}
+                    />
+
                   </Form.Item>
                 </Col>
                 <Col xs={24} sm={12}>

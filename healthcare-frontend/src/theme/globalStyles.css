@@ -105,9 +105,57 @@
   --z-tooltip: 1070;
 }
 
+
+/* ============================================
+   ANT DESIGN POPUP Z-INDEX & VISIBILITY FIX
+   Ensures dropdowns, date pickers, and select 
+   menus appear above all other content
+   ============================================ */
+
+.ant-select-dropdown,
+.ant-picker-dropdown,
+.ant-dropdown,
+.ant-popover,
+.ant-tooltip,
+.ant-message,
+.ant-notification,
+.custom-select-dropdown {
+  z-index: 9999999 !important;
+}
+
+
+
+/* Ensure layout containers don't clip portals */
+.ant-layout,
+.ant-layout-content,
+.ant-card,
+.ant-card-body,
+.healthcare-app {
+  overflow: visible !important;
+}
+
+/* Fix DatePicker dropdown visibility inside forms and cards */
+.ant-form-item,
+.ant-form-item-control,
+.ant-form-item-control-input,
+.ant-form-item-control-input-content {
+  overflow: visible !important;
+}
+
+/* Ensure parent containers don't clip DatePicker popup */
+.bg-gray-50,
+.rounded,
+.p-4 {
+  overflow: visible !important;
+  position: relative;
+}
+
+
 /* ============================================
    RESET & BASE STYLES
    ============================================ */
+
+
 
 * {
   margin: 0;
@@ -139,11 +187,11 @@ body::before {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     radial-gradient(circle at 20% 30%, rgba(102, 126, 234, 0.05) 0%, transparent 50%),
     radial-gradient(circle at 80% 70%, rgba(240, 147, 251, 0.05) 0%, transparent 50%);
   pointer-events: none;
-  z-index: 0;
+  z-index: -1;
 }
 
 /* ============================================
@@ -211,19 +259,41 @@ a:focus-visible {
    TYPOGRAPHY UTILITIES
    ============================================ */
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 600;
   line-height: 1.2;
   color: var(--text-primary);
   margin-bottom: var(--spacing-md);
 }
 
-h1 { font-size: 30px; }
-h2 { font-size: 24px; }
-h3 { font-size: 20px; }
-h4 { font-size: 18px; }
-h5 { font-size: 16px; }
-h6 { font-size: 14px; }
+h1 {
+  font-size: 30px;
+}
+
+h2 {
+  font-size: 24px;
+}
+
+h3 {
+  font-size: 20px;
+}
+
+h4 {
+  font-size: 18px;
+}
+
+h5 {
+  font-size: 16px;
+}
+
+h6 {
+  font-size: 14px;
+}
 
 p {
   margin-bottom: var(--spacing-sm);
@@ -249,11 +319,10 @@ a:hover {
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-card);
   background: var(--bg-glass);
-  backdrop-filter: blur(20px);
   border: 1px solid var(--border-light);
   transition: all var(--transition-normal);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .ant-card::before {
@@ -329,18 +398,18 @@ a:hover {
   overflow: hidden;
 }
 
-.ant-table-thead > tr > th {
+.ant-table-thead>tr>th {
   background: linear-gradient(180deg, #FAFAFA, #F0F0F0);
   font-weight: 600;
   color: var(--text-primary);
   border-bottom: 2px solid var(--border-color);
 }
 
-.ant-table-tbody > tr:hover > td {
+.ant-table-tbody>tr:hover>td {
   background-color: var(--bg-hover);
 }
 
-.ant-table-tbody > tr.ant-table-row-selected > td {
+.ant-table-tbody>tr.ant-table-row-selected>td {
   background-color: var(--bg-active);
 }
 
@@ -376,7 +445,7 @@ a:hover {
   margin-bottom: var(--spacing-lg);
 }
 
-.ant-form-item-label > label {
+.ant-form-item-label>label {
   font-weight: 500;
   color: var(--text-primary);
 }
@@ -466,6 +535,7 @@ a:hover {
   0% {
     background-position: -468px 0;
   }
+
   100% {
     background-position: 468px 0;
   }
@@ -473,12 +543,10 @@ a:hover {
 
 .skeleton-loading {
   animation: shimmer 1.2s ease-in-out infinite;
-  background: linear-gradient(
-    to right,
-    #F0F0F0 4%,
-    #F9F9F9 25%,
-    #F0F0F0 36%
-  );
+  background: linear-gradient(to right,
+      #F0F0F0 4%,
+      #F9F9F9 25%,
+      #F0F0F0 36%);
   background-size: 1000px 100%;
 }
 
@@ -491,6 +559,7 @@ a:hover {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -506,32 +575,87 @@ a:hover {
    ============================================ */
 
 /* Spacing */
-.mt-xs { margin-top: var(--spacing-xs); }
-.mt-sm { margin-top: var(--spacing-sm); }
-.mt-md { margin-top: var(--spacing-md); }
-.mt-lg { margin-top: var(--spacing-lg); }
+.mt-xs {
+  margin-top: var(--spacing-xs);
+}
 
-.mb-xs { margin-bottom: var(--spacing-xs); }
-.mb-sm { margin-bottom: var(--spacing-sm); }
-.mb-md { margin-bottom: var(--spacing-md); }
-.mb-lg { margin-bottom: var(--spacing-lg); }
+.mt-sm {
+  margin-top: var(--spacing-sm);
+}
 
-.p-xs { padding: var(--spacing-xs); }
-.p-sm { padding: var(--spacing-sm); }
-.p-md { padding: var(--spacing-md); }
-.p-lg { padding: var(--spacing-lg); }
+.mt-md {
+  margin-top: var(--spacing-md);
+}
+
+.mt-lg {
+  margin-top: var(--spacing-lg);
+}
+
+.mb-xs {
+  margin-bottom: var(--spacing-xs);
+}
+
+.mb-sm {
+  margin-bottom: var(--spacing-sm);
+}
+
+.mb-md {
+  margin-bottom: var(--spacing-md);
+}
+
+.mb-lg {
+  margin-bottom: var(--spacing-lg);
+}
+
+.p-xs {
+  padding: var(--spacing-xs);
+}
+
+.p-sm {
+  padding: var(--spacing-sm);
+}
+
+.p-md {
+  padding: var(--spacing-md);
+}
+
+.p-lg {
+  padding: var(--spacing-lg);
+}
 
 /* Text Alignment */
-.text-left { text-align: left; }
-.text-center { text-align: center; }
-.text-right { text-align: right; }
+.text-left {
+  text-align: left;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
 
 /* Text Colors */
-.text-primary { color: var(--color-primary) !important; }
-.text-success { color: var(--color-success) !important; }
-.text-warning { color: var(--color-warning) !important; }
-.text-error { color: var(--color-error) !important; }
-.text-secondary { color: var(--text-secondary) !important; }
+.text-primary {
+  color: var(--color-primary) !important;
+}
+
+.text-success {
+  color: var(--color-success) !important;
+}
+
+.text-warning {
+  color: var(--color-warning) !important;
+}
+
+.text-error {
+  color: var(--color-error) !important;
+}
+
+.text-secondary {
+  color: var(--text-secondary) !important;
+}
 
 /* Text Gradient */
 .text-gradient {
@@ -543,10 +667,21 @@ a:hover {
 }
 
 /* Background Colors */
-.bg-primary { background-color: var(--color-primary) !important; }
-.bg-success { background-color: var(--color-success) !important; }
-.bg-warning { background-color: var(--color-warning) !important; }
-.bg-error { background-color: var(--color-error) !important; }
+.bg-primary {
+  background-color: var(--color-primary) !important;
+}
+
+.bg-success {
+  background-color: var(--color-success) !important;
+}
+
+.bg-warning {
+  background-color: var(--color-warning) !important;
+}
+
+.bg-error {
+  background-color: var(--color-error) !important;
+}
 
 /* Background Gradients */
 .bg-gradient-primary {
@@ -567,20 +702,41 @@ a:hover {
 }
 
 /* Shadows */
-.shadow-sm { box-shadow: var(--shadow-sm) !important; }
-.shadow-md { box-shadow: var(--shadow-md) !important; }
-.shadow-lg { box-shadow: var(--shadow-lg) !important; }
-.shadow-hover { box-shadow: var(--shadow-hover) !important; }
-.shadow-glow { box-shadow: var(--shadow-glow) !important; }
+.shadow-sm {
+  box-shadow: var(--shadow-sm) !important;
+}
+
+.shadow-md {
+  box-shadow: var(--shadow-md) !important;
+}
+
+.shadow-lg {
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.shadow-hover {
+  box-shadow: var(--shadow-hover) !important;
+}
+
+.shadow-glow {
+  box-shadow: var(--shadow-glow) !important;
+}
 
 /* Display */
-.flex { display: flex; }
-.flex-column { flex-direction: column; }
-.flex-center { 
+.flex {
+  display: flex;
+}
+
+.flex-column {
+  flex-direction: column;
+}
+
+.flex-center {
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
 .flex-between {
   display: flex;
   align-items: center;
@@ -595,24 +751,31 @@ a:hover {
   0% {
     background-position: -1000px 0;
   }
+
   100% {
     background-position: 1000px 0;
   }
 }
 
 @keyframes floatUp {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-10px);
   }
 }
 
 @keyframes glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow: 0 0 20px rgba(102, 126, 234, 0.3);
   }
+
   50% {
     box-shadow: 0 0 40px rgba(102, 126, 234, 0.6);
   }
@@ -622,9 +785,11 @@ a:hover {
   0% {
     background-position: 0% 50%;
   }
+
   50% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0% 50%;
   }
@@ -632,12 +797,10 @@ a:hover {
 
 /* Animation Classes */
 .shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.5) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.5) 50%,
+      rgba(255, 255, 255, 0) 100%);
   background-size: 1000px 100%;
   animation: shimmer 2s infinite;
 }

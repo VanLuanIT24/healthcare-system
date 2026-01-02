@@ -2,14 +2,15 @@
 import appointmentAPI from '@/services/api/appointmentAPI';
 import { doctorAPI } from '@/services/api/doctorAPI';
 import publicAPI from '@/services/api/publicAPI';
-import { Button, Col, DatePicker, Divider, Form, Input, Row, Select, Spin, message } from 'antd';
+import { Button, Col, DatePicker, Divider, Form, Input, Row, Spin, message } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
-const AppointmentForm = ({ 
-  form, 
-  initialData = null, 
-  onSubmit, 
+const AppointmentForm = ({
+  form,
+  initialData = null,
+  onSubmit,
   loading = false,
   mode = 'create' // 'create', 'edit', 'reschedule'
 }) => {
@@ -95,12 +96,8 @@ const AppointmentForm = ({
           name="doctorId"
           rules={[{ required: true, message: 'Vui lòng chọn bác sĩ' }]}
         >
-          <Select
+          <CustomSelect
             placeholder="Chọn bác sĩ"
-            optionFilterProp="children"
-            filterOption={(input, option) =>
-              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-            }
             options={filteredDoctors.map(doctor => ({
               label: `${doctor.fullName}`,
               value: doctor._id
@@ -108,6 +105,7 @@ const AppointmentForm = ({
             onChange={handleDoctorChange}
           />
         </Form.Item>
+
 
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12}>
@@ -135,7 +133,7 @@ const AppointmentForm = ({
                 name="slot"
                 rules={[{ required: true, message: 'Vui lòng chọn khung giờ' }]}
               >
-                <Select
+                <CustomSelect
                   placeholder="Chọn khung giờ"
                   options={availableSlots.map(slot => ({
                     label: slot.time || slot,
@@ -144,6 +142,7 @@ const AppointmentForm = ({
                   disabled={availableSlots.length === 0}
                 />
               </Form.Item>
+
             </Col>
           )}
         </Row>
@@ -153,7 +152,7 @@ const AppointmentForm = ({
           name="reason"
           rules={[{ required: true, message: 'Vui lòng nhập lý do khám' }]}
         >
-          <Input.TextArea 
+          <Input.TextArea
             placeholder="Mô tả lý do khám bệnh"
             rows={3}
           />
@@ -163,7 +162,7 @@ const AppointmentForm = ({
           label="Ghi chú thêm"
           name="notes"
         >
-          <Input.TextArea 
+          <Input.TextArea
             placeholder="Ghi chú thêm (tùy chọn)"
             rows={2}
           />
@@ -178,8 +177,8 @@ const AppointmentForm = ({
             </Button>
           </Col>
           <Col>
-            <Button 
-              type="primary" 
+            <Button
+              type="primary"
               htmlType="submit"
               loading={loading}
             >

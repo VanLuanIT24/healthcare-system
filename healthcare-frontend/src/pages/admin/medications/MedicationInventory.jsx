@@ -2,37 +2,37 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import medicationInventoryAPI from '@/services/api/medicationInventoryAPI';
 import {
-    DeleteOutlined,
-    EditOutlined,
-    EyeOutlined,
-    FileExcelOutlined,
-    PlusOutlined, SearchOutlined,
-    SwapOutlined,
-    WarningOutlined
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  FileExcelOutlined,
+  PlusOutlined, SearchOutlined,
+  SwapOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 import {
-    Badge,
-    Button,
-    Card,
-    Col,
-    Drawer, Form,
-    Input,
-    InputNumber,
-    message,
-    Popconfirm,
-    Row,
-    Select,
-    Space,
-    Spin,
-    Statistic,
-    Table,
-    Tag,
-    Tooltip
+  Badge,
+  Button,
+  Card,
+  Col,
+  Drawer, Form,
+  Input,
+  InputNumber,
+  message,
+  Popconfirm,
+  Row,
+  Space,
+  Spin,
+  Statistic,
+  Table,
+  Tag,
+  Tooltip
 } from 'antd';
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const MedicationInventory = () => {
   const navigate = useNavigate();
@@ -89,7 +89,7 @@ const MedicationInventory = () => {
       const lowStockCount = medList.filter(m => m.quantity <= (m.minimumStock || 10)).length;
       const outOfStockCount = medList.filter(m => m.quantity === 0).length;
       const totalValue = medList.reduce((sum, m) => sum + ((m.quantity || 0) * (m.price || 0)), 0);
-      
+
       setStats({
         totalMedications: res.data.pagination?.total || medList.length,
         lowStockCount,
@@ -386,7 +386,7 @@ const MedicationInventory = () => {
               />
             </Col>
             <Col xs={24} sm={12} md={8}>
-              <Select
+              <CustomSelect
                 placeholder="Chọn phân loại"
                 value={selectedCategory || undefined}
                 onChange={(value) => setSelectedCategory(value)}
@@ -394,6 +394,7 @@ const MedicationInventory = () => {
                 allowClear
               />
             </Col>
+
           </Row>
         </Card>
 
@@ -472,7 +473,7 @@ const MedicationInventory = () => {
               label="Loại cập nhật"
               rules={[{ required: true, message: 'Vui lòng chọn loại cập nhật' }]}
             >
-              <Select
+              <CustomSelect
                 options={[
                   { label: 'Nhập kho', value: 'add' },
                   { label: 'Xuất kho', value: 'remove' },
@@ -480,6 +481,7 @@ const MedicationInventory = () => {
                 ]}
               />
             </Form.Item>
+
 
             <Form.Item
               name="quantity"

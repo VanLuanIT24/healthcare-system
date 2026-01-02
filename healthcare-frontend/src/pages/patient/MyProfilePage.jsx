@@ -1,6 +1,7 @@
 // src/pages/patient/MyProfilePage.jsx
 import { CameraOutlined, EditOutlined, LockOutlined, LogoutOutlined, MailOutlined, PhoneOutlined, SaveOutlined, UserOutlined } from '@ant-design/icons';
-import { App, Avatar, Button, Card, Col, DatePicker, Divider, Form, Input, Modal, Row, Select, Space, Spin, Typography, Upload } from 'antd';
+import { App, Avatar, Button, Card, Col, DatePicker, Divider, Form, Input, Modal, Row, Space, Spin, Typography, Upload } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
@@ -9,7 +10,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import authAPI from '../../services/api/authAPI';
 
 const { Title, Text, Paragraph } = Typography;
-const { Option } = Select;
 
 const MyProfilePage = () => {
   const [form] = Form.useForm();
@@ -26,12 +26,12 @@ const MyProfilePage = () => {
       setUser(contextUser);
       const profilePicture = contextUser.personalInfo?.profilePicture;
       if (profilePicture) {
-        const avatarUrl = profilePicture.startsWith('http') 
-          ? profilePicture 
+        const avatarUrl = profilePicture.startsWith('http')
+          ? profilePicture
           : `http://localhost:5000/uploads/profiles/${profilePicture}`;
         setAvatar(avatarUrl);
       }
-      
+
       form.setFieldsValue({
         email: contextUser.email,
         firstName: contextUser.personalInfo?.firstName,
@@ -47,7 +47,7 @@ const MyProfilePage = () => {
     setLoading(true);
     try {
       console.log('💾 MyProfilePage - Saving profile:', values);
-      
+
       // Prepare data to send
       const profileData = {
         personalInfo: {
@@ -58,17 +58,17 @@ const MyProfilePage = () => {
           dateOfBirth: values.dateOfBirth ? values.dateOfBirth.format('YYYY-MM-DD') : null,
         }
       };
-      
+
       console.log('📤 MyProfilePage - Sending to API:', profileData);
-      
+
       // Call AuthContext's updateProfile to persist changes globally
       const result = await updateContextProfile(profileData);
-      
+
       if (result.success) {
         // Update local state from context
         setUser(contextUser);
         form.setFieldsValue(values);
-        
+
         message.success('✅ Cập nhật hồ sơ thành công!');
         setIsEditing(false);
         console.log('✅ MyProfilePage - Profile updated successfully');
@@ -112,20 +112,20 @@ const MyProfilePage = () => {
     try {
       setLoading(true);
       console.log('📤 MyProfilePage - Uploading avatar:', file.name);
-      
+
       // Upload file to server using authAPI
       const response = await authAPI.uploadAvatar(file);
       console.log('✅ Avatar upload response:', response);
-      
+
       if (response?.data?.success) {
         // Get the full URL from response or construct it
         let avatarUrl = response?.data?.data?.profilePictureUrl;
-        
+
         // If it's a relative path, make it absolute
         if (avatarUrl && !avatarUrl.startsWith('http')) {
           avatarUrl = `http://localhost:5000${avatarUrl}`;
         }
-        
+
         // If we have a full URL, set it
         if (avatarUrl) {
           console.log('🖼️ Setting avatar URL:', avatarUrl);
@@ -139,7 +139,7 @@ const MyProfilePage = () => {
             }
           }));
         }
-        
+
         message.success('✅ Tải lên ảnh đại diện thành công!');
         console.log('✅ Avatar uploaded successfully');
       } else {
@@ -401,15 +401,17 @@ const MyProfilePage = () => {
                       label="Giới tính"
                       name="gender"
                     >
-                      <Select
+                      <CustomSelect
                         disabled={!isEditing}
                         placeholder="Chọn giới tính"
                         style={{ borderRadius: '10px' }}
-                      >
-                        <Option value="male">Nam</Option>
-                        <Option value="female">Nữ</Option>
-                        <Option value="other">Khác</Option>
-                      </Select>
+                        options={[
+                          { label: 'Nam', value: 'male' },
+                          { label: 'Nữ', value: 'female' },
+                          { label: 'Khác', value: 'other' }
+                        ]}
+                      />
+
                     </Form.Item>
                   </Col>
                   <Col xs={24} sm={12}>

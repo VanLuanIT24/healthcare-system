@@ -14,7 +14,6 @@ import {
   Input,
   InputNumber,
   Row,
-  Select,
   Spin,
   Table,
   Upload
@@ -25,6 +24,7 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AdminLayout from '../../../components/layout/admin/AdminLayout';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 import { departmentAPI } from '../../../services/api/departmentAPI';
 import { doctorAPI } from '../../../services/api/doctorAPI';
 
@@ -294,7 +294,7 @@ const DoctorForm = () => {
               </Col>
               <Col xs={24} sm={12}>
                 <Form.Item label="Giới tính" name="gender">
-                  <Select
+                  <CustomSelect
                     options={[
                       { label: 'Nam', value: 'MALE' },
                       { label: 'Nữ', value: 'FEMALE' },
@@ -342,7 +342,7 @@ const DoctorForm = () => {
                   name="departmentId"
                   rules={[{ required: true, message: 'Vui lòng chọn khoa' }]}
                 >
-                  <Select
+                  <CustomSelect
                     placeholder="Chọn khoa"
                     options={departments}
                   />

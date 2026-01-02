@@ -2,29 +2,43 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import adminAPI from '@/services/api/admin/adminAPI';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { Button, Card, Checkbox, Col, DatePicker, Form, Input, Row, Select, Space, message } from 'antd';
+import { Button, Card, Checkbox, Col, Form, Input, Row, Space, message } from 'antd';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+import CustomDatePicker from '@/components/common/CustomDatePicker/CustomDatePicker';
 const CreateUser = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const roles = [
-    { label: 'SUPER_ADMIN', value: 'SUPER_ADMIN' },
-    { label: 'SYSTEM_ADMIN', value: 'SYSTEM_ADMIN' },
-    { label: 'HOSPITAL_ADMIN', value: 'HOSPITAL_ADMIN' },
-    { label: 'CLINICAL_ADMIN', value: 'CLINICAL_ADMIN' },
-    { label: 'DEPARTMENT_HEAD', value: 'DEPARTMENT_HEAD' },
-    { label: 'DOCTOR', value: 'DOCTOR' },
-    { label: 'NURSE', value: 'NURSE' },
-    { label: 'LAB_TECHNICIAN', value: 'LAB_TECHNICIAN' },
-    { label: 'PHARMACIST', value: 'PHARMACIST' },
-    { label: 'RECEPTIONIST', value: 'RECEPTIONIST' },
-    { label: 'BILLING_STAFF', value: 'BILLING_STAFF' },
-    { label: 'PATIENT', value: 'PATIENT' }
+  const roleOptions = [
+    { value: 'SUPER_ADMIN', label: 'Super Admin' },
+    { value: 'SYSTEM_ADMIN', label: 'Quản trị hệ thống' },
+    { value: 'CLINICAL_ADMIN', label: 'Giám đốc chuyên môn' },
+    { value: 'HOSPITAL_ADMIN', label: 'Quản trị bệnh viện' },
+    { value: 'DEPARTMENT_HEAD', label: 'Trưởng khoa' },
+    { value: 'DOCTOR', label: 'Bác sĩ' },
+    { value: 'NURSE', label: 'Điều dưỡng' },
+    { value: 'PHARMACIST', label: 'Dược sĩ' },
+    { value: 'LAB_TECHNICIAN', label: 'Kỹ thuật viên XN' },
+    { value: 'BILLING_STAFF', label: 'Thu ngân' },
+    { value: 'RECEPTIONIST', label: 'Lễ tân' },
+    { value: 'CONSULTANT_SUPPORT', label: 'Nhân viên Tư vấn' },
+    { value: 'PATIENT', label: 'Bệnh nhân' },
+  ];
+
+  const statusOptions = [
+    { value: 'ACTIVE', label: 'Hoạt động' },
+    { value: 'INACTIVE', label: 'Tạm khóa' },
+    { value: 'PENDING_APPROVAL', label: 'Chờ xác nhận' },
+  ];
+
+  const genderOptions = [
+    { value: 'MALE', label: 'Nam' },
+    { value: 'FEMALE', label: 'Nữ' },
+    { value: 'OTHER', label: 'Khác' },
   ];
 
   const handleSubmit = async (values) => {
@@ -39,7 +53,7 @@ const CreateUser = () => {
         personalInfo: {
           firstName: values.firstName,
           lastName: values.lastName,
-          dateOfBirth: values.dateOfBirth ? values.dateOfBirth.toISOString() : null,
+          dateOfBirth: values.dateOfBirth ? dayjs(values.dateOfBirth).toDate() : null,
           gender: values.gender,
           phone: values.phone,
           address: {
@@ -56,7 +70,7 @@ const CreateUser = () => {
 
       // Gọi API tạo người dùng
       const response = await adminAPI.createUser(userData);
-      
+
       if (response?.data?.success) {
         message.success('Tạo người dùng thành công!');
         navigate('/admin/users/list');
@@ -77,7 +91,7 @@ const CreateUser = () => {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">Tạo Người Dùng Mới</h1>
-          <Button 
+          <Button
             icon={<ArrowLeftOutlined />}
             onClick={() => navigate('/admin/users/list')}
           >
@@ -125,29 +139,26 @@ const CreateUser = () => {
             <Row gutter={[16, 16]}>
               <Col xs={24} md={12}>
                 <Form.Item
-                  label="Role"
                   name="role"
+                  label="Role"
                   rules={[{ required: true, message: 'Role là bắt buộc' }]}
                 >
-                  <Select 
+                  <CustomSelect
                     placeholder="Chọn role"
-                    options={roles}
+                    options={roleOptions}
+                    allowClear
                   />
                 </Form.Item>
+
               </Col>
               <Col xs={24} md={12}>
                 <Form.Item
-                  label="Trạng thái"
                   name="status"
-                  initialValue="ACTIVE"
+                  label="Trạng thái"
+                  initialValue="active"
                 >
-                  <Select 
-                    options={[
-                      { label: 'ACTIVE', value: 'ACTIVE' },
-                      { label: 'INACTIVE', value: 'INACTIVE' },
-                      { label: 'SUSPENDED', value: 'SUSPENDED' },
-                      { label: 'PENDING_APPROVAL', value: 'PENDING_APPROVAL' }
-                    ]}
+                  <CustomSelect
+                    options={statusOptions}
                   />
                 </Form.Item>
               </Col>
@@ -184,26 +195,27 @@ const CreateUser = () => {
                     name="dateOfBirth"
                     rules={[{ required: true, message: 'Ngày sinh là bắt buộc' }]}
                   >
-                    <DatePicker 
+                    <CustomDatePicker
+                      placeholder="Chọn ngày sinh"
                       format="DD/MM/YYYY"
-                      style={{ width: '100%' }}
+                      disabledDate={(current) => {
+                        return current && current.isAfter(dayjs().endOf('day'));
+                      }}
                     />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={12}>
                   <Form.Item
-                    label="Giới tính"
                     name="gender"
-                    rules={[{ required: true, message: 'Giới tính là bắt buộc' }]}
+                    label="Giới tính"
                   >
-                    <Select 
-                      options={[
-                        { label: 'Nam', value: 'MALE' },
-                        { label: 'Nữ', value: 'FEMALE' },
-                        { label: 'Khác', value: 'OTHER' }
-                      ]}
+                    <CustomSelect
+                      placeholder="Chọn giới tính"
+                      options={genderOptions}
+                      allowClear
                     />
                   </Form.Item>
+
                 </Col>
               </Row>
 
@@ -283,15 +295,15 @@ const CreateUser = () => {
             {/* Buttons */}
             <Form.Item>
               <Space>
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   htmlType="submit"
                   loading={loading}
                   size="large"
                 >
                   Tạo người dùng
                 </Button>
-                <Button 
+                <Button
                   onClick={() => form.resetFields()}
                   size="large"
                 >

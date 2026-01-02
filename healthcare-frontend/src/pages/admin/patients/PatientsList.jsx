@@ -2,10 +2,11 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import patientAPI from '@/services/api/patientAPI';
 import { DeleteOutlined, EyeOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Card, Col, Input, Row, Select, Skeleton, Space, Table, Tag, message } from 'antd';
+import { Button, Card, Col, Input, Row, Skeleton, Space, Table, Tag, message } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const PatientsList = () => {
   const [patients, setPatients] = useState([]);
@@ -159,7 +160,7 @@ const PatientsList = () => {
               />
             </Col>
             <Col xs={24} sm={12} md={8}>
-              <Select
+              <CustomSelect
                 placeholder="Lọc theo trạng thái"
                 allowClear
                 value={filters.status || undefined}
@@ -171,6 +172,7 @@ const PatientsList = () => {
                 ]}
               />
             </Col>
+
           </Row>
         </Card>
 

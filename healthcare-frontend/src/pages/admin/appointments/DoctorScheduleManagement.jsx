@@ -3,9 +3,10 @@ import AdminLayout from '@/components/layout/admin/AdminLayout';
 import appointmentAPI from '@/services/api/appointmentAPI';
 import { doctorAPI } from '@/services/api/doctorAPI';
 import { ClockCircleOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { Button, Card, Col, Divider, Form, Modal, Row, Select, Skeleton, Space, Table, TimePicker, message } from 'antd';
+import { Button, Card, Col, Divider, Form, Modal, Row, Skeleton, Space, Table, TimePicker, message } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const DoctorScheduleManagement = () => {
   const [doctors, setDoctors] = useState([]);
@@ -184,20 +185,16 @@ const DoctorScheduleManagement = () => {
           <Row gutter={[16, 16]} align="middle">
             <Col xs={24} sm={16}>
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Chọn bác sĩ</label>
-              <Select
-                style={{ width: '100%' }}
+              <CustomSelect
                 placeholder="Chọn bác sĩ"
                 value={selectedDoctor}
                 onChange={setSelectedDoctor}
-                optionFilterProp="children"
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
                 options={doctors.map(doctor => ({
                   label: `${doctor.fullName}`,
                   value: doctor._id
                 }))}
               />
+
             </Col>
 
             <Col xs={24} sm={8}>
@@ -253,10 +250,11 @@ const DoctorScheduleManagement = () => {
               name="dayOfWeek"
               rules={[{ required: true, message: 'Vui lòng chọn ngày' }]}
             >
-              <Select
+              <CustomSelect
                 placeholder="Chọn ngày"
                 options={daysOfWeek}
               />
+
             </Form.Item>
 
             <Row gutter={[16, 16]}>

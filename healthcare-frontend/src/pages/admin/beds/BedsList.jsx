@@ -1,7 +1,8 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import bedAPI from '@/services/api/bedAPI';
 import { DeleteOutlined, EditOutlined, EyeOutlined, LogoutOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Card, Col, DatePicker, Drawer, Empty, Form, Input, message, Popconfirm, Row, Select, Skeleton, Space, Statistic, Table, Tag } from 'antd';
+import { Button, Card, Col, DatePicker, Drawer, Empty, Form, Input, message, Popconfirm, Row, Skeleton, Space, Statistic, Table, Tag } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -45,7 +46,7 @@ const BedsList = () => {
       const res = await bedAPI.getBeds(params);
       const bedData = res.data?.data || res.data || [];
       const bedsArray = Array.isArray(bedData) ? bedData : [];
-      
+
       setBeds(bedsArray);
       setPagination({
         current: res.data?.currentPage || page,
@@ -58,7 +59,7 @@ const BedsList = () => {
       const available = bedsArray.filter(b => b.status === 'AVAILABLE').length;
       const occupied = bedsArray.filter(b => b.status === 'OCCUPIED').length;
       const occupancyRate = total > 0 ? ((occupied / total) * 100).toFixed(1) : 0;
-      
+
       setStatistics({ total, available, occupied, occupancyRate });
     } catch (error) {
       console.error('Error fetching beds:', error);
@@ -175,18 +176,18 @@ const BedsList = () => {
       fixed: 'right',
       render: (_, record) => (
         <Space size="small" wrap>
-          <Button 
-            type="primary" 
-            size="small" 
-            icon={<EyeOutlined />} 
+          <Button
+            type="primary"
+            size="small"
+            icon={<EyeOutlined />}
             onClick={() => navigate(`/admin/beds/${record?._id}`)}
           >
             Chi tiết
           </Button>
           {record?.status === 'AVAILABLE' && (
-            <Button 
-              type="dashed" 
-              size="small" 
+            <Button
+              type="dashed"
+              size="small"
               onClick={() => handleAssignBed(record)}
             >
               Phân giường
@@ -206,9 +207,9 @@ const BedsList = () => {
               </Button>
             </Popconfirm>
           )}
-          <Button 
-            size="small" 
-            icon={<EditOutlined />} 
+          <Button
+            size="small"
+            icon={<EditOutlined />}
             onClick={() => navigate(`/admin/beds/${record?._id}/edit`)}
           >
             Sửa
@@ -285,16 +286,16 @@ const BedsList = () => {
         <Card className="rounded-lg">
           <Row gutter={16}>
             <Col xs={24} sm={12} lg={6}>
-              <Input 
-                placeholder="Tìm giường..." 
-                prefix={<SearchOutlined />} 
-                value={filters.search} 
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })} 
+              <Input
+                placeholder="Tìm giường..."
+                prefix={<SearchOutlined />}
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                 allowClear
               />
             </Col>
             <Col xs={24} sm={12} lg={6}>
-              <Select 
+              <CustomSelect
                 placeholder="Lọc trạng thái"
                 allowClear
                 value={filters.status}
@@ -302,8 +303,9 @@ const BedsList = () => {
                 options={bedStatuses}
               />
             </Col>
+
             <Col xs={24} sm={12} lg={6}>
-              <Select 
+              <CustomSelect
                 placeholder="Lọc loại giường"
                 allowClear
                 value={filters.bedType}
@@ -311,10 +313,11 @@ const BedsList = () => {
                 options={bedTypes}
               />
             </Col>
+
             <Col xs={24} sm={12} lg={6}>
-              <Input 
+              <Input
                 placeholder="Lọc khoa..."
-                value={filters.department} 
+                value={filters.department}
                 onChange={(e) => setFilters({ ...filters, department: e.target.value })}
                 allowClear
               />
@@ -329,12 +332,12 @@ const BedsList = () => {
           ) : beds.length === 0 ? (
             <Empty description="Chưa có giường nào" />
           ) : (
-            <Table 
-              columns={columns} 
-              dataSource={beds} 
-              rowKey="_id" 
-              pagination={{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total }} 
-              scroll={{ x: 1400 }} 
+            <Table
+              columns={columns}
+              dataSource={beds}
+              rowKey="_id"
+              pagination={{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total }}
+              scroll={{ x: 1400 }}
               onChange={handleTableChange}
               bordered
               size="middle"
@@ -350,15 +353,15 @@ const BedsList = () => {
           open={drawerVisible}
         >
           <Form form={form} layout="vertical" onFinish={handleUpdateStock}>
-            <Form.Item 
-              name="patientId" 
+            <Form.Item
+              name="patientId"
               label="Mã bệnh nhân"
               rules={[{ required: true, message: 'Vui lòng nhập mã bệnh nhân' }]}
             >
               <Input placeholder="Nhập mã bệnh nhân" />
             </Form.Item>
-            <Form.Item 
-              name="admissionDate" 
+            <Form.Item
+              name="admissionDate"
               label="Ngày nhập viện"
               rules={[{ required: true, message: 'Vui lòng chọn ngày nhập viện' }]}
             >

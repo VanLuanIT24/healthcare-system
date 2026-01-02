@@ -183,13 +183,29 @@ class DashboardController {
     const limit = parseInt(req.query.limit) || 10;
 
     const appointments = await Appointment.find()
+      .populate('patientId', 'personalInfo.firstName personalInfo.lastName')
+      .populate('doctorId', 'personalInfo.firstName personalInfo.lastName professionalInfo.specialty')
       .limit(limit)
       .sort({ appointmentDate: -1 })
       .lean();
 
+    // Format data for frontend
+    const formattedAppointments = appointments.map(apt => ({
+      _id: apt._id,
+      patientName: apt.patientId 
+        ? `${apt.patientId.personalInfo?.lastName || ''} ${apt.patientId.personalInfo?.firstName || ''}`.trim() 
+        : 'N/A',
+      doctorName: apt.doctorId 
+        ? `${apt.doctorId.personalInfo?.lastName || ''} ${apt.doctorId.personalInfo?.firstName || ''}`.trim() 
+        : 'N/A',
+      department: apt.specialty || apt.doctorId?.professionalInfo?.specialty || 'N/A',
+      datetime: apt.appointmentDate,
+      status: apt.status
+    }));
+
     res.json({
       success: true,
-      data: appointments
+      data: formattedAppointments
     });
   });
 }

@@ -1,10 +1,11 @@
 // src/pages/admin/medications/MedicationForm.jsx
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import medicationInventoryAPI from '@/services/api/medicationInventoryAPI';
-import { Button, Card, Col, DatePicker, Form, Input, InputNumber, message, Row, Select, Space, Spin } from 'antd';
+import { Button, Card, Col, DatePicker, Form, Input, InputNumber, message, Row, Space, Spin } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const MedicationForm = () => {
   const { id } = useParams();
@@ -43,7 +44,7 @@ const MedicationForm = () => {
           setLoading(true);
           const res = await medicationInventoryAPI.getMedicationById(id);
           const medication = res.data?.data || res.data;
-          
+
           if (medication) {
             form.setFieldsValue({
               name: medication.name,
@@ -181,11 +182,12 @@ const MedicationForm = () => {
                   label="Phân loại"
                   rules={[{ required: true, message: 'Vui lòng chọn phân loại' }]}
                 >
-                  <Select
+                  <CustomSelect
                     placeholder="Chọn phân loại"
                     options={categories}
                   />
                 </Form.Item>
+
               </Col>
               <Col xs={24} sm={12}>
                 <Form.Item
@@ -194,11 +196,12 @@ const MedicationForm = () => {
                   rules={[{ required: true, message: 'Vui lòng chọn đơn vị' }]}
                   initialValue="tablet"
                 >
-                  <Select
+                  <CustomSelect
                     placeholder="Chọn đơn vị"
                     options={units}
                   />
                 </Form.Item>
+
               </Col>
             </Row>
 

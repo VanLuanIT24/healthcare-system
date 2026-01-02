@@ -2,7 +2,8 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import adminAPI from '@/services/api/admin/adminAPI';
 import axios from '@/services/axios';
-import { Button, Card, Col, Form, Input, message, Row, Select, Space, Spin, TimePicker } from 'antd';
+import { Button, Card, Col, Form, Input, message, Row, Space, Spin, TimePicker } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -41,7 +42,7 @@ const DepartmentForm = () => {
           setLoading(true);
           const res = await adminAPI.getDepartmentById(id);
           const dept = res.data?.data || res.data;
-          
+
           // Format working hours for form
           const formattedWorkingHours = {};
           if (dept?.workingHours) {
@@ -103,7 +104,7 @@ const DepartmentForm = () => {
         delete submitData[`${day}_start`];
         delete submitData[`${day}_end`];
       });
-      
+
       submitData.workingHours = workingHours;
 
       if (id) {
@@ -176,7 +177,7 @@ const DepartmentForm = () => {
                   label="Loại khoa"
                   rules={[{ required: true, message: 'Vui lòng chọn loại khoa' }]}
                 >
-                  <Select
+                  <CustomSelect
                     placeholder="Chọn loại khoa"
                     options={departmentTypes}
                   />
@@ -188,7 +189,7 @@ const DepartmentForm = () => {
                   label="Trưởng khoa"
                   rules={[{ required: true, message: 'Vui lòng chọn trưởng khoa' }]}
                 >
-                  <Select
+                  <CustomSelect
                     placeholder="Chọn trưởng khoa"
                     options={doctors.map(doc => ({
                       value: doc._id,
@@ -198,6 +199,7 @@ const DepartmentForm = () => {
                 </Form.Item>
               </Col>
             </Row>
+
 
             <Form.Item
               name="description"

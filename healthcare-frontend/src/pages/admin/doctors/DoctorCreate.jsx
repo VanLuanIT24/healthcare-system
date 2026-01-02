@@ -4,23 +4,23 @@ import { departmentAPI } from '@/services/api/departmentAPI';
 import { doctorAPI } from '@/services/api/doctorAPI';
 import { ArrowLeftOutlined, DeleteOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import {
-    Button, Card,
-    Col,
-    DatePicker,
-    Form, Input,
-    InputNumber,
-    Row,
-    Select,
-    Space,
-    Spin,
-    Table,
-    Upload,
-    message
+  Button, Card,
+  Col,
+  Form, Input,
+  InputNumber,
+  Row,
+  Space,
+  Spin,
+  Table,
+  Upload,
+  message
 } from 'antd';
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+import CustomDatePicker from '@/components/common/CustomDatePicker/CustomDatePicker';
 
 const DoctorForm = () => {
   const { doctorId } = useParams();
@@ -119,6 +119,7 @@ const DoctorForm = () => {
         firstName: values.firstName,
         lastName: values.lastName,
         email: values.email,
+        password: values.password,
         phone: values.phone,
         gender: values.gender,
         dateOfBirth: values.dateOfBirth?.toISOString(),
@@ -219,7 +220,7 @@ const DoctorForm = () => {
         transition={{ duration: 0.3 }}
         style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto' }}
       >
-        <Button 
+        <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate('/admin/doctors')}
           style={{ marginBottom: '20px' }}
@@ -287,6 +288,19 @@ const DoctorForm = () => {
               </Col>
               <Col xs={24} sm={12}>
                 <Form.Item
+                  label="Mật khẩu"
+                  name="password"
+                  rules={[
+                    { required: !isEdit, message: 'Vui lòng nhập mật khẩu' },
+                    { min: 8, message: 'Mật khẩu tối thiểu 8 ký tự' }
+                  ]}
+                  extra={isEdit ? 'Để trống nếu không muốn đổi mật khẩu' : 'Mặc định: Doctor@123'}
+                >
+                  <Input.Password placeholder={isEdit ? 'Nhập mật khẩu mới' : 'Doctor@123'} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item
                   label="Điện thoại"
                   name="phone"
                 >
@@ -299,7 +313,7 @@ const DoctorForm = () => {
                   name="gender"
                   rules={[{ required: true, message: 'Vui lòng chọn giới tính' }]}
                 >
-                  <Select
+                  <CustomSelect
                     options={[
                       { label: 'Nam', value: 'MALE' },
                       { label: 'Nữ', value: 'FEMALE' },
@@ -307,6 +321,7 @@ const DoctorForm = () => {
                     ]}
                   />
                 </Form.Item>
+
               </Col>
               <Col xs={24} sm={12}>
                 <Form.Item
@@ -314,7 +329,10 @@ const DoctorForm = () => {
                   name="dateOfBirth"
                   rules={[{ required: true, message: 'Vui lòng chọn ngày sinh' }]}
                 >
-                  <DatePicker style={{ width: '100%' }} />
+                  <CustomDatePicker 
+                    placeholder="Chọn ngày sinh"
+                    disabledDate={(current) => current && current > dayjs().endOf('day')}
+                  />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
@@ -352,11 +370,12 @@ const DoctorForm = () => {
                   name="departmentId"
                   rules={[{ required: true, message: 'Vui lòng chọn khoa' }]}
                 >
-                  <Select
+                  <CustomSelect
                     placeholder="Chọn khoa"
                     options={departments.map(d => ({ label: `${d.name} (${d.code || 'N/A'})`, value: d._id }))}
                   />
                 </Form.Item>
+
               </Col>
               <Col xs={24} sm={12}>
                 <Form.Item
@@ -402,8 +421,8 @@ const DoctorForm = () => {
                   />
                 </Col>
               </Row>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 style={{ marginTop: '12px' }}
                 onClick={handleAddCertificate}
               >
@@ -424,15 +443,15 @@ const DoctorForm = () => {
             {/* Submit */}
             <Form.Item style={{ marginTop: '24px' }}>
               <Space>
-                <Button 
-                  type="primary" 
+                <Button
+                  type="primary"
                   htmlType="submit"
                   loading={submitting}
                   size="large"
                 >
                   {isEdit ? 'Cập nhật' : 'Tạo mới'}
                 </Button>
-                <Button 
+                <Button
                   onClick={() => navigate('/admin/doctors')}
                   size="large"
                 >

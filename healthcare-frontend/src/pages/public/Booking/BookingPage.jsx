@@ -63,7 +63,7 @@ const BookingPage = () => {
     const loadData = async () => {
       try {
         const [doctorsRes, deptsRes] = await Promise.all([
-          publicAPI.getDoctors(),
+          publicAPI.getDoctors({ limit: 100 }), // Get all doctors
           publicAPI.getDepartments()
         ]);
 

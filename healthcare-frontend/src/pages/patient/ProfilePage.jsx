@@ -1,7 +1,9 @@
 // src/pages/patient/ProfilePage.jsx
 import { DashboardLayout } from '@/components/layout';
 import { UserOutlined } from '@ant-design/icons';
-import { Avatar, Button, Card, DatePicker, Form, Input, message, Select, Tabs } from 'antd';
+import { Avatar, Button, Card, DatePicker, Form, Input, message, Tabs } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import locale from 'antd/es/date-picker/locale/vi_VN';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
@@ -87,11 +89,14 @@ const ProfilePage = () => {
                     label="Giới tính"
                     rules={[{ required: true }]}
                   >
-                    <Select size="large" className="rounded-lg">
-                      <Select.Option value="male">Nam</Select.Option>
-                      <Select.Option value="female">Nữ</Select.Option>
-                      <Select.Option value="other">Khác</Select.Option>
-                    </Select>
+                    <CustomSelect
+                      options={[
+                        { label: 'Nam', value: 'male' },
+                        { label: 'Nữ', value: 'female' },
+                        { label: 'Khác', value: 'other' },
+                      ]}
+                    />
+
                   </Form.Item>
 
                   <Form.Item

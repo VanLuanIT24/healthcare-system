@@ -12,7 +12,8 @@ import {
   MenuUnfoldOutlined,
   SettingOutlined,
   TeamOutlined,
-  UserOutlined
+  UserOutlined,
+  MedicineBoxOutlined,
 } from '@ant-design/icons';
 import { Avatar, Badge, Breadcrumb, Button, Dropdown, Layout, Menu } from 'antd';
 import { useEffect, useRef, useState } from 'react';
@@ -110,6 +111,11 @@ const AdminLayout = ({ children }) => {
       label: 'Quản lý lịch khám',
     },
     {
+      key: '/admin/consultations',
+      icon: <MedicineBoxOutlined />,
+      label: 'Hỗ trợ tư vấn KH',
+    },
+    {
       key: '/admin/reports',
       icon: <FileTextOutlined />,
       label: 'Báo cáo',
@@ -188,11 +194,14 @@ const AdminLayout = ({ children }) => {
       'users': 'Người dùng',
       'doctors': 'Bác sĩ',
       'appointments': 'Lịch khám',
+      'consultations': 'Hỗ trợ tư vấn',
       'reports': 'Báo cáo',
       'settings': 'Cài đặt',
       'list': 'Danh sách',
       'deleted': 'Đã xóa',
       'stats': 'Thống kê',
+      'schedule': 'Lịch hẹn',
+      'work-schedule': 'Lịch làm việc'
     };
 
     pathSnippets.forEach((snippet) => {
@@ -281,7 +290,11 @@ const AdminLayout = ({ children }) => {
       </Sider>
 
       {/* Main Layout */}
-      <Layout style={{ marginLeft: collapsed ? 80 : 260, transition: 'margin-left 0.2s' }}>
+      <Layout style={{
+        marginLeft: collapsed ? 80 : 260,
+        transition: 'margin-left 0.2s',
+        overflow: 'visible'
+      }}>
         {/* Header */}
         <Header
           className="bg-white shadow-sm flex items-center justify-between px-6"
@@ -377,6 +390,7 @@ const AdminLayout = ({ children }) => {
             background: '#f5f7fa',
             minHeight: 'calc(100vh - 88px)',
             borderRadius: '8px',
+            overflow: 'visible'
           }}
         >
           {children}

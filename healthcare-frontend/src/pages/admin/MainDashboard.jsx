@@ -1,9 +1,10 @@
 // src/pages/admin/MainDashboard.jsx
 import adminAPI from '@/services/api/admin/adminAPI';
 import { CalendarOutlined, DollarOutlined, TeamOutlined, UserOutlined } from '@ant-design/icons';
-import { Card, Col, Row, Skeleton, Statistic, Table } from 'antd';
+import { Card, Col, Row, Skeleton, Statistic, Table, Tag } from 'antd';
+import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, Cell, Legend, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import AdminLayout from '../../components/layout/admin/AdminLayout';
 
 const MainDashboard = () => {
@@ -12,22 +13,25 @@ const MainDashboard = () => {
   const [appointmentsStats, setAppointmentsStats] = useState(null);
   const [reportsData, setReportsData] = useState(null);
   const [departmentsStats, setDepartmentsStats] = useState(null);
+  const [recentAppointments, setRecentAppointments] = useState([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        const [users, appointments, reports, departments] = await Promise.all([
+        const [users, appointments, reports, departments, recent] = await Promise.all([
           adminAPI.getUsersStats(),
           adminAPI.getAppointmentsStats(),
           adminAPI.getReportsOverview(),
           adminAPI.getDepartmentsStats(),
+          adminAPI.getRecentAppointments(10),
         ]);
 
         setUsersStats(users?.data?.data);
         setAppointmentsStats(appointments?.data?.data);
         setReportsData(reports?.data?.data);
         setDepartmentsStats(departments?.data?.data);
+        setRecentAppointments(recent?.data?.data || []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -120,16 +124,25 @@ const MainDashboard = () => {
 
           <Col xs={24} lg={12}>
             <Skeleton loading={loading} active paragraph={{ rows: 10 }}>
-              <Card title="📊 Lịch khám theo khoa" className="rounded-lg">
+              <Card title="🎯 Lịch khám theo khoa" className="rounded-lg">
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={departmentsStats?.departmentAppointments || []}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
+                  <PieChart>
+                    <Pie
+                      data={departmentsStats?.departments || []}
+                      dataKey="appointments"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {(departmentsStats?.departments || []).map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={['#1890ff', '#52c41a', '#faad14', '#eb2f96', '#722ed1', '#13c2c2', '#fa541c'][index % 7]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => [`${value} lịch khám`, 'Số lượng']} />
                     <Legend />
-                    <Bar dataKey="appointments" fill="#52c41a" />
-                  </BarChart>
+                  </PieChart>
                 </ResponsiveContainer>
               </Card>
             </Skeleton>
@@ -146,11 +159,34 @@ const MainDashboard = () => {
                     { title: 'Bệnh nhân', dataIndex: 'patientName', key: 'patientName' },
                     { title: 'Bác sĩ', dataIndex: 'doctorName', key: 'doctorName' },
                     { title: 'Khoa', dataIndex: 'department', key: 'department' },
-                    { title: 'Thời gian', dataIndex: 'datetime', key: 'datetime' },
-                    { title: 'Trạng thái', dataIndex: 'status', key: 'status' },
+                    { 
+                      title: 'Thời gian', 
+                      dataIndex: 'datetime', 
+                      key: 'datetime',
+                      render: (date) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : 'N/A'
+                    },
+                    { 
+                      title: 'Trạng thái', 
+                      dataIndex: 'status', 
+                      key: 'status',
+                      render: (status) => {
+                        const statusMap = {
+                          'SCHEDULED': { color: 'blue', text: 'Đã đặt' },
+                          'CONFIRMED': { color: 'cyan', text: 'Đã xác nhận' },
+                          'CHECKED_IN': { color: 'purple', text: 'Đã check-in' },
+                          'IN_PROGRESS': { color: 'orange', text: 'Đang khám' },
+                          'COMPLETED': { color: 'green', text: 'Hoàn thành' },
+                          'CANCELLED': { color: 'red', text: 'Đã hủy' },
+                          'NO_SHOW': { color: 'default', text: 'Không đến' },
+                        };
+                        const config = statusMap[status] || { color: 'default', text: status };
+                        return <Tag color={config.color}>{config.text}</Tag>;
+                      }
+                    },
                   ]}
-                  dataSource={appointmentsStats?.recentAppointments || []}
+                  dataSource={recentAppointments}
                   pagination={false}
+                  rowKey="_id"
                   size="small"
                 />
               </Card>

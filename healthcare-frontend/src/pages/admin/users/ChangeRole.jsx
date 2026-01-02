@@ -15,7 +15,6 @@ import {
   Divider,
   Form,
   Row,
-  Select,
   Spin,
   Tag,
   message,
@@ -23,6 +22,7 @@ import {
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const ChangeRole = () => {
   const { user: currentUser } = useAuth();
@@ -62,7 +62,7 @@ const ChangeRole = () => {
       const res = await userAPI.getUserById(userId);
       // API returns { success: true, data: user }
       const userData = res.data?.data;
-      
+
       if (userData) {
         // Normalize data from MongoDB schema
         const normalizedUser = {
@@ -150,8 +150,8 @@ const ChangeRole = () => {
           transition={{ duration: 0.3 }}
         >
           {/* Current Role Info */}
-          <Card style={{ 
-            marginBottom: '24px', 
+          <Card style={{
+            marginBottom: '24px',
             borderRadius: '12px',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
             borderTop: '4px solid #4facfe'
@@ -182,7 +182,7 @@ const ChangeRole = () => {
           {/* Change Role Form */}
           <Card
             title="🔄 Đổi Role"
-            style={{ 
+            style={{
               borderRadius: '12px',
               boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
               borderTop: '4px solid #4facfe'
@@ -201,16 +201,10 @@ const ChangeRole = () => {
                   { required: true, message: 'Vui lòng chọn role' },
                 ]}
               >
-                <Select
+                <CustomSelect
                   placeholder="Chọn role mới"
                   options={availableRoles}
-                  optionLabelRender={(option) => (
-                    <div>
-                      <Tag color={option.data.color} style={{ fontSize: '13px', padding: '6px 12px' }}>
-                        {option.data.label}
-                      </Tag>
-                    </div>
-                  )}
+                  allowClear
                 />
               </Form.Item>
 

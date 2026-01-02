@@ -20,6 +20,7 @@ export const ROLES = {
   // ===== NHÂN VIÊN HÀNH CHÍNH =====
   RECEPTIONIST: 'RECEPTIONIST',       // Lễ tân
   BILLING_STAFF: 'BILLING_STAFF',     // Nhân viên thu ngân / Kế toán thanh toán
+  CONSULTANT_SUPPORT: 'CONSULTANT_SUPPORT', // Tư vấn hỗ trợ
 
   // ===== NGƯỜI DÙNG BÊN NGOÀI =====
   PATIENT: 'PATIENT',                 // Bệnh nhân
@@ -39,6 +40,7 @@ export const ROLE_LABELS = {
   LAB_TECHNICIAN: 'Kỹ thuật viên XN',
   RECEPTIONIST: 'Lễ tân',
   BILLING_STAFF: 'Thu ngân',
+  CONSULTANT_SUPPORT: 'Nhân viên Tư vấn (Consultant)',
   PATIENT: 'Bệnh nhân',
   GUEST: 'Khách',
 };
@@ -61,6 +63,7 @@ export const ROLE_ORDER = [
   ROLES.NURSE,
   ROLES.LAB_TECHNICIAN,
   ROLES.BILLING_STAFF,
+  ROLES.CONSULTANT_SUPPORT,
   ROLES.RECEPTIONIST,
   ROLES.PATIENT,
   ROLES.GUEST,

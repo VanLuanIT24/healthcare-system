@@ -25,7 +25,6 @@ import {
   Empty,
   message,
   Row,
-  Select,
   Space,
   Spin,
   Statistic,
@@ -234,7 +233,7 @@ const ReportsPage = () => {
 
       <Card title="Doanh thu theo phương thức thanh toán">
         {financialData?.paymentMethods &&
-        Object.keys(financialData.paymentMethods).length > 0 ? (
+          Object.keys(financialData.paymentMethods).length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
@@ -306,7 +305,7 @@ const ReportsPage = () => {
 
       <Card title="Top 10 Thuốc được sử dụng nhiều nhất">
         {pharmacyData?.topMedications &&
-        pharmacyData.topMedications.length > 0 ? (
+          pharmacyData.topMedications.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <BarChart
               data={pharmacyData.topMedications}

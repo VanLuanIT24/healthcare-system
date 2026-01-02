@@ -5,32 +5,33 @@ import AdminLayout from '@/components/layout/admin/AdminLayout';
 import { doctorAPI } from '@/services/api/doctorAPI';
 import publicAPI from '@/services/api/publicAPI';
 import {
-    CheckCircleOutlined,
-    DeleteOutlined,
-    DisconnectOutlined,
-    EditOutlined,
-    EyeOutlined,
-    LoadingOutlined,
-    PlusOutlined,
-    SearchOutlined
+  CheckCircleOutlined,
+  DeleteOutlined,
+  DisconnectOutlined,
+  EditOutlined,
+  EyeOutlined,
+  LoadingOutlined,
+  PlusOutlined,
+  SearchOutlined
 } from '@ant-design/icons';
 import {
-    Button,
-    Card,
-    Col,
-    Input,
-    message,
-    Modal,
-    Row,
-    Segmented,
-    Select,
-    Space,
-    Spin,
-    Statistic,
-    Table,
-    Tag,
-    Tooltip
+  Button,
+  Card,
+  Col,
+  Input,
+  message,
+  Modal,
+  Row,
+  Segmented,
+  Space,
+  Spin,
+  Statistic,
+  Table,
+  Tag,
+  Tooltip
 } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -468,25 +469,27 @@ const DoctorListEnhanced = () => {
               />
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <Select
+              <CustomSelect
                 placeholder="Chọn chuyên khoa"
                 value={selectedSpecialty || undefined}
                 onChange={(value) => setSelectedSpecialty(value)}
                 options={specialties.map(s => ({ label: s.name, value: s._id }))}
                 allowClear
               />
+
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <Select
+              <CustomSelect
                 placeholder="Chọn khoa"
                 value={selectedDepartment || undefined}
                 onChange={(value) => setSelectedDepartment(value)}
                 options={departments.map(d => ({ label: d.name, value: d._id }))}
                 allowClear
               />
+
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <Select
+              <CustomSelect
                 placeholder="Chọn trạng thái"
                 value={selectedStatus || undefined}
                 onChange={(value) => setSelectedStatus(value)}
@@ -496,6 +499,7 @@ const DoctorListEnhanced = () => {
                 ]}
                 allowClear
               />
+
             </Col>
           </Row>
         </Card>

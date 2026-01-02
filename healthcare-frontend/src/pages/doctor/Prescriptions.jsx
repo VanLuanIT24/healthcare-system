@@ -20,19 +20,20 @@ import {
   Form,
   Input,
   InputNumber,
-  Select,
   DatePicker,
   Row,
   Col,
   Divider,
   message,
 } from 'antd';
+
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 import DoctorLayout from '@/components/layout/doctor/DoctorLayout';
 import prescriptionAPI from '@/services/api/prescriptionAPI';
 import patientAPI from '@/services/api/patientAPI';
@@ -497,44 +498,39 @@ const Prescriptions = () => {
                 },
               ]}
             >
-              <Select
+              <CustomSelect
                 showSearch
                 placeholder="Tìm bệnh nhân theo tên hoặc số điện thoại"
-                filterOption={false}
                 onSearch={loadPatients}
                 loading={loadingPatients || loadingActivePatients}
-                notFoundContent={loadingPatients ? <Spin size="small" /> : 'Không tìm thấy bệnh nhân'}
-              >
-                {activePatients.length > 0 && (
-                  <Select.OptGroup label="Bệnh nhân đang khám">
-                    {activePatients.map((p) => {
+                options={[
+                  ...(activePatients.length > 0 ? [{
+                    label: "Bệnh nhân đang khám",
+                    options: activePatients.map((p) => {
                       const u = p?.userId || p;
                       const info = u?.personalInfo || p?.personalInfo || {};
                       const userId = u?._id || p?._id;
-                      if (!userId) return null;
-                      return (
-                        <Select.Option key={`active-${userId}`} value={userId}>
-                          {info.firstName || 'Bệnh nhân'} {info.lastName || ''} - {info.phone || 'Không có SĐT'} (Đang khám)
-                        </Select.Option>
-                      );
-                    })}
-                  </Select.OptGroup>
-                )}
+                      return {
+                        label: `${info.firstName || 'Bệnh nhân'} ${info.lastName || ''} - ${info.phone || 'Không có SĐT'} (Đang khám)`,
+                        value: userId
+                      };
+                    }).filter(opt => opt.value)
+                  }] : []),
+                  {
+                    label: "Tất cả bệnh nhân",
+                    options: patients.map((p) => {
+                      const u = p.userId || {};
+                      const info = u.personalInfo || p.personalInfo || {};
+                      const userId = u._id || p.userId || p._id;
+                      return {
+                        label: `${info.firstName || 'Unknown'} ${info.lastName || ''} - ${info.phone || 'No phone'}`,
+                        value: userId
+                      };
+                    })
+                  }
+                ]}
+              />
 
-                <Select.OptGroup label="Tất cả bệnh nhân">
-                  {patients.map((p) => {
-                    const u = p.userId || {};
-                    const info = u.personalInfo || p.personalInfo || {};
-                    const userId = u._id || p.userId || p._id;
-
-                    return (
-                      <Select.Option key={p._id} value={userId}>
-                        {info.firstName || 'Unknown'} {info.lastName || ''} - {info.phone || 'No phone'}
-                      </Select.Option>
-                    );
-                  })}
-                </Select.OptGroup>
-              </Select>
             </Form.Item>
 
             <Divider>Thông tin đơn thuốc</Divider>
@@ -629,11 +625,14 @@ const Prescriptions = () => {
                             label="Đơn vị"
                             initialValue="days"
                           >
-                            <Select>
-                              <Select.Option value="days">Ngày</Select.Option>
-                              <Select.Option value="weeks">Tuần</Select.Option>
-                              <Select.Option value="months">Tháng</Select.Option>
-                            </Select>
+                            <CustomSelect
+                              options={[
+                                { label: 'Ngày', value: 'days' },
+                                { label: 'Tuần', value: 'weeks' },
+                                { label: 'Tháng', value: 'months' }
+                              ]}
+                            />
+
                           </Form.Item>
                         </Col>
                       </Row>

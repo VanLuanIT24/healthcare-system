@@ -20,7 +20,6 @@ import {
   Empty,
   Pagination,
   Row,
-  Select,
   Skeleton,
   Space,
   Table,
@@ -28,6 +27,9 @@ import {
   Timeline,
   Typography
 } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
+
 import dayjs from 'dayjs';
 import 'dayjs/locale/vi';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
@@ -64,7 +66,7 @@ const DoctorSchedule = () => {
         const response = await doctorAPI.getDoctors({ limit: 999 });
         const doctorsList = response?.data?.data || [];
         setDoctors(doctorsList);
-        
+
         // Auto-select doctor if provided in URL params
         if (selectedDoctorFromParams && doctorsList.length > 0) {
           setSelectedDoctor(selectedDoctorFromParams);
@@ -184,7 +186,7 @@ const DoctorSchedule = () => {
                   <Space direction="vertical" size="small" style={{ width: '100%' }}>
                     <div>
                       <ClockCircleOutlined /> {' '}
-                      <strong>{dayjs(apt.appointmentDate).format('HH:mm')}</strong>
+                      <strong>{dayjs(apt.appointmentDate).format('HH:mm')} - {dayjs(apt.appointmentDate).add(apt.duration || 30, 'minute').format('HH:mm')}</strong>
                     </div>
                     <div>
                       <strong>Bệnh nhân:</strong> {apt.patientId?.personalInfo?.firstName} {apt.patientId?.personalInfo?.lastName}
@@ -211,7 +213,18 @@ const DoctorSchedule = () => {
       title: 'Thời gian',
       dataIndex: 'appointmentDate',
       key: 'appointmentDate',
-      render: (date) => dayjs(date).format('HH:mm DD/MM/YYYY'),
+      render: (date, record) => {
+        const start = dayjs(date);
+        const end = start.add(record.duration || 30, 'minute');
+        return (
+          <div>
+            <div>{start.format('DD/MM/YYYY')}</div>
+            <div style={{ color: '#1890ff', fontSize: '12px' }}>
+              {start.format('HH:mm')} - {end.format('HH:mm')}
+            </div>
+          </div>
+        );
+      },
       width: 150
     },
     {
@@ -298,7 +311,7 @@ const DoctorSchedule = () => {
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `lichlambac-si-${highlightedDate.format('YYYY-MM-DD')}.csv`);
+    link.setAttribute('download', `lich-hen-bac-si-${highlightedDate.format('YYYY-MM-DD')}.csv`);
     link.click();
   };
 
@@ -306,7 +319,7 @@ const DoctorSchedule = () => {
     <AdminLayout>
       <div style={{ padding: '24px' }}>
         <Title level={2}>
-          <CalendarOutlined /> Lịch Làm Việc Bác Sĩ
+          <CalendarOutlined /> Lịch Hẹn Bác Sĩ
         </Title>
 
         {/* Select Doctor Section */}
@@ -315,23 +328,18 @@ const DoctorSchedule = () => {
             <Col xs={24} sm={24} md={12} lg={8}>
               <div>
                 <Text strong>Chọn Bác Sĩ</Text>
-                <Select
+                <CustomSelect
                   style={{ width: '100%', marginTop: '8px' }}
                   placeholder="Tìm bác sĩ..."
                   value={selectedDoctor}
                   onChange={setSelectedDoctor}
                   showSearch
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    option?.children?.toLowerCase?.().includes(input.toLowerCase())
-                  }
-                >
-                  {doctors.map(doctor => (
-                    <Select.Option key={doctor._id} value={doctor._id}>
-                      {doctor.personalInfo?.firstName} {doctor.personalInfo?.lastName}
-                    </Select.Option>
-                  ))}
-                </Select>
+                  options={doctors.map(doctor => ({
+                    label: `${doctor.personalInfo?.firstName} ${doctor.personalInfo?.lastName}`,
+                    value: doctor._id
+                  }))}
+                />
+
               </div>
             </Col>
 
@@ -351,15 +359,17 @@ const DoctorSchedule = () => {
             <Col xs={24} sm={24} md={12} lg={6}>
               <div>
                 <Text strong>Chế độ xem</Text>
-                <Select
+                <CustomSelect
                   style={{ width: '100%', marginTop: '8px' }}
                   value={viewMode}
                   onChange={setViewMode}
-                >
-                  <Select.Option value="calendar">Lịch</Select.Option>
-                  <Select.Option value="timeline">Dòng thời gian</Select.Option>
-                  <Select.Option value="table">Bảng</Select.Option>
-                </Select>
+                  options={[
+                    { label: 'Lịch', value: 'calendar' },
+                    { label: 'Dòng thời gian', value: 'timeline' },
+                    { label: 'Bảng', value: 'table' },
+                  ]}
+                />
+
               </div>
             </Col>
           </Row>
@@ -423,20 +433,22 @@ const DoctorSchedule = () => {
                 title={`Lịch Hẹn Ngày ${highlightedDate.format('DD/MM/YYYY')}`}
                 extra={
                   <Space>
-                    <Select
+                    <CustomSelect
                       style={{ width: '150px' }}
                       value={statusFilter}
                       onChange={setStatusFilter}
                       placeholder="Lọc trạng thái"
-                    >
-                      <Select.Option value="all">Tất cả trạng thái</Select.Option>
-                      <Select.Option value="SCHEDULED">Đã lên lịch</Select.Option>
-                      <Select.Option value="CONFIRMED">Xác nhận</Select.Option>
-                      <Select.Option value="IN_PROGRESS">Đang khám</Select.Option>
-                      <Select.Option value="COMPLETED">Hoàn thành</Select.Option>
-                      <Select.Option value="CANCELLED">Hủy</Select.Option>
-                      <Select.Option value="NO_SHOW">Vắng</Select.Option>
-                    </Select>
+                      options={[
+                        { label: 'Tất cả trạng thái', value: 'all' },
+                        { label: 'Đã lên lịch', value: 'SCHEDULED' },
+                        { label: 'Xác nhận', value: 'CONFIRMED' },
+                        { label: 'Đang khám', value: 'IN_PROGRESS' },
+                        { label: 'Hoàn thành', value: 'COMPLETED' },
+                        { label: 'Hủy', value: 'CANCELLED' },
+                        { label: 'Vắng', value: 'NO_SHOW' },
+                      ]}
+                    />
+
                     <Button
                       type="primary"
                       icon={<DownloadOutlined />}
@@ -489,7 +501,7 @@ const DoctorSchedule = () => {
         ) : (
           <Card>
             <Empty
-              description="Vui lòng chọn bác sĩ để xem lịch làm việc"
+              description="Vui lòng chọn bác sĩ để xem danh sách lịch hẹn"
               image={Empty.PRESENTED_IMAGE_SIMPLE}
             />
           </Card>

@@ -2,7 +2,8 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import laboratoryAPI from '@/services/api/laboratoryAPI';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { Button, Card, Col, DatePicker, Form, Input, message, Row, Select, Spin } from 'antd';
+import { Button, Card, Col, DatePicker, Form, Input, message, Row, Spin } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -92,11 +93,12 @@ const CreateLaboratory = () => {
                       { required: true, message: 'Vui lòng chọn loại xét nghiệm' },
                     ]}
                   >
-                    <Select
+                    <CustomSelect
                       placeholder="Chọn loại xét nghiệm"
                       disabled={loading}
                       options={labTests}
                     />
+
                   </Form.Item>
                 </Col>
 

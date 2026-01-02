@@ -3,7 +3,7 @@
 import DoctorAvailabilityChecker from '@/components/appointment/DoctorAvailabilityChecker';
 import appointmentAPI from '@/services/api/appointmentAPI';
 import { departmentAPI } from '@/services/api/departmentAPI';
-import { doctorAPI } from '@/services/api/doctorAPI';
+import publicAPI from '@/services/api/publicAPI';
 import { ArrowLeftOutlined, CopyOutlined } from '@ant-design/icons';
 import {
   Alert,
@@ -16,7 +16,6 @@ import {
   Input,
   Result,
   Row,
-  Select,
   Space,
   Spin,
   message
@@ -25,6 +24,7 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const { TextArea } = Input;
 
@@ -53,11 +53,11 @@ const BookAppointment = () => {
       try {
         setLoadingDoctors(true);
         const [doctorsRes, deptsRes] = await Promise.all([
-          doctorAPI.getDoctors(),
+          publicAPI.getDoctors({ limit: 100 }), // Use public API for patient access, get all doctors
           departmentAPI.getDepartments()
         ]);
 
-        let doctorsList = doctorsRes.data?.data || doctorsRes.data || [];
+        let doctorsList = doctorsRes.data?.data?.doctors || doctorsRes.data?.data || doctorsRes.data || [];
         let deptsList = deptsRes.data?.data || deptsRes.data || [];
 
         console.log('Doctors loaded:', doctorsList);
@@ -134,9 +134,8 @@ const BookAppointment = () => {
         <label className="block text-sm font-medium mb-2">
           Chọn khoa ({departments.length} khoa)
         </label>
-        <Select
+        <CustomSelect
           placeholder="Chọn khoa"
-          style={{ width: '100%' }}
           allowClear
           value={selectedDepartment}
           onChange={(value) => {
@@ -148,6 +147,7 @@ const BookAppointment = () => {
             value: dept._id
           }))}
         />
+
       </div>
 
       {/* Select Doctor */}

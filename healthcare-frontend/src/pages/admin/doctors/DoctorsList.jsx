@@ -4,23 +4,23 @@ import { doctorAPI } from '@/services/api/doctorAPI';
 import publicAPI from '@/services/api/publicAPI';
 import { CheckCircleOutlined, DeleteOutlined, DisconnectOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import {
-    Button,
-    Card,
-    Col,
-    Input,
-    message,
-    Modal,
-    Row,
-    Select,
-    Space,
-    Spin,
-    Table,
-    Tag,
-    Tooltip
+  Button,
+  Card,
+  Col,
+  Input,
+  message,
+  Modal,
+  Row,
+  Space,
+  Spin,
+  Table,
+  Tag,
+  Tooltip
 } from 'antd';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const DoctorsList = () => {
   const navigate = useNavigate();
@@ -44,7 +44,7 @@ const DoctorsList = () => {
         // Get specialties and departments from public API
         const specRes = await publicAPI.getSpecialties();
         const deptRes = await publicAPI.getDepartments();
-        
+
         if (specRes?.data?.data) {
           setSpecialties(specRes.data.data || []);
         }
@@ -76,19 +76,19 @@ const DoctorsList = () => {
       if (selectedStatus) params.status = selectedStatus;
 
       console.log('📊 Loading doctors with params:', params);
-      
+
       const res = await doctorAPI.getDoctors(params);
-      
+
       console.log('📦 Response received:', res.data);
-      
+
       if (res.data?.data) {
         // Backend returns: { success: true, data: [], pagination: { total, ... } }
         const doctorList = Array.isArray(res.data.data) ? res.data.data : [];
         console.log('👨‍⚕️ Doctors loaded:', doctorList.length, doctorList);
-        
+
         setDoctors(doctorList);
         setTotal(res.data.pagination?.total || 0);
-        
+
         if (doctorList.length === 0 && !searchText && !selectedDepartment && !selectedSpecialty) {
           message.info('Không có dữ liệu bác sĩ');
         }
@@ -169,9 +169,9 @@ const DoctorsList = () => {
           return a & a;
         }, 0);
         const bgColor = colors[Math.abs(hashCode) % colors.length];
-        
+
         return (
-          <div 
+          <div
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -188,12 +188,12 @@ const DoctorsList = () => {
             title={`${firstName} ${lastName}`}
           >
             {profilePicture ? (
-              <img 
+              <img
                 src={`/uploads/profiles/${profilePicture}`}
                 alt="avatar"
-                style={{ 
-                  width: '100%', 
-                  height: '100%', 
+                style={{
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'cover',
                   display: 'block'
                 }}
@@ -265,8 +265,8 @@ const DoctorsList = () => {
       width: 100,
       align: 'center',
       render: (rating) => (
-        <span style={{ 
-          color: '#faad14', 
+        <span style={{
+          color: '#faad14',
           fontWeight: 'bold',
           fontSize: 14
         }}>
@@ -298,7 +298,7 @@ const DoctorsList = () => {
       render: (_, record) => (
         <Space wrap size="small">
           <Tooltip title="Xem chi tiết">
-            <Button 
+            <Button
               type="primary"
               size="small"
               icon={<EyeOutlined />}
@@ -308,7 +308,7 @@ const DoctorsList = () => {
             </Button>
           </Tooltip>
           <Tooltip title="Chỉnh sửa thông tin">
-            <Button 
+            <Button
               type="default"
               size="small"
               icon={<EditOutlined />}
@@ -319,8 +319,8 @@ const DoctorsList = () => {
           </Tooltip>
           {record.status === 'ACTIVE' ? (
             <Tooltip title="Tắt tài khoản">
-              <Button 
-                size="small" 
+              <Button
+                size="small"
                 danger
                 icon={<DisconnectOutlined />}
                 onClick={() => handleDisableDoctor(record._id)}
@@ -330,7 +330,7 @@ const DoctorsList = () => {
             </Tooltip>
           ) : (
             <Tooltip title="Bật lại tài khoản">
-              <Button 
+              <Button
                 size="small"
                 type="dashed"
                 icon={<CheckCircleOutlined />}
@@ -357,8 +357,8 @@ const DoctorsList = () => {
             </Tooltip>
           )}
           <Tooltip title="Xóa bác sĩ">
-            <Button 
-              size="small" 
+            <Button
+              size="small"
               danger
               icon={<DeleteOutlined />}
               onClick={() => handleDeleteDoctor(record._id)}
@@ -382,8 +382,8 @@ const DoctorsList = () => {
         {/* Header */}
         <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1>👨‍⚕️ Danh sách bác sĩ</h1>
-          <Button 
-            type="primary" 
+          <Button
+            type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/admin/doctors/create')}
             size="large"
@@ -405,18 +405,18 @@ const DoctorsList = () => {
               />
             </Col>
             <Col xs={24} sm={12} md={8}>
-              <Select
+              <CustomSelect
                 placeholder="Chọn trạng thái"
-                value={selectedStatus || undefined}
+                value={selectedStatus}
                 onChange={(value) => setSelectedStatus(value)}
                 options={[
                   { label: 'Hoạt động', value: 'ACTIVE' },
                   { label: 'Tắt', value: 'INACTIVE' },
                 ]}
                 allowClear
-                style={{ width: '100%' }}
               />
             </Col>
+
           </Row>
         </Card>
 
@@ -446,8 +446,8 @@ const DoctorsList = () => {
               <div style={{ fontSize: 48 }}>📋</div>
               <h3 style={{ color: '#262626', marginBottom: 8 }}>Chưa có dữ liệu bác sĩ</h3>
               <p style={{ color: '#8c8c8c', marginBottom: 16 }}>Hãy thêm bác sĩ mới để bắt đầu</p>
-              <Button 
-                type="primary" 
+              <Button
+                type="primary"
                 size="large"
                 onClick={() => navigate('/admin/doctors/create')}
               >

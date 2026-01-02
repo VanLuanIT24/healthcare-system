@@ -2,7 +2,9 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import appointmentAPI from '@/services/api/appointmentAPI';
 import { BellOutlined } from '@ant-design/icons';
-import { Button, Card, Col, DatePicker, Divider, Empty, Modal, Row, Select, Skeleton, Space, message } from 'antd';
+import { Button, Card, Col, DatePicker, Divider, Empty, Modal, Row, Skeleton, Space, message } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
@@ -131,12 +133,13 @@ const AppointmentReminders = () => {
 
             <Col xs={24} sm={8}>
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Phương thức gửi</label>
-              <Select
+              <CustomSelect
                 style={{ width: '100%' }}
                 value={reminderType}
                 onChange={setReminderType}
                 options={reminderTypeOptions}
               />
+
             </Col>
 
             <Col xs={24} sm={8}>

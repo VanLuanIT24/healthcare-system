@@ -3,7 +3,9 @@ import AppointmentCard from '@/components/appointment/AppointmentCard';
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import appointmentAPI from '@/services/api/appointmentAPI';
 import { CheckOutlined, ClockCircleOutlined, CloseOutlined, PhoneOutlined } from '@ant-design/icons';
-import { Button, Col, Divider, Empty, Modal, Row, Select, Skeleton, message } from 'antd';
+import { Button, Col, Divider, Empty, Modal, Row, Skeleton, message } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,7 +35,7 @@ const TodayAppointments = () => {
       const response = await appointmentAPI.getTodayAppointments({
         status: filterStatus || undefined
       });
-      
+
       const data = Array.isArray(response.data) ? response.data : response.data?.data || [];
       setAppointments(data);
     } catch (error) {
@@ -63,8 +65,8 @@ const TodayAppointments = () => {
   };
 
   const handleComplete = (appointment) => {
-    navigate(`/admin/appointments/${appointment._id}`, { 
-      state: { tab: 'complete' } 
+    navigate(`/admin/appointments/${appointment._id}`, {
+      state: { tab: 'complete' }
     });
   };
 
@@ -172,13 +174,14 @@ const TodayAppointments = () => {
         <Row gutter={[16, 16]} style={{ marginBottom: '20px' }}>
           <Col xs={24} sm={12} md={8}>
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Lọc theo trạng thái</label>
-            <Select
+            <CustomSelect
               style={{ width: '100%' }}
               placeholder="Chọn trạng thái"
               options={statusOptions}
               value={filterStatus}
               onChange={setFilterStatus}
             />
+
           </Col>
 
           <Col xs={24} sm={12} md={16} style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>

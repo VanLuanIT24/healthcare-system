@@ -2,7 +2,8 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import adminAPI from '@/services/api/admin/adminAPI';
 import bedAPI from '@/services/api/bedAPI';
-import { Button, Card, Checkbox, Col, Form, Input, InputNumber, message, Row, Select, Space, Spin } from 'antd';
+import { Button, Card, Checkbox, Col, Form, Input, InputNumber, message, Row, Space, Spin } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -37,7 +38,7 @@ const BedForm = () => {
           setLoading(true);
           const res = await bedAPI.getBedById(id);
           const bed = res.data?.data || res.data;
-          
+
           form.setFieldsValue({
             bedNumber: bed?.bedNumber,
             roomNumber: bed?.roomNumber,
@@ -193,13 +194,14 @@ const BedForm = () => {
                   label="Khoa"
                   rules={[{ required: true, message: 'Vui lòng chọn khoa' }]}
                 >
-                  <Select
+                  <CustomSelect
                     placeholder="Chọn khoa"
                     options={departments.map(dept => ({
                       value: dept._id,
                       label: dept.name
                     }))}
                   />
+
                 </Form.Item>
               </Col>
             </Row>
@@ -212,10 +214,11 @@ const BedForm = () => {
                   label="Loại giường"
                   rules={[{ required: true, message: 'Vui lòng chọn loại giường' }]}
                 >
-                  <Select
+                  <CustomSelect
                     placeholder="Chọn loại giường"
                     options={bedTypes}
                   />
+
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
@@ -224,10 +227,11 @@ const BedForm = () => {
                   label="Trạng thái"
                   rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
                 >
-                  <Select
+                  <CustomSelect
                     placeholder="Chọn trạng thái"
                     options={bedStatuses}
                   />
+
                 </Form.Item>
               </Col>
             </Row>

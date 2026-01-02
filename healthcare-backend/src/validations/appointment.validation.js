@@ -292,6 +292,7 @@ const appointmentValidation = {
   searchAppointments: Joi.object({
     page: Joi.number().integer().min(1).default(1),
     limit: Joi.number().integer().min(1).max(100).default(10),
+    search: Joi.string().max(200).optional(),
     status: Joi.string().valid('SCHEDULED', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'NO_SHOW').optional(),
     startDate: Joi.date().iso().optional(),
     endDate: Joi.date().iso().min(Joi.ref('startDate')).optional(),

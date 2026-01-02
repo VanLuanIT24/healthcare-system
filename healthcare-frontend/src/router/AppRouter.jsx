@@ -95,6 +95,9 @@ import UserDetail from '@/pages/admin/users/UserDetail';
 import UserEdit from '@/pages/admin/users/UserEdit';
 import UsersList from '@/pages/admin/users/UsersList';
 import UsersStats from '@/pages/admin/users/UsersStats';
+import ConsultationsList from '@/pages/admin/consultations/ConsultationsList';
+import ConsultationDetail from '@/pages/admin/consultations/ConsultationDetail';
+import CreateConsultation from '@/pages/admin/consultations/CreateConsultation';
 
 // Error Pages
 import ForbiddenPage from '@/pages/errors/ForbiddenPage';
@@ -416,6 +419,32 @@ const AppRouter = () => {
           element={
             <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'SYSTEM_ADMIN', 'HOSPITAL_ADMIN', 'DOCTOR', 'NURSE', 'RECEPTIONIST']}>
               <PatientDetail />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Consultations Management */}
+        <Route
+          path="/admin/consultations"
+          element={
+            <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'SYSTEM_ADMIN', 'HOSPITAL_ADMIN']}>
+              <ConsultationsList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/consultations/create"
+          element={
+            <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'SYSTEM_ADMIN', 'HOSPITAL_ADMIN']}>
+              <CreateConsultation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/consultations/:consultationId"
+          element={
+            <ProtectedRoute requiredRoles={['SUPER_ADMIN', 'SYSTEM_ADMIN', 'HOSPITAL_ADMIN']}>
+              <ConsultationDetail />
             </ProtectedRoute>
           }
         />

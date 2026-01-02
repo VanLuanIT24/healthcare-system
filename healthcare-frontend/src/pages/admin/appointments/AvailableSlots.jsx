@@ -4,7 +4,9 @@ import appointmentAPI from '@/services/api/appointmentAPI';
 import { doctorAPI } from '@/services/api/doctorAPI';
 import publicAPI from '@/services/api/publicAPI';
 import { ArrowRightOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import { Button, Card, Col, DatePicker, Divider, Empty, Row, Select, Skeleton, message } from 'antd';
+import { Button, Card, Col, DatePicker, Divider, Empty, Row, Skeleton, message } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -97,7 +99,7 @@ const AvailableSlots = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} md={6}>
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Bác sĩ</label>
-              <Select
+              <CustomSelect
                 style={{ width: '100%' }}
                 placeholder="Chọn bác sĩ"
                 allowClear
@@ -111,6 +113,7 @@ const AvailableSlots = () => {
                   setAvailableSlots([]);
                 }}
               />
+
             </Col>
 
             <Col xs={24} sm={12} md={6}>

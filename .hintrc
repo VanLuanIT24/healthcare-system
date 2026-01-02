@@ -16,7 +16,12 @@
       "default",
       {
         "ignore": [
-          "-webkit-text-size-adjust"
+          "-webkit-text-size-adjust",
+          "scrollbar-width",
+          "scrollbar-color",
+          "scrollbar-width: thin",
+          "backdrop-filter",
+          "user-select"
         ]
       }
     ]

@@ -24,6 +24,8 @@ const healthcareTheme = {
     colorBgLayout: '#f0f2f5',
     borderRadius: 8,
     fontFamily: "'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif",
+    zIndexPopupBase: 20000,
+    motion: false,
   },
   components: {
     Button: {
@@ -94,7 +96,11 @@ export const ThemeProvider = ({ children }) => {
 
   return (
     <ThemeContext.Provider value={value}>
-      <ConfigProvider theme={themeConfig} locale={viVN}>
+      <ConfigProvider
+        theme={themeConfig}
+        locale={viVN}
+        getPopupContainer={() => document.body}
+      >
         {children}
       </ConfigProvider>
     </ThemeContext.Provider>

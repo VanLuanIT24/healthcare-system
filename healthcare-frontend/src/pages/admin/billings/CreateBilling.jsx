@@ -2,7 +2,8 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import billingAPI from '@/services/api/billingAPI';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { Button, Card, Col, DatePicker, Form, Input, InputNumber, message, Row, Select, Spin } from 'antd';
+import { Button, Card, Col, DatePicker, Form, Input, InputNumber, message, Row, Spin } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 import dayjs from 'dayjs';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -108,11 +109,12 @@ const CreateBilling = () => {
                       { required: true, message: 'Vui lòng chọn phương thức thanh toán' },
                     ]}
                   >
-                    <Select
+                    <CustomSelect
                       placeholder="Chọn phương thức thanh toán"
                       disabled={loading}
                       options={paymentMethods}
                     />
+
                   </Form.Item>
                 </Col>
 

@@ -1,9 +1,11 @@
 // src/pages/admin/doctors/ManageDoctorSpecialties.jsx
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Card, Row, Col, Button, Select, Space, Table, Modal, message, Spin, Tag
+import {
+  Card, Row, Col, Button, Space, Table, Modal, message, Spin, Tag
 } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import { LoadingOutlined, ArrowLeftOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import { doctorAPI } from '@/services/api/doctorAPI';
@@ -140,7 +142,7 @@ const ManageDoctorSpecialties = () => {
         transition={{ duration: 0.3 }}
         style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}
       >
-        <Button 
+        <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate(`/admin/doctors/${doctorId}`)}
           style={{ marginBottom: '20px' }}
@@ -154,7 +156,7 @@ const ManageDoctorSpecialties = () => {
         >
           <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
             <Col xs={24} sm={18}>
-              <Select
+              <CustomSelect
                 placeholder="Chọn chuyên khoa để thêm"
                 value={selectedSpecialty}
                 onChange={(value) => setSelectedSpecialty(value)}

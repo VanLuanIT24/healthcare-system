@@ -2,7 +2,9 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import adminAPI from '@/services/api/admin/adminAPI';
 import { DeleteOutlined, EditOutlined, EyeOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Card, Col, Empty, Input, Popconfirm, Progress, Row, Select, Skeleton, Space, Statistic, Table, Tag, message } from 'antd';
+import { Button, Card, Col, Empty, Input, Popconfirm, Progress, Row, Skeleton, Space, Statistic, Table, Tag, message } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -46,11 +48,11 @@ const DepartmentsList = () => {
       setLoading(true);
       const params = { page, limit, search: filters.search };
       if (filters.type) params.type = filters.type;
-      
+
       const res = await adminAPI.getDepartments(params);
       const departmentData = res.data?.data || res.data || [];
       const deptArray = Array.isArray(departmentData) ? departmentData : [];
-      
+
       setDepartments(deptArray);
       setPagination({
         current: res.data?.currentPage || page,
@@ -63,7 +65,7 @@ const DepartmentsList = () => {
       const totalDoctors = deptArray.reduce((sum, dept) => sum + (dept.statistics?.totalDoctors || 0), 0);
       const totalBeds = deptArray.reduce((sum, dept) => sum + (dept.statistics?.totalBeds || 0), 0);
       const occupiedBeds = deptArray.reduce((sum, dept) => sum + (dept.statistics?.occupiedBeds || 0), 0);
-      
+
       setStats({ totalDepts, totalDoctors, totalBeds, occupiedBeds });
     } catch (error) {
       console.error('Error fetching departments:', error);
@@ -143,7 +145,7 @@ const DepartmentsList = () => {
         const total = record?.statistics?.totalBeds || 0;
         const occupied = record?.statistics?.occupiedBeds || 0;
         const rate = total > 0 ? ((occupied / total) * 100).toFixed(1) : 0;
-        
+
         return (
           <div>
             <span style={{ fontWeight: 'bold' }}>{occupied}/{total}</span>
@@ -160,17 +162,17 @@ const DepartmentsList = () => {
       fixed: 'right',
       render: (_, record) => (
         <Space size="small" wrap>
-          <Button 
-            type="primary" 
-            size="small" 
-            icon={<EyeOutlined />} 
+          <Button
+            type="primary"
+            size="small"
+            icon={<EyeOutlined />}
             onClick={() => navigate(`/admin/departments/${record?._id}`)}
           >
             Chi tiết
           </Button>
-          <Button 
-            size="small" 
-            icon={<EditOutlined />} 
+          <Button
+            size="small"
+            icon={<EditOutlined />}
             onClick={() => navigate(`/admin/departments/${record?._id}/edit`)}
           >
             Sửa
@@ -246,22 +248,23 @@ const DepartmentsList = () => {
         <Card className="rounded-lg">
           <Row gutter={16}>
             <Col xs={24} sm={12} lg={16}>
-              <Input 
-                placeholder="Tìm kiếm khoa..." 
-                prefix={<SearchOutlined />} 
-                value={filters.search} 
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })} 
+              <Input
+                placeholder="Tìm kiếm khoa..."
+                prefix={<SearchOutlined />}
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
                 allowClear
               />
             </Col>
             <Col xs={24} sm={12} lg={8}>
-              <Select 
+              <CustomSelect
                 placeholder="Lọc theo loại"
                 allowClear
                 value={filters.type}
                 onChange={(val) => setFilters({ ...filters, type: val })}
                 options={departmentTypes}
               />
+
             </Col>
           </Row>
         </Card>
@@ -273,12 +276,12 @@ const DepartmentsList = () => {
           ) : departments.length === 0 ? (
             <Empty description="Chưa có khoa nào" />
           ) : (
-            <Table 
-              columns={columns} 
-              dataSource={departments} 
-              rowKey="_id" 
-              pagination={{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total }} 
-              scroll={{ x: 1200 }} 
+            <Table
+              columns={columns}
+              dataSource={departments}
+              rowKey="_id"
+              pagination={{ current: pagination.current, pageSize: pagination.pageSize, total: pagination.total }}
+              scroll={{ x: 1200 }}
               onChange={handleTableChange}
               bordered
               size="middle"

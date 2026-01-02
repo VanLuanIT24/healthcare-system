@@ -1,7 +1,9 @@
 // src/pages/admin/doctors/DoctorAppointments.jsx
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Table, Card, Space, Button, Tag, Input, Select, Row, Col, Modal, message, Spin } from 'antd';
+import { Table, Card, Space, Button, Tag, Input, Row, Col, Modal, message, Spin } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import { LoadingOutlined, ArrowLeftOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import { doctorAPI } from '@/services/api/doctorAPI';
@@ -137,7 +139,7 @@ const DoctorAppointments = () => {
         transition={{ duration: 0.3 }}
         style={{ padding: '24px' }}
       >
-        <Button 
+        <Button
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate('/admin/doctors')}
           style={{ marginBottom: '20px' }}
@@ -151,7 +153,7 @@ const DoctorAppointments = () => {
         <Card style={{ marginBottom: '24px', borderRadius: '12px' }}>
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} md={6}>
-              <Select
+              <CustomSelect
                 placeholder="Chọn trạng thái"
                 value={status || undefined}
                 onChange={(value) => setStatus(value)}
@@ -163,6 +165,7 @@ const DoctorAppointments = () => {
                 ]}
                 allowClear
               />
+
             </Col>
           </Row>
         </Card>

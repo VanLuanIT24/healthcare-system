@@ -3,7 +3,9 @@ import AppointmentCard from '@/components/appointment/AppointmentCard';
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import appointmentAPI from '@/services/api/appointmentAPI';
 import { CalendarOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Col, Divider, Empty, Input, Row, Select, Skeleton, message } from 'antd';
+import { Button, Col, Divider, Empty, Input, Row, Skeleton, message } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -32,7 +34,7 @@ const UpcomingAppointments = () => {
       const response = await appointmentAPI.getUpcomingAppointments({
         search: searchText || undefined
       });
-      
+
       let data = Array.isArray(response.data) ? response.data : response.data?.data || [];
 
       // Sắp xếp theo tiêu chí
@@ -157,13 +159,14 @@ const UpcomingAppointments = () => {
           </Col>
 
           <Col xs={24} sm={8}>
-            <Select
+            <CustomSelect
               style={{ width: '100%' }}
               placeholder="Sắp xếp theo"
               options={sortOptions}
               value={sortBy}
               onChange={setSortBy}
             />
+
           </Col>
 
           <Col xs={24}>

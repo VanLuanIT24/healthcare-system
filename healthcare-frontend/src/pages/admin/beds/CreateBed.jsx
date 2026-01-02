@@ -2,7 +2,9 @@
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import { createBed } from '@/services/api/bedAPI';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { Button, Card, Col, Form, Input, message, Row, Select, Spin } from 'antd';
+import { Button, Card, Col, Form, Input, message, Row, Spin } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -93,14 +95,14 @@ const CreateBed = () => {
                       { required: true, message: 'Vui lòng chọn khoa' },
                     ]}
                   >
-                    <Select
+                    <CustomSelect
                       placeholder="Chọn khoa"
-                      disabled={loading}
                       options={departments.map((dept) => ({
                         label: dept.name || dept.departmentName,
                         value: dept._id || dept.id,
                       }))}
                     />
+
                   </Form.Item>
                 </Col>
 

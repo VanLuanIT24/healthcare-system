@@ -26,7 +26,6 @@ import {
   List,
   Modal,
   Row,
-  Select,
   Space,
   Skeleton,
   Table,
@@ -36,6 +35,7 @@ import {
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const Appointments = () => {
   const { user } = useAuth();
@@ -357,13 +357,14 @@ const Appointments = () => {
               />
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <Select
+              <CustomSelect
                 className="w-full"
                 value={filters.status}
                 onChange={(value) => setFilters({ ...filters, status: value })}
                 options={statusOptions}
               />
             </Col>
+
             <Col xs={24} sm={12} md={12}>
               <Input
                 placeholder="Tìm kiếm bệnh nhân..."

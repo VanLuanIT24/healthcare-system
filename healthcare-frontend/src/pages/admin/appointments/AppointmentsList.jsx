@@ -1,11 +1,12 @@
 // src/pages/admin/appointments/AppointmentsList.jsx
 import AdminLayout from '@/components/layout/admin/AdminLayout';
 import appointmentAPI from '@/services/api/appointmentAPI';
-import { CheckOutlined, DeleteOutlined, EditOutlined, EyeOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Card, Col, Input, Modal, Row, Select, Skeleton, Space, Table, Tag, message } from 'antd';
+import { CheckOutlined, ClockCircleOutlined, DeleteOutlined, EditOutlined, EyeOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
+import { Button, Card, Col, Input, Modal, Row, Skeleton, Space, Table, Tag, message } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const AppointmentsList = () => {
   const [appointments, setAppointments] = useState([]);
@@ -15,11 +16,12 @@ const AppointmentsList = () => {
   const navigate = useNavigate();
 
   const statusMap = {
-    PENDING: { label: 'Chờ xác nhận', color: 'blue' },
+    SCHEDULED: { label: 'Chờ xác nhận', color: 'blue' },
     CONFIRMED: { label: 'Đã xác nhận', color: 'green' },
+    IN_PROGRESS: { label: 'Đang khám', color: 'orange' },
     COMPLETED: { label: 'Hoàn thành', color: 'cyan' },
     CANCELLED: { label: 'Đã hủy', color: 'red' },
-    NO_SHOW: { label: 'Vắng mặt', color: 'orange' }
+    NO_SHOW: { label: 'Vắng mặt', color: 'default' }
   };
 
   const fetchAppointments = async (page = 1, limit = 10) => {
@@ -104,8 +106,9 @@ const AppointmentsList = () => {
       width: '15%',
       render: (_, record) => (
         <div>
-          <strong>{record?.patient?.personalInfo?.firstName} {record?.patient?.personalInfo?.lastName}</strong>
-          <div style={{ fontSize: '12px', color: '#666' }}>{record?.patient?.email}</div>
+          <strong>{record?.patientId?.personalInfo?.firstName} {record?.patientId?.personalInfo?.lastName}</strong>
+          <div style={{ fontSize: '12px', color: '#1890ff' }}>{record?.patientId?.personalInfo?.phone || record?.patientId?.phone || 'No phone'}</div>
+          <div style={{ fontSize: '11px', color: '#8c8c8c' }}>{record?.patientId?.email}</div>
         </div>
       )
     },
@@ -115,9 +118,12 @@ const AppointmentsList = () => {
       width: '15%',
       render: (_, record) => (
         <div>
-          <strong>{record?.doctor?.personalInfo?.firstName} {record?.doctor?.personalInfo?.lastName}</strong>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            {record?.doctor?.professionalInfo?.department || 'N/A'}
+          <strong>{record?.doctorId?.personalInfo?.firstName} {record?.doctorId?.personalInfo?.lastName}</strong>
+          <div style={{ fontSize: '12px', color: '#52c41a' }}>
+            {record?.doctorId?.professionalInfo?.department?.name || record?.doctorId?.professionalInfo?.department || 'N/A'}
+          </div>
+          <div style={{ fontSize: '11px', color: '#8c8c8c' }}>
+            {record?.doctorId?.personalInfo?.phone || 'No phone'}
           </div>
         </div>
       )
@@ -126,14 +132,19 @@ const AppointmentsList = () => {
       title: 'Thời gian',
       key: 'appointmentTime',
       width: '15%',
-      render: (_, record) => (
-        <div>
-          <div>{dayjs(record?.appointmentDate).format('DD/MM/YYYY')}</div>
-          <div style={{ fontSize: '12px', color: '#666' }}>
-            {dayjs(record?.appointmentTime, 'HH:mm').format('HH:mm')}
+      render: (_, record) => {
+        const start = dayjs(record?.appointmentDate);
+        const end = start.add(record?.duration || 30, 'minute');
+        return (
+          <div>
+            <div style={{ fontWeight: '500' }}>{start.format('DD/MM/YYYY')}</div>
+            <div style={{ fontSize: '13px', color: '#1890ff' }}>
+              <ClockCircleOutlined style={{ marginRight: 4 }} />
+              {start.format('HH:mm')} - {end.format('HH:mm')}
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
       sorter: (a, b) => new Date(a.appointmentDate) - new Date(b.appointmentDate)
     },
     {
@@ -171,7 +182,7 @@ const AppointmentsList = () => {
           >
             Chi tiết
           </Button>
-          {record?.status === 'PENDING' && (
+          {record?.status === 'SCHEDULED' && (
             <>
               <Button
                 type="success"
@@ -235,20 +246,22 @@ const AppointmentsList = () => {
               />
             </Col>
             <Col xs={24} sm={12} md={6}>
-              <Select
+              <CustomSelect
                 placeholder="Lọc theo trạng thái"
                 allowClear
                 value={filters.status || undefined}
                 onChange={(value) => setFilters({ ...filters, status: value })}
                 options={[
-                  { label: 'Chờ xác nhận', value: 'PENDING' },
+                  { label: 'Chờ xác nhận', value: 'SCHEDULED' },
                   { label: 'Đã xác nhận', value: 'CONFIRMED' },
+                  { label: 'Đang khám', value: 'IN_PROGRESS' },
                   { label: 'Hoàn thành', value: 'COMPLETED' },
                   { label: 'Đã hủy', value: 'CANCELLED' },
                   { label: 'Vắng mặt', value: 'NO_SHOW' }
                 ]}
               />
             </Col>
+
           </Row>
         </Card>
 

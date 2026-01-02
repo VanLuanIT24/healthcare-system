@@ -1,17 +1,15 @@
-// src/pages/public/Services/ServicesList.jsx
 import { PageHeader } from '@/components/common';
 import {
-    AppstoreOutlined,
-    CalendarOutlined,
-    SearchOutlined,
-    UnorderedListOutlined
+  AppstoreOutlined,
+  CalendarOutlined,
+  SearchOutlined,
+  UnorderedListOutlined
 } from '@ant-design/icons';
-import { Button, Card, Col, Input, Pagination, Rate, Row, Select, Tabs, Tag } from 'antd';
+import { Button, Card, Col, Input, Pagination, Rate, Row, Tabs, Tag } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-
-const { Option } = Select;
 
 // Mock data cho services
 const servicesData = [
@@ -182,7 +180,7 @@ const doctorsData = [
 const ServicesList = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   const [activeTab, setActiveTab] = useState('services');
   const [searchText, setSearchText] = useState('');
   const [specialty, setSpecialty] = useState(searchParams.get('specialty') || '');
@@ -192,7 +190,7 @@ const ServicesList = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   // Filter data
-  const filteredServices = servicesData.filter(service => 
+  const filteredServices = servicesData.filter(service =>
     service.name.toLowerCase().includes(searchText.toLowerCase()) &&
     (!specialty || service.id === specialty)
   );
@@ -231,12 +229,12 @@ const ServicesList = () => {
                     </div>
                     <h3 className="text-lg font-bold text-gray-900 mb-2">{service.name}</h3>
                     <p className="text-sm text-gray-500 mb-4 line-clamp-2">{service.description}</p>
-                    
+
                     <div className="flex items-center justify-between text-sm mb-4">
                       <span className="text-gray-500">{service.doctors} bác sĩ</span>
                       <span className="font-semibold text-blue-600">{service.price}</span>
                     </div>
-                    
+
                     <div className="flex items-center justify-center gap-2">
                       <Rate disabled defaultValue={service.rating} allowHalf className="text-xs" />
                       <span className="text-xs text-gray-500">({service.reviews})</span>
@@ -264,18 +262,16 @@ const ServicesList = () => {
                 >
                   <Card
                     hoverable
-                    className={`rounded-xl border-0 shadow-sm hover:shadow-lg transition-all ${
-                      viewMode === 'list' ? 'flex-row' : ''
-                    }`}
+                    className={`rounded-xl border-0 shadow-sm hover:shadow-lg transition-all ${viewMode === 'list' ? 'flex-row' : ''
+                      }`}
                   >
                     <div className={viewMode === 'list' ? 'flex gap-4' : ''}>
                       <div className={viewMode === 'list' ? 'flex-shrink-0' : 'text-center'}>
                         <img
                           src={doctor.avatar}
                           alt={doctor.name}
-                          className={`object-cover rounded-xl ${
-                            viewMode === 'list' ? 'w-24 h-24' : 'w-full h-48 mb-4'
-                          }`}
+                          className={`object-cover rounded-xl ${viewMode === 'list' ? 'w-24 h-24' : 'w-full h-48 mb-4'
+                            }`}
                         />
                       </div>
                       <div className={viewMode === 'list' ? 'flex-1' : ''}>
@@ -287,20 +283,20 @@ const ServicesList = () => {
                         <Tag color="blue" className="mb-2">{doctor.specialty}</Tag>
                         <h3 className="font-bold text-gray-900 mb-1">{doctor.name}</h3>
                         <p className="text-sm text-gray-500 mb-2">{doctor.experience} kinh nghiệm</p>
-                        
+
                         <div className="flex items-center gap-2 mb-3">
                           <Rate disabled defaultValue={doctor.rating} allowHalf className="text-xs" />
                           <span className="text-xs text-gray-500">({doctor.reviews})</span>
                         </div>
-                        
+
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-blue-600">{doctor.price}</span>
                           <div className="flex gap-2">
                             <Button size="small" onClick={() => navigate(`/doctors/${doctor.id}`)}>
                               Xem hồ sơ
                             </Button>
-                            <Button 
-                              type="primary" 
+                            <Button
+                              type="primary"
                               size="small"
                               icon={<CalendarOutlined />}
                               disabled={!doctor.available}
@@ -317,7 +313,7 @@ const ServicesList = () => {
               </Col>
             ))}
           </Row>
-          
+
           <div className="mt-8 text-center">
             <Pagination
               current={currentPage}
@@ -355,39 +351,38 @@ const ServicesList = () => {
               />
             </Col>
             <Col xs={24} sm={12} md={5}>
-              <Select
+              <CustomSelect
                 placeholder="Chuyên khoa"
-                size="large"
                 allowClear
                 className="w-full"
-                value={specialty || undefined}
+                value={specialty}
                 onChange={setSpecialty}
-              >
-                {servicesData.map(s => (
-                  <Option key={s.id} value={s.id}>{s.name}</Option>
-                ))}
-              </Select>
+                options={servicesData.map(s => ({
+                  label: s.name,
+                  value: s.id
+                }))}
+              />
             </Col>
             <Col xs={24} sm={12} md={5}>
-              <Select
+              <CustomSelect
                 placeholder="Sắp xếp theo"
-                size="large"
                 className="w-full"
                 value={sortBy}
                 onChange={setSortBy}
-              >
-                <Option value="rating">Đánh giá cao nhất</Option>
-                <Option value="reviews">Lượt đánh giá</Option>
-                <Option value="experience">Kinh nghiệm</Option>
-              </Select>
+                options={[
+                  { label: 'Đánh giá cao nhất', value: 'rating' },
+                  { label: 'Lượt đánh giá', value: 'reviews' },
+                  { label: 'Kinh nghiệm', value: 'experience' },
+                ]}
+              />
             </Col>
             <Col xs={24} md={6} className="flex justify-end gap-2">
-              <Button 
-                icon={<AppstoreOutlined />} 
+              <Button
+                icon={<AppstoreOutlined />}
                 type={viewMode === 'grid' ? 'primary' : 'default'}
                 onClick={() => setViewMode('grid')}
               />
-              <Button 
+              <Button
                 icon={<UnorderedListOutlined />}
                 type={viewMode === 'list' ? 'primary' : 'default'}
                 onClick={() => setViewMode('list')}

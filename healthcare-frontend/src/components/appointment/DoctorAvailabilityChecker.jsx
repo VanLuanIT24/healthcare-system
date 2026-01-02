@@ -23,6 +23,7 @@ const DoctorAvailabilityChecker = ({
   const [checkResult, setCheckResult] = useState(null);
   const [selectedDateLocal, setSelectedDateLocal] = useState(selectedDate ? dayjs(selectedDate) : null);
   const [selectedTimeLocal, setSelectedTimeLocal] = useState(selectedTime);
+  const [showAllSchedules, setShowAllSchedules] = useState(false); // Toggle show more schedules
   const prevAvailabilityRef = useRef(null); // Track previous availability state to prevent loop
 
   // Load doctor's schedule
@@ -252,33 +253,47 @@ const DoctorAvailabilityChecker = ({
               </div>
             )}
 
-            {/* Thông tin lịch làm việc */}
+            {/* Thông tin lịch làm việc - Compact View */}
             {selectedDateLocal && doctorSchedules.length > 0 && (
               <Card size="small" className="bg-blue-50">
                 <h4 className="font-semibold mb-2 flex items-center gap-2">
                   <ClockCircleOutlined />
                   Lịch làm việc của bác sĩ
+                  <Tag color="blue" className="ml-auto">{doctorSchedules.length} ngày</Tag>
                 </h4>
-                <Row gutter={[16, 8]}>
-                  {doctorSchedules.map((schedule, idx) => {
+                
+                {/* Show only first 6 schedules by default */}
+                <Row gutter={[12, 8]}>
+                  {(showAllSchedules ? doctorSchedules : doctorSchedules.slice(0, 6)).map((schedule, idx) => {
                     const isDateSchedule = !!schedule.date;
-                    const title = isDateSchedule ? dayjs(schedule.date).format('DD/MM/YYYY') : schedule.dayOfWeek;
+                    const title = isDateSchedule ? dayjs(schedule.date).format('DD/MM') : schedule.dayOfWeek;
                     const timeInfo = isDateSchedule && schedule.timeSlots?.length > 0
                       ? `${schedule.timeSlots[0].startTime} - ${schedule.timeSlots[schedule.timeSlots.length - 1].endTime}`
                       : `${schedule.startTime || '--'} - ${schedule.endTime || '--'}`;
 
                     return (
-                      <Col xs={12} sm={8} key={idx}>
-                        <div className="text-sm">
-                          <div className="font-medium">{title}</div>
-                          <div className="text-gray-600">
-                            {timeInfo}
-                          </div>
+                      <Col xs={8} sm={6} md={4} key={idx}>
+                        <div className="text-center p-2 bg-white rounded border border-blue-200 hover:border-blue-400 transition-colors">
+                          <div className="font-semibold text-blue-600 text-xs">{title}</div>
+                          <div className="text-gray-500 text-xs">{timeInfo}</div>
                         </div>
                       </Col>
                     );
                   })}
                 </Row>
+                
+                {/* Show more/less button */}
+                {doctorSchedules.length > 6 && (
+                  <div className="text-center mt-2">
+                    <Button 
+                      type="link" 
+                      size="small"
+                      onClick={() => setShowAllSchedules(!showAllSchedules)}
+                    >
+                      {showAllSchedules ? 'Thu gọn' : `Xem thêm ${doctorSchedules.length - 6} ngày`}
+                    </Button>
+                  </div>
+                )}
               </Card>
             )}
           </Space>

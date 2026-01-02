@@ -15,7 +15,6 @@ import {
   Form,
   Input,
   Row,
-  Select,
   Spin,
   Upload,
   message,
@@ -23,6 +22,7 @@ import {
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const UserEdit = () => {
   const navigate = useNavigate();
@@ -40,7 +40,7 @@ const UserEdit = () => {
       const res = await userAPI.getUserById(userId);
       // API returns { success: true, data: user }
       const userData = res.data?.data;
-      
+
       if (userData) {
         // Normalize data from MongoDB schema
         const normalizedUser = {
@@ -58,7 +58,7 @@ const UserEdit = () => {
           country: userData.personalInfo?.address?.country || '',
           zipCode: userData.personalInfo?.address?.zipCode || '',
         };
-        
+
         setUser(normalizedUser);
 
         // Prefill form
@@ -118,7 +118,7 @@ const UserEdit = () => {
         const res = await userAPI.updateUser(userId, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        
+
         // Update user state with new data including avatar
         if (res.data?.data) {
           const normalizedUser = {
@@ -186,7 +186,7 @@ const UserEdit = () => {
         {/* Edit Form */}
         <Card
           title={`✏️ Chỉnh sửa thông tin ${user?.name}`}
-          style={{ 
+          style={{
             borderRadius: '12px',
             boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)',
             borderTop: '4px solid #f093fb'
@@ -244,11 +244,12 @@ const UserEdit = () => {
                   label="Giới tính"
                   name="gender"
                 >
-                  <Select
+                  <CustomSelect
                     placeholder="Chọn giới tính"
                     options={[
-                      { value: 'M', label: 'Nam' },
-                      { value: 'F', label: 'Nữ' },
+                      { value: 'male', label: 'Nam' },
+                      { value: 'female', label: 'Nữ' },
+                      { value: 'other', label: 'Khác' },
                     ]}
                     allowClear
                   />
@@ -290,34 +291,34 @@ const UserEdit = () => {
                         </div>
                       )}
                     </Upload>
-                    
+
                     {/* Preview current avatar from database */}
                     {!avatarFile && user?.personalInfo?.profilePicture && (
                       <div style={{ marginTop: '12px' }}>
                         <div style={{ fontSize: '12px', marginBottom: '8px' }}>Ảnh hiện tại:</div>
-                        <img 
+                        <img
                           src={`/uploads/profiles/${user.personalInfo.profilePicture}`}
-                          alt="current avatar" 
-                          style={{ 
-                            maxHeight: '120px', 
-                            maxWidth: '120px', 
+                          alt="current avatar"
+                          style={{
+                            maxHeight: '120px',
+                            maxWidth: '120px',
                             borderRadius: '8px',
                             border: '1px solid #ddd'
                           }}
                         />
                       </div>
                     )}
-                    
+
                     {/* Preview selected avatar */}
                     {avatarFile && (
                       <div style={{ marginTop: '12px' }}>
                         <div style={{ fontSize: '12px', marginBottom: '8px' }}>Ảnh mới:</div>
-                        <img 
-                          src={URL.createObjectURL(avatarFile)} 
-                          alt="new preview" 
-                          style={{ 
-                            maxHeight: '120px', 
-                            maxWidth: '120px', 
+                        <img
+                          src={URL.createObjectURL(avatarFile)}
+                          alt="new preview"
+                          style={{
+                            maxHeight: '120px',
+                            maxWidth: '120px',
                             borderRadius: '8px',
                             border: '1px solid #ddd'
                           }}

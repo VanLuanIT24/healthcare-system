@@ -2,36 +2,38 @@
 import DoctorLayout from '@/components/layout/doctor/DoctorLayout';
 import appointmentAPI from '@/services/api/appointmentAPI';
 import {
-    CalendarOutlined,
-    CheckCircleOutlined,
-    DeleteOutlined,
-    EditOutlined,
-    PlusOutlined,
-    SaveOutlined,
-    StopOutlined
+  CalendarOutlined,
+  CheckCircleOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  PlusOutlined,
+  SaveOutlined,
+  StopOutlined
 } from '@ant-design/icons';
 import {
-    Avatar,
-    Button,
-    Card,
-    Col,
-    Divider,
-    Empty,
-    Form,
-    List,
-    message,
-    Modal,
-    Row,
-    Select,
-    Skeleton,
-    Space,
-    Table,
-    Tabs,
-    Tag,
-    TimePicker
+  Avatar,
+  Button,
+  Card,
+  Col,
+  Collapse,
+  Divider,
+  Empty,
+  Form,
+  List,
+  message,
+  Modal,
+  Row,
+  Skeleton,
+  Space,
+  Table,
+  Tabs,
+  Tag,
+  TimePicker,
+  Tooltip
 } from 'antd';
 import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const DoctorSchedule = () => {
   const [schedules, setSchedules] = useState([]);
@@ -236,78 +238,92 @@ const DoctorSchedule = () => {
           </div>
         </Card>
 
-        {/* Schedule Table */}
+        {/* Weekly Schedule Overview - Compact Cards */}
         <Card className="rounded-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-lg m-0">Lịch làm việc hàng tuần</h3>
+            <Tag color="blue">{schedules.filter(s => s.isAvailable).length}/7 ngày</Tag>
+          </div>
           {loading ? (
-            <Skeleton active paragraph={{ rows: 5 }} />
-          ) : (
-            <Table
-              columns={columns}
-              dataSource={schedules}
-              rowKey="_id"
-              pagination={false}
-              locale={{ emptyText: 'Chưa có lịch làm việc' }}
-              scroll={{ x: 1000 }}
-            />
-          )}
-        </Card>
-
-        {/* Weekly Schedule Overview */}
-        <Card title="Lịch làm việc hàng tuần" className="rounded-lg">
-          {schedules.length > 0 ? (
-            <Row gutter={[16, 16]}>
+            <Skeleton active paragraph={{ rows: 2 }} />
+          ) : schedules.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
               {[1, 2, 3, 4, 5, 6, 7].map((day) => {
                 const schedule = schedules.find(s => s.dayOfWeek === day);
                 return (
-                  <Col xs={24} sm={12} md={8} lg={6} key={day}>
-                    <Card className="rounded-lg border-l-4 border-blue-600">
+                  <Tooltip
+                    key={day}
+                    title={schedule ? (
                       <div className="text-center">
-                        <p className="font-semibold text-gray-900">{daysOfWeek[day - 1]}</p>
-                        <Divider />
-                        {schedule ? (
-                          <>
-                            <div className="space-y-2">
-                              <div>
-                                <p className="text-sm text-gray-600">Thời gian</p>
-                                <p className="font-semibold text-gray-900">
-                                  {schedule.startTime} - {schedule.endTime}
-                                </p>
-                              </div>
-                              <Tag color={schedule.isAvailable ? 'green' : 'red'}>
-                                {schedule.isAvailable ? 'Hoạt động' : 'Tạm dừng'}
-                              </Tag>
-                            </div>
-                            <Divider />
-                            <Space size="small">
-                              <Button
-                                type="primary"
-                                size="small"
-                                onClick={() => handleEditSchedule(schedule)}
-                              >
-                                Sửa
-                              </Button>
-                              <Button
-                                danger
-                                size="small"
-                                onClick={() => handleDeleteSchedule(schedule._id)}
-                              >
-                                Xóa
-                              </Button>
-                            </Space>
-                          </>
-                        ) : (
-                          <p className="text-gray-500 text-sm">Không làm việc</p>
-                        )}
+                        <p>{schedule.startTime} - {schedule.endTime}</p>
+                        <Space className="mt-2">
+                          <Button size="small" type="primary" ghost onClick={() => handleEditSchedule(schedule)}>
+                            Sửa
+                          </Button>
+                          <Button size="small" danger ghost onClick={() => handleDeleteSchedule(schedule._id)}>
+                            Xóa
+                          </Button>
+                        </Space>
                       </div>
-                    </Card>
-                  </Col>
+                    ) : 'Không làm việc'}
+                    placement="top"
+                  >
+                    <div 
+                      className={`
+                        px-4 py-3 rounded-lg cursor-pointer transition-all text-center min-w-[80px]
+                        ${schedule && schedule.isAvailable 
+                          ? 'bg-green-100 border-2 border-green-500 hover:bg-green-200' 
+                          : schedule 
+                            ? 'bg-orange-100 border-2 border-orange-400 hover:bg-orange-200'
+                            : 'bg-gray-100 border border-gray-300 hover:bg-gray-200'}
+                      `}
+                    >
+                      <p className="font-semibold text-sm mb-1">{daysOfWeek[day - 1]}</p>
+                      {schedule ? (
+                        <p className="text-xs text-gray-600">{schedule.startTime} - {schedule.endTime}</p>
+                      ) : (
+                        <p className="text-xs text-gray-400">Nghỉ</p>
+                      )}
+                    </div>
+                  </Tooltip>
                 );
               })}
-            </Row>
+            </div>
           ) : (
-            <Empty description="Chưa có lịch làm việc" />
+            <Empty description="Chưa có lịch làm việc" image={Empty.PRESENTED_IMAGE_SIMPLE} />
           )}
         </Card>
+
+        {/* Detailed Schedule Table - Collapsible */}
+        <Collapse
+          defaultActiveKey={[]}
+          className="rounded-lg"
+          items={[
+            {
+              key: 'schedule-table',
+              label: (
+                <div className="flex items-center gap-2">
+                  <CalendarOutlined />
+                  <span className="font-medium">Chi tiết lịch làm việc</span>
+                  <Tag color="blue">{schedules.length} lịch</Tag>
+                </div>
+              ),
+              children: loading ? (
+                <Skeleton active paragraph={{ rows: 5 }} />
+              ) : (
+                <Table
+                  columns={columns}
+                  dataSource={schedules}
+                  rowKey="_id"
+                  pagination={false}
+                  size="small"
+                  locale={{ emptyText: 'Chưa có lịch làm việc' }}
+                  scroll={{ x: 800 }}
+                />
+              ),
+            },
+          ]}
+        />
 
         {/* Modal */}
         <Modal
@@ -332,7 +348,7 @@ const DoctorSchedule = () => {
               name="dayOfWeek"
               rules={[{ required: true, message: 'Vui lòng chọn ngày' }]}
             >
-              <Select
+              <CustomSelect
                 placeholder="Chọn ngày"
                 options={daysOfWeek.map((day, index) => ({
                   label: day,
@@ -340,6 +356,7 @@ const DoctorSchedule = () => {
                 }))}
               />
             </Form.Item>
+
 
             <Form.Item
               label="Thời gian bắt đầu"

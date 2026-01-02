@@ -114,6 +114,32 @@ class AppointmentService {
     if (status) filter.status = status;
     if (doctorId) filter.doctorId = doctorId;
     if (patientId) filter.patientId = patientId;
+
+    if (query.search) {
+      const searchTerms = query.search.trim().split(/\s+/);
+      const searchPatterns = searchTerms.map(term => new RegExp(term, 'i'));
+
+      // Find users matching search terms
+      const matchingUsers = await User.find({
+        $or: searchPatterns.map(pattern => ({
+          $or: [
+            { 'personalInfo.firstName': pattern },
+            { 'personalInfo.lastName': pattern },
+            { email: pattern }
+          ]
+        }))
+      }).select('_id');
+
+      const userIds = matchingUsers.map(u => u._id);
+
+      // Add to filter: either doctorId or patientId matches, or appointmentId matches
+      filter.$or = [
+        { doctorId: { $in: userIds } },
+        { patientId: { $in: userIds } },
+        { appointmentId: { $regex: query.search.trim(), $options: 'i' } }
+      ];
+    }
+
     if (startDate) filter.appointmentDate = { ...filter.appointmentDate, $gte: new Date(startDate) };
     if (endDate) filter.appointmentDate = { ...filter.appointmentDate, $lte: new Date(endDate) };
 
@@ -410,7 +436,8 @@ class AppointmentService {
     }
 
     // Fallback: return persisted schedule entries if any
-    return DoctorSchedule.find({ doctorId }).sort({ date: 1 });
+    // Note: Schema uses 'doctor' field, not 'doctorId'
+    return DoctorSchedule.find({ doctor: doctorId, isActive: true }).sort({ dayOfWeek: 1 });
   }
 
   async createDoctorSchedule(data, creator) {

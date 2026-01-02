@@ -1,6 +1,8 @@
 import { ClearOutlined, FilterOutlined, SearchOutlined } from '@ant-design/icons';
-import { Button, Checkbox, Input, Select } from 'antd';
+import { Button, Checkbox, Input } from 'antd';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 import { motion } from 'framer-motion';
+
 import { useEffect, useState } from 'react';
 
 const FilterSidebar = ({
@@ -166,7 +168,7 @@ const FilterSidebar = ({
         <label className="block text-sm font-semibold text-gray-700 mb-2">
           Sắp xếp
         </label>
-        <Select
+        <CustomSelect
           value={sortBy}
           onChange={handleSortChange}
           className="w-full"
@@ -178,6 +180,7 @@ const FilterSidebar = ({
             { label: 'Mới nhất', value: 'newest' },
           ]}
         />
+
       </div>
 
       {/* Specialty Filter */}
@@ -235,54 +238,49 @@ const FilterSidebar = ({
         </label>
         <div className="space-y-2">
           <div
-            className={`p-3 rounded-lg cursor-pointer transition ${
-              localExperience === null
-                ? 'bg-blue-50 border border-blue-300'
-                : 'bg-gray-50 border border-gray-200'
-            }`}
+            className={`p-3 rounded-lg cursor-pointer transition ${localExperience === null
+              ? 'bg-blue-50 border border-blue-300'
+              : 'bg-gray-50 border border-gray-200'
+              }`}
             onClick={() => handleExperienceChange(null)}
           >
             <span className="text-sm font-medium text-gray-700">Tất cả</span>
           </div>
           <div
-            className={`p-3 rounded-lg cursor-pointer transition ${
-              localExperience === '0-5'
-                ? 'bg-blue-50 border border-blue-300'
-                : 'bg-gray-50 border border-gray-200'
-            }`}
+            className={`p-3 rounded-lg cursor-pointer transition ${localExperience === '0-5'
+              ? 'bg-blue-50 border border-blue-300'
+              : 'bg-gray-50 border border-gray-200'
+              }`}
             onClick={() => handleExperienceChange('0-5')}
           >
             <span className="text-sm font-medium text-gray-700">0 - 5 năm</span>
             <span className="text-xs text-gray-500 ml-2">(Mới tốt nghiệp)</span>
           </div>
           <div
-            className={`p-3 rounded-lg cursor-pointer transition ${
-              localExperience === '5-10'
-                ? 'bg-blue-50 border border-blue-300'
-                : 'bg-gray-50 border border-gray-200'
-            }`}
+            className={`p-3 rounded-lg cursor-pointer transition ${localExperience === '5-10'
+              ? 'bg-blue-50 border border-blue-300'
+              : 'bg-gray-50 border border-gray-200'
+              }`}
             onClick={() => handleExperienceChange('5-10')}
           >
             <span className="text-sm font-medium text-gray-700">5 - 10 năm</span>
             <span className="text-xs text-gray-500 ml-2">(Có kinh nghiệm)</span>
           </div>
           <div
-            className={`p-3 rounded-lg cursor-pointer transition ${
-              localExperience === '10-15'
-                ? 'bg-blue-50 border border-blue-300'
-                : 'bg-gray-50 border border-gray-200'
-            }`}
+            className={`p-3 rounded-lg cursor-pointer transition ${localExperience === '10-15'
+              ? 'bg-blue-50 border border-blue-300'
+              : 'bg-gray-50 border border-gray-200'
+              }`}
             onClick={() => handleExperienceChange('10-15')}
           >
             <span className="text-sm font-medium text-gray-700">10 - 15 năm</span>
             <span className="text-xs text-gray-500 ml-2">(Kinh nghiệm cao)</span>
           </div>
           <div
-            className={`p-3 rounded-lg cursor-pointer transition ${
-              localExperience === '15+'
-                ? 'bg-blue-50 border border-blue-300'
-                : 'bg-gray-50 border border-gray-200'
-            }`}
+            className={`p-3 rounded-lg cursor-pointer transition ${localExperience === '15+'
+              ? 'bg-blue-50 border border-blue-300'
+              : 'bg-gray-50 border border-gray-200'
+              }`}
             onClick={() => handleExperienceChange('15+')}
           >
             <span className="text-sm font-medium text-gray-700">15+ năm</span>

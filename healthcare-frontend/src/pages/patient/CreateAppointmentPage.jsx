@@ -4,27 +4,27 @@ import { doctorAPI } from '@/services/api/doctorAPI';
 import publicAPI from '@/services/api/publicAPI';
 import { ArrowLeftOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import {
-    Button,
-    Card,
-    Col,
-    DatePicker,
-    Divider,
-    Empty,
-    Form,
-    Input,
-    message,
-    Modal,
-    Row,
-    Select,
-    Space,
-    Spin,
-    Steps,
-    Tag
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Divider,
+  Empty,
+  Form,
+  Input,
+  message,
+  Modal,
+  Row,
+  Space,
+  Spin,
+  Steps,
+  Tag
 } from 'antd';
 import dayjs from 'dayjs';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import CustomSelect from '@/components/common/CustomSelect/CustomSelect';
 
 const CreateAppointmentPage = () => {
   const navigate = useNavigate();
@@ -50,7 +50,7 @@ const CreateAppointmentPage = () => {
         // Load departments
         const deptResponse = await publicAPI.getDepartments();
         setDepartments(deptResponse.data || []);
-        
+
         // Load all doctors
         const doctorResponse = await doctorAPI.getDoctors();
         setDoctors(doctorResponse.data || []);
@@ -67,7 +67,7 @@ const CreateAppointmentPage = () => {
   // Filter doctors when department is selected
   useEffect(() => {
     if (selectedDepartment && doctors.length > 0) {
-      const filtered = doctors.filter(doctor => 
+      const filtered = doctors.filter(doctor =>
         doctor.professionalInfo?.department === selectedDepartment
       );
       setFilteredDoctors(filtered);
@@ -203,9 +203,9 @@ const CreateAppointmentPage = () => {
 
       setLoading(true);
       const response = await appointmentAPI.createAppointment(appointmentPayload);
-      
+
       message.success('Lịch hẹn đã được tạo thành công!');
-      
+
       // Show confirmation modal
       Modal.success({
         title: 'Đặt lịch thành công',
@@ -245,364 +245,356 @@ const CreateAppointmentPage = () => {
       <div className="flex items-center gap-4 mb-6">
         <Button
           type="text"
-            icon={<ArrowLeftOutlined />}
-            onClick={() => navigate('/patient/appointments')}
-            className="text-lg"
-          />
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Đặt lịch khám mới</h1>
-            <p className="text-gray-500">Chọn khoa, bác sĩ và thời gian phù hợp</p>
-          </div>
+          icon={<ArrowLeftOutlined />}
+          onClick={() => navigate('/patient/appointments')}
+          className="text-lg"
+        />
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Đặt lịch khám mới</h1>
+          <p className="text-gray-500">Chọn khoa, bác sĩ và thời gian phù hợp</p>
         </div>
+      </div>
 
-        <Card className="rounded-xl">
-          <Steps
-            current={currentStep}
-            items={steps}
-            className="mb-8"
-          />
+      <Card className="rounded-xl">
+        <Steps
+          current={currentStep}
+          items={steps}
+          className="mb-8"
+        />
 
-          <Spin spinning={loading}>
-            {/* Step 1: Select Department and Doctor */}
-            {currentStep === 0 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+        <Spin spinning={loading}>
+          {/* Step 1: Select Department and Doctor */}
+          {currentStep === 0 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Form
+                form={form}
+                layout="vertical"
+                onValuesChange={(_, values) => {
+                  setFormData({ ...formData, ...values });
+                }}
               >
-                <Form
-                  form={form}
-                  layout="vertical"
-                  onValuesChange={(_, values) => {
-                    setFormData({ ...formData, ...values });
-                  }}
+                <Form.Item
+                  label="Chọn khoa/phòng khám"
+                  name="department"
+                  rules={[{ required: true, message: 'Vui lòng chọn khoa' }]}
                 >
-                  <Form.Item
-                    label="Chọn khoa/phòng khám"
-                    name="department"
-                    rules={[{ required: true, message: 'Vui lòng chọn khoa' }]}
-                  >
-                    <Select
-                      placeholder="Tìm kiếm khoa..."
-                      loading={loading}
-                      onChange={handleSelectDepartment}
-                      optionFilterProp="children"
-                      filterOption={(input, option) =>
-                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                      }
-                      options={departments.map(dept => ({
-                        label: dept,
-                        value: dept,
-                      }))}
-                    />
-                  </Form.Item>
+                  <CustomSelect
+                    placeholder="Tìm kiếm khoa..."
+                    loading={loading}
+                    onChange={handleSelectDepartment}
+                    options={departments.map(dept => ({
+                      label: dept,
+                      value: dept,
+                    }))}
+                  />
 
-                  {selectedDepartment && (
-                    <div className="mb-4 p-4 bg-green-50 rounded-lg">
-                      <p className="text-sm text-gray-600">
-                        Khoa được chọn: <span className="font-semibold">{selectedDepartment}</span>
-                      </p>
-                    </div>
-                  )}
+                </Form.Item>
 
-                  <Form.Item
-                    label="Chọn bác sĩ"
-                    name="doctor"
-                    rules={[{ required: true, message: 'Vui lòng chọn bác sĩ' }]}
-                  >
-                    <Select
-                      placeholder={selectedDepartment ? "Tìm kiếm bác sĩ..." : "Vui lòng chọn khoa trước"}
-                      loading={loading}
-                      onChange={handleSelectDoctor}
-                      disabled={!selectedDepartment}
-                      optionFilterProp="children"
-                      filterOption={(input, option) =>
-                        (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                      }
-                      options={filteredDoctors.map(doctor => ({
-                        label: (
-                          <div className="flex items-center justify-between w-full">
-                            <span>{doctor.personalInfo?.firstName} {doctor.personalInfo?.lastName}</span>
-                            <span className="text-xs text-gray-500">
-                              {doctor.doctorInfo?.specialization || 'Chuyên khoa'}
-                            </span>
-                          </div>
-                        ),
-                        value: doctor._id,
-                      }))}
-                      notFoundContent={selectedDepartment && filteredDoctors.length === 0 ? "Không có bác sĩ nào trong khoa này" : "Chọn khoa để xem danh sách"}
-                    />
-                  </Form.Item>
-
-                  {selectedDoctor && (
-                    <div className="mb-4 p-4 bg-blue-50 rounded-lg">
-                      <p className="text-sm text-gray-600">
-                        Bác sĩ được chọn: <span className="font-semibold">
-                          {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.firstName} 
-                          {' '}
-                          {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.lastName}
-                        </span>
-                      </p>
-                    </div>
-                  )}
-
-                  <Form.Item
-                    label="Lý do khám"
-                    name="reason"
-                    rules={[{ required: true, message: 'Vui lòng nhập lý do khám' }]}
-                  >
-                    <Input.TextArea
-                      placeholder="Mô tả lý do bạn muốn khám..."
-                      rows={4}
-                    />
-                  </Form.Item>
-                </Form>
-              </motion.div>
-            )}
-
-            {/* Step 2: Select Date */}
-            {currentStep === 1 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <div className="space-y-6">
-                  <Card className="bg-blue-50 border-blue-200">
-                    <Row gutter={16}>
-                      <Col span={12}>
-                        <p className="text-sm text-gray-600">Khoa được chọn</p>
-                        <p className="text-lg font-semibold text-gray-900">
-                          {selectedDepartment}
-                        </p>
-                      </Col>
-                      <Col span={12}>
-                        <p className="text-sm text-gray-600">Bác sĩ được chọn</p>
-                        <p className="text-lg font-semibold text-gray-900">
-                          {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.firstName} 
-                          {' '}
-                          {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.lastName}
-                        </p>
-                      </Col>
-                    </Row>
-                  </Card>
-
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Chọn ngày khám</h3>
-                    <DatePicker
-                      fullWidth
-                      style={{ width: '100%', height: '40px' }}
-                      placeholder="Chọn ngày"
-                      onChange={handleSelectDate}
-                      value={selectedDate}
-                      disabledDate={(current) =>
-                        !current ||
-                        current.isBefore(dayjs(), 'day') ||
-                        current.isAfter(dayjs().add(3, 'months'), 'day')
-                      }
-                      format="DD/MM/YYYY"
-                    />
+                {selectedDepartment && (
+                  <div className="mb-4 p-4 bg-green-50 rounded-lg">
+                    <p className="text-sm text-gray-600">
+                      Khoa được chọn: <span className="font-semibold">{selectedDepartment}</span>
+                    </p>
                   </div>
+                )}
 
-                  {selectedDate && (
-                    <Card className="bg-green-50 border-green-200">
-                      <p className="text-sm text-gray-600">Ngày được chọn</p>
+                <Form.Item
+                  label="Chọn bác sĩ"
+                  name="doctor"
+                  rules={[{ required: true, message: 'Vui lòng chọn bác sĩ' }]}
+                >
+                  <CustomSelect
+                    placeholder={selectedDepartment ? "Tìm kiếm bác sĩ..." : "Vui lòng chọn khoa trước"}
+                    loading={loading}
+                    onChange={handleSelectDoctor}
+                    disabled={!selectedDepartment}
+                    options={filteredDoctors.map(doctor => ({
+                      label: (
+                        <div className="flex items-center justify-between w-full">
+                          <span>{doctor.personalInfo?.firstName} {doctor.personalInfo?.lastName}</span>
+                          <span className="text-xs text-gray-500">
+                            {doctor.doctorInfo?.specialization || 'Chuyên khoa'}
+                          </span>
+                        </div>
+                      ),
+                      value: doctor._id,
+                    }))}
+                  />
+
+                </Form.Item>
+
+                {selectedDoctor && (
+                  <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+                    <p className="text-sm text-gray-600">
+                      Bác sĩ được chọn: <span className="font-semibold">
+                        {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.firstName}
+                        {' '}
+                        {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.lastName}
+                      </span>
+                    </p>
+                  </div>
+                )}
+
+                <Form.Item
+                  label="Lý do khám"
+                  name="reason"
+                  rules={[{ required: true, message: 'Vui lòng nhập lý do khám' }]}
+                >
+                  <Input.TextArea
+                    placeholder="Mô tả lý do bạn muốn khám..."
+                    rows={4}
+                  />
+                </Form.Item>
+              </Form>
+            </motion.div>
+          )}
+
+          {/* Step 2: Select Date */}
+          {currentStep === 1 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div className="space-y-6">
+                <Card className="bg-blue-50 border-blue-200">
+                  <Row gutter={16}>
+                    <Col span={12}>
+                      <p className="text-sm text-gray-600">Khoa được chọn</p>
                       <p className="text-lg font-semibold text-gray-900">
-                        {selectedDate.format('dddd, DD/MM/YYYY')}
+                        {selectedDepartment}
                       </p>
-                    </Card>
+                    </Col>
+                    <Col span={12}>
+                      <p className="text-sm text-gray-600">Bác sĩ được chọn</p>
+                      <p className="text-lg font-semibold text-gray-900">
+                        {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.firstName}
+                        {' '}
+                        {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.lastName}
+                      </p>
+                    </Col>
+                  </Row>
+                </Card>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Chọn ngày khám</h3>
+                  <DatePicker
+                    fullWidth
+                    style={{ width: '100%', height: '40px' }}
+                    placeholder="Chọn ngày"
+                    onChange={handleSelectDate}
+                    value={selectedDate}
+                    disabledDate={(current) =>
+                      !current ||
+                      current.isBefore(dayjs(), 'day') ||
+                      current.isAfter(dayjs().add(3, 'months'), 'day')
+                    }
+                    format="DD/MM/YYYY"
+                  />
+                </div>
+
+                {selectedDate && (
+                  <Card className="bg-green-50 border-green-200">
+                    <p className="text-sm text-gray-600">Ngày được chọn</p>
+                    <p className="text-lg font-semibold text-gray-900">
+                      {selectedDate.format('dddd, DD/MM/YYYY')}
+                    </p>
+                  </Card>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 3: Select Time Slot */}
+          {currentStep === 2 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div className="space-y-6">
+                <Card className="bg-blue-50 border-blue-200">
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <p className="text-sm text-gray-600">Khoa</p>
+                      <p className="text-base font-semibold text-gray-900">
+                        {selectedDepartment}
+                      </p>
+                    </Col>
+                    <Col span={8}>
+                      <p className="text-sm text-gray-600">Bác sĩ</p>
+                      <p className="text-base font-semibold text-gray-900">
+                        {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.firstName}
+                      </p>
+                    </Col>
+                    <Col span={8}>
+                      <p className="text-sm text-gray-600">Ngày khám</p>
+                      <p className="text-base font-semibold text-gray-900">
+                        {selectedDate?.format('DD/MM/YYYY')}
+                      </p>
+                    </Col>
+                  </Row>
+                </Card>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4">Chọn khung giờ</h3>
+                  {loadingSlots ? (
+                    <div className="flex justify-center py-8">
+                      <Spin />
+                    </div>
+                  ) : availableSlots.length > 0 ? (
+                    <Row gutter={[16, 16]}>
+                      {availableSlots.map((slot, idx) => (
+                        <Col key={idx} xs={24} sm={12} md={8} lg={6}>
+                          <Card
+                            className={`cursor-pointer text-center transition-all ${selectedSlot?.time === slot.time
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 hover:border-blue-500'
+                              }`}
+                            onClick={() => handleSelectSlot(slot)}
+                          >
+                            <ClockCircleOutlined className="text-2xl mb-2" />
+                            <p className="text-lg font-semibold">{slot.time}</p>
+                            <Tag color={slot.available ? 'green' : 'red'} className="mt-2">
+                              {slot.available ? 'Trống' : 'Đã đặt'}
+                            </Tag>
+                          </Card>
+                        </Col>
+                      ))}
+                    </Row>
+                  ) : (
+                    <Empty description="Không có khung giờ trống" />
                   )}
                 </div>
-              </motion.div>
-            )}
 
-            {/* Step 3: Select Time Slot */}
-            {currentStep === 2 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <div className="space-y-6">
-                  <Card className="bg-blue-50 border-blue-200">
-                    <Row gutter={16}>
-                      <Col span={8}>
-                        <p className="text-sm text-gray-600">Khoa</p>
-                        <p className="text-base font-semibold text-gray-900">
-                          {selectedDepartment}
-                        </p>
+                {selectedSlot && (
+                  <Card className="bg-green-50 border-green-200">
+                    <p className="text-sm text-gray-600">Khung giờ được chọn</p>
+                    <p className="text-lg font-semibold text-gray-900">{selectedSlot.time}</p>
+                  </Card>
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 4: Confirm */}
+          {currentStep === 3 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <Form form={form} layout="vertical">
+                <div className="space-y-4 mb-6">
+                  <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                    <h3 className="text-lg font-semibold mb-4 text-gray-900">
+                      Thông tin lịch hẹn
+                    </h3>
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24} sm={12}>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">🏥 Khoa</p>
+                          <p className="text-base font-semibold text-gray-900">
+                            {selectedDepartment}
+                          </p>
+                        </div>
                       </Col>
-                      <Col span={8}>
-                        <p className="text-sm text-gray-600">Bác sĩ</p>
-                        <p className="text-base font-semibold text-gray-900">
-                          {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.firstName}
-                        </p>
+                      <Col xs={24} sm={12}>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">👨‍⚕️ Bác sĩ</p>
+                          <p className="text-base font-semibold text-gray-900">
+                            {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.firstName}{' '}
+                            {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.lastName}
+                          </p>
+                        </div>
                       </Col>
-                      <Col span={8}>
-                        <p className="text-sm text-gray-600">Ngày khám</p>
-                        <p className="text-base font-semibold text-gray-900">
-                          {selectedDate?.format('DD/MM/YYYY')}
-                        </p>
+                      <Col xs={24} sm={12}>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">📋 Chuyên khoa</p>
+                          <p className="text-base font-semibold text-gray-900">
+                            {filteredDoctors.find(d => d._id === selectedDoctor)?.doctorInfo?.specialization || 'N/A'}
+                          </p>
+                        </div>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">📅 Ngày khám</p>
+                          <p className="text-base font-semibold text-gray-900">
+                            {selectedDate?.format('dddd, DD/MM/YYYY')}
+                          </p>
+                        </div>
+                      </Col>
+                      <Col xs={24} sm={12}>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">⏰ Giờ khám</p>
+                          <p className="text-base font-semibold text-gray-900">
+                            {selectedSlot?.time}
+                          </p>
+                        </div>
+                      </Col>
+                      <Col xs={24}>
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">💬 Lý do khám</p>
+                          <p className="text-base font-semibold text-gray-900">
+                            {formData.reason}
+                          </p>
+                        </div>
                       </Col>
                     </Row>
                   </Card>
-
-                  <div>
-                    <h3 className="text-lg font-semibold mb-4">Chọn khung giờ</h3>
-                    {loadingSlots ? (
-                      <div className="flex justify-center py-8">
-                        <Spin />
-                      </div>
-                    ) : availableSlots.length > 0 ? (
-                      <Row gutter={[16, 16]}>
-                        {availableSlots.map((slot, idx) => (
-                          <Col key={idx} xs={24} sm={12} md={8} lg={6}>
-                            <Card
-                              className={`cursor-pointer text-center transition-all ${
-                                selectedSlot?.time === slot.time
-                                  ? 'border-blue-500 bg-blue-50'
-                                  : 'border-gray-200 hover:border-blue-500'
-                              }`}
-                              onClick={() => handleSelectSlot(slot)}
-                            >
-                              <ClockCircleOutlined className="text-2xl mb-2" />
-                              <p className="text-lg font-semibold">{slot.time}</p>
-                              <Tag color={slot.available ? 'green' : 'red'} className="mt-2">
-                                {slot.available ? 'Trống' : 'Đã đặt'}
-                              </Tag>
-                            </Card>
-                          </Col>
-                        ))}
-                      </Row>
-                    ) : (
-                      <Empty description="Không có khung giờ trống" />
-                    )}
-                  </div>
-
-                  {selectedSlot && (
-                    <Card className="bg-green-50 border-green-200">
-                      <p className="text-sm text-gray-600">Khung giờ được chọn</p>
-                      <p className="text-lg font-semibold text-gray-900">{selectedSlot.time}</p>
-                    </Card>
-                  )}
                 </div>
-              </motion.div>
-            )}
 
-            {/* Step 4: Confirm */}
-            {currentStep === 3 && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <Form form={form} layout="vertical">
-                  <div className="space-y-4 mb-6">
-                    <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
-                      <h3 className="text-lg font-semibold mb-4 text-gray-900">
-                        Thông tin lịch hẹn
-                      </h3>
-                      <Row gutter={[16, 16]}>
-                        <Col xs={24} sm={12}>
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">🏥 Khoa</p>
-                            <p className="text-base font-semibold text-gray-900">
-                              {selectedDepartment}
-                            </p>
-                          </div>
-                        </Col>
-                        <Col xs={24} sm={12}>
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">👨‍⚕️ Bác sĩ</p>
-                            <p className="text-base font-semibold text-gray-900">
-                              {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.firstName}{' '}
-                              {filteredDoctors.find(d => d._id === selectedDoctor)?.personalInfo?.lastName}
-                            </p>
-                          </div>
-                        </Col>
-                        <Col xs={24} sm={12}>
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">📋 Chuyên khoa</p>
-                            <p className="text-base font-semibold text-gray-900">
-                              {filteredDoctors.find(d => d._id === selectedDoctor)?.doctorInfo?.specialization || 'N/A'}
-                            </p>
-                          </div>
-                        </Col>
-                        <Col xs={24} sm={12}>
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">📅 Ngày khám</p>
-                            <p className="text-base font-semibold text-gray-900">
-                              {selectedDate?.format('dddd, DD/MM/YYYY')}
-                            </p>
-                          </div>
-                        </Col>
-                        <Col xs={24} sm={12}>
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">⏰ Giờ khám</p>
-                            <p className="text-base font-semibold text-gray-900">
-                              {selectedSlot?.time}
-                            </p>
-                          </div>
-                        </Col>
-                        <Col xs={24}>
-                          <div>
-                            <p className="text-sm text-gray-600 mb-1">💬 Lý do khám</p>
-                            <p className="text-base font-semibold text-gray-900">
-                              {formData.reason}
-                            </p>
-                          </div>
-                        </Col>
-                      </Row>
-                    </Card>
-                  </div>
+                <Divider />
 
-                  <Divider />
+                <Form.Item
+                  label="Ghi chú hoặc yêu cầu đặc biệt (tùy chọn)"
+                  name="notes"
+                >
+                  <Input.TextArea
+                    placeholder="Nhập bất kỳ ghi chú hay yêu cầu đặc biệt nào..."
+                    rows={4}
+                  />
+                </Form.Item>
 
-                  <Form.Item
-                    label="Ghi chú hoặc yêu cầu đặc biệt (tùy chọn)"
-                    name="notes"
-                  >
-                    <Input.TextArea
-                      placeholder="Nhập bất kỳ ghi chú hay yêu cầu đặc biệt nào..."
-                      rows={4}
-                    />
-                  </Form.Item>
+                <Card className="bg-yellow-50 border-yellow-200 mb-6">
+                  <p className="text-sm text-gray-600 mb-2">
+                    ⚠️ Các điều khoản
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Bằng cách xác nhận, bạn đồng ý với các điều khoản và điều kiện của chúng tôi.
+                    Vui lòng đến sớm 10 phút trước giờ hẹn.
+                  </p>
+                </Card>
+              </Form>
+            </motion.div>
+          )}
+        </Spin>
 
-                  <Card className="bg-yellow-50 border-yellow-200 mb-6">
-                    <p className="text-sm text-gray-600 mb-2">
-                      ⚠️ Các điều khoản
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Bằng cách xác nhận, bạn đồng ý với các điều khoản và điều kiện của chúng tôi.
-                      Vui lòng đến sớm 10 phút trước giờ hẹn.
-                    </p>
-                  </Card>
-                </Form>
-              </motion.div>
-            )}
-          </Spin>
+        <Divider />
 
-          <Divider />
-
-          <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-            <Button onClick={() => navigate('/patient/appointments')}>
-              Hủy
+        <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+          <Button onClick={() => navigate('/patient/appointments')}>
+            Hủy
+          </Button>
+          <Button onClick={handlePrevStep} disabled={currentStep === 0}>
+            Quay lại
+          </Button>
+          {currentStep < 3 ? (
+            <Button type="primary" onClick={handleNextStep} loading={loading}>
+              Tiếp tục
             </Button>
-            <Button onClick={handlePrevStep} disabled={currentStep === 0}>
-              Quay lại
+          ) : (
+            <Button type="primary" onClick={handleSubmit} loading={loading}>
+              Xác nhận đặt lịch
             </Button>
-            {currentStep < 3 ? (
-              <Button type="primary" onClick={handleNextStep} loading={loading}>
-                Tiếp tục
-              </Button>
-            ) : (
-              <Button type="primary" onClick={handleSubmit} loading={loading}>
-                Xác nhận đặt lịch
-              </Button>
-            )}
-          </Space>
-        </Card>
-      </motion.div>
+          )}
+        </Space>
+      </Card>
+    </motion.div>
   );
 };
 
