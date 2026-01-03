@@ -8,6 +8,10 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 
+// 📚 SWAGGER API DOCUMENTATION
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./src/config/swagger.config');
+
 const { appConfig } = require('./src/config');
 const { initializeConfig } = require('./src/config');
 
@@ -57,7 +61,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // 📚 Cho phép Swagger UI
       imgSrc: ["'self'", "data:", "https:"],
     },
   },
@@ -163,6 +167,26 @@ app.get('/health', (req, res) => {
   res.status(200).json(healthCheck);
 });
 
+// 📚 SWAGGER API DOCUMENTATION
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: '🏥 Healthcare API Documentation',
+  customfavIcon: '/favicon.ico',
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    filter: true,
+    showExtensions: true,
+    showCommonExtensions: true
+  }
+}));
+
+// 📄 SWAGGER JSON ENDPOINT
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+
 // 🆕 ROOT ENDPOINT - HIỂN THỊ THÔNG TIN API
 app.get('/', (req, res) => {
   res.json({
@@ -170,7 +194,8 @@ app.get('/', (req, res) => {
     version: '1.0.0',
     environment: appConfig.env,
     timestamp: new Date().toISOString(),
-    documentation: '/api/docs', // 🆕 CÓ THỂ THÊM SWAGGER SAU NÀY
+    documentation: '/api-docs', // 📚 SWAGGER UI
+    swagger_json: '/api-docs.json', // 📄 SWAGGER JSON
     endpoints: {
       auth: '/api/auth',
       users: '/api/users',
