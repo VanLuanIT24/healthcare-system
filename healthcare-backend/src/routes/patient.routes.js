@@ -9,7 +9,59 @@ const { auditLog, AUDIT_ACTIONS } = require('../middlewares/audit.middleware');
 const uploadMiddleware = require('../middlewares/upload.middleware'); // Assume this exists for file upload
 const { ROLES } = require('../constants/roles');
 
-// Tạo bệnh nhân (register)
+/**
+ * @swagger
+ * /api/patients/register:
+ *   post:
+ *     summary: Đăng ký bệnh nhân mới
+ *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - fullName
+ *               - dateOfBirth
+ *               - gender
+ *               - phone
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *                 example: Nguyễn Văn A
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *               gender:
+ *                 type: string
+ *                 enum: [male, female, other]
+ *               phone:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               address:
+ *                 type: string
+ *               emergencyContact:
+ *                 type: object
+ *                 properties:
+ *                   name:
+ *                     type: string
+ *                   relationship:
+ *                     type: string
+ *                   phone:
+ *                     type: string
+ *     responses:
+ *       201:
+ *         description: Đăng ký thành công
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.post('/register', 
   authMiddleware,
   roleMiddleware([ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN]),
@@ -18,7 +70,47 @@ router.post('/register',
   patientController.registerPatient
 );
 
-// Tìm kiếm bệnh nhân
+/**
+ * @swagger
+ * /api/patients/search:
+ *   get:
+ *     summary: Tìm kiếm bệnh nhân
+ *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Từ khóa tìm kiếm (tên, mã BN, SĐT)
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Kết quả tìm kiếm
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Patient'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/search', 
   authMiddleware,
   roleMiddleware([ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN]),
@@ -27,7 +119,40 @@ router.get('/search',
   patientController.searchPatients
 );
 
-// Tìm kiếm nâng cao
+/**
+ * @swagger
+ * /api/patients/advanced-search:
+ *   post:
+ *     summary: Tìm kiếm bệnh nhân nâng cao
+ *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               ageRange:
+ *                 type: object
+ *                 properties:
+ *                   min:
+ *                     type: integer
+ *                   max:
+ *                     type: integer
+ *               gender:
+ *                 type: string
+ *               bloodType:
+ *                 type: string
+ *               hasInsurance:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Kết quả tìm kiếm nâng cao
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.post('/advanced-search', 
   authMiddleware,
   roleMiddleware([ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN]),
@@ -36,7 +161,55 @@ router.post('/advanced-search',
   patientController.advancedSearch
 );
 
-// Lấy tất cả bệnh nhân với filter
+/**
+ * @swagger
+ * /api/patients:
+ *   get:
+ *     summary: Lấy danh sách tất cả bệnh nhân
+ *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, inactive]
+ *       - in: query
+ *         name: sortBy
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Danh sách bệnh nhân
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Patient'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/Pagination'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/', 
   authMiddleware,
   roleMiddleware([ROLES.HOSPITAL_ADMIN]),
@@ -45,7 +218,38 @@ router.get('/',
   patientController.getPatients
 );
 
-// Lấy bệnh nhân theo ID
+/**
+ * @swagger
+ * /api/patients/{patientId}:
+ *   get:
+ *     summary: Lấy thông tin bệnh nhân theo ID
+ *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID của bệnh nhân
+ *     responses:
+ *       200:
+ *         description: Thông tin bệnh nhân
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Patient'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/:patientId', 
   authMiddleware,
   roleMiddleware([ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN]),
@@ -54,7 +258,26 @@ router.get('/:patientId',
   patientController.getPatientById
 );
 
-// Lấy dữ liệu nhạy cảm
+/**
+ * @swagger
+ * /api/patients/{patientId}/sensitive:
+ *   get:
+ *     summary: Lấy dữ liệu nhạy cảm của bệnh nhân
+ *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Dữ liệu nhạy cảm
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/:patientId/sensitive', 
   authMiddleware,
   roleMiddleware([ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN]),
@@ -63,7 +286,41 @@ router.get('/:patientId/sensitive',
   patientController.getPatientSensitiveData
 );
 
-// Cập nhật bệnh nhân
+/**
+ * @swagger
+ * /api/patients/{patientId}:
+ *   put:
+ *     summary: Cập nhật thông tin bệnh nhân
+ *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               emergencyContact:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 router.put('/:patientId', 
   authMiddleware,
   roleMiddleware([ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN]),
@@ -73,7 +330,28 @@ router.put('/:patientId',
   patientController.updatePatient
 );
 
-// Xóa bệnh nhân
+/**
+ * @swagger
+ * /api/patients/{patientId}:
+ *   delete:
+ *     summary: Xóa bệnh nhân
+ *     tags: [Patients]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Xóa thành công
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.delete('/:patientId', 
   authMiddleware,
   roleMiddleware([ROLES.HOSPITAL_ADMIN]),

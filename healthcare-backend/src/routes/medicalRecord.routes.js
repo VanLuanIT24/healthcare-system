@@ -11,6 +11,45 @@ const { ROLES, PERMISSIONS } = require('../constants/roles');
 router.use(authenticate);
 
 // ===== TẠO & QUẢN LÝ HỒ SƠ BỆNH ÁN =====
+
+/**
+ * @swagger
+ * /api/medical-records:
+ *   post:
+ *     summary: Tạo hồ sơ bệnh án mới
+ *     tags: [Medical Records]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - patientId
+ *               - chiefComplaint
+ *             properties:
+ *               patientId:
+ *                 type: string
+ *               appointmentId:
+ *                 type: string
+ *               chiefComplaint:
+ *                 type: string
+ *               presentIllness:
+ *                 type: string
+ *               diagnosis:
+ *                 type: string
+ *               treatmentPlan:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Tạo hồ sơ thành công
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.post(
   '/',
   requireRole(ROLES.DOCTOR, ROLES.HOSPITAL_ADMIN),
@@ -19,6 +58,26 @@ router.post(
   medicalRecordController.createMedicalRecord
 );
 
+/**
+ * @swagger
+ * /api/medical-records/{recordId}:
+ *   get:
+ *     summary: Lấy hồ sơ bệnh án theo ID
+ *     tags: [Medical Records]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: recordId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Thông tin hồ sơ bệnh án
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 router.get(
   '/:recordId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
@@ -27,6 +86,34 @@ router.get(
   medicalRecordController.getMedicalRecord
 );
 
+/**
+ * @swagger
+ * /api/medical-records/patient/{patientId}:
+ *   get:
+ *     summary: Lấy tất cả hồ sơ bệnh án của bệnh nhân
+ *     tags: [Medical Records]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Danh sách hồ sơ bệnh án
+ */
 router.get(
   '/patient/:patientId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
@@ -36,6 +123,39 @@ router.get(
   medicalRecordController.getPatientMedicalRecords
 );
 
+/**
+ * @swagger
+ * /api/medical-records/{recordId}:
+ *   put:
+ *     summary: Cập nhật hồ sơ bệnh án
+ *     tags: [Medical Records]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: recordId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               diagnosis:
+ *                 type: string
+ *               treatmentPlan:
+ *                 type: string
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 router.put(
   '/:recordId',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
@@ -46,6 +166,52 @@ router.put(
 );
 
 // ===== DẤU HIỆU SINH TỒN =====
+
+/**
+ * @swagger
+ * /api/medical-records/patient/{patientId}/vital-signs:
+ *   post:
+ *     summary: Ghi nhận dấu hiệu sinh tồn
+ *     tags: [Medical Records]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               temperature:
+ *                 type: number
+ *                 example: 36.5
+ *               bloodPressure:
+ *                 type: object
+ *                 properties:
+ *                   systolic:
+ *                     type: number
+ *                   diastolic:
+ *                     type: number
+ *               heartRate:
+ *                 type: number
+ *               respiratoryRate:
+ *                 type: number
+ *               oxygenSaturation:
+ *                 type: number
+ *               weight:
+ *                 type: number
+ *               height:
+ *                 type: number
+ *     responses:
+ *       201:
+ *         description: Ghi nhận thành công
+ */
 router.post(
   '/patient/:patientId/vital-signs',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
@@ -55,6 +221,34 @@ router.post(
   medicalRecordController.recordVitalSigns
 );
 
+/**
+ * @swagger
+ * /api/medical-records/patient/{patientId}/vital-signs:
+ *   get:
+ *     summary: Lấy lịch sử dấu hiệu sinh tồn
+ *     tags: [Medical Records]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: fromDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: toDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Lịch sử dấu hiệu sinh tồn
+ */
 router.get(
   '/patient/:patientId/vital-signs',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),
@@ -65,6 +259,42 @@ router.get(
 );
 
 // ===== TIỀN SỬ BỆNH LÝ =====
+
+/**
+ * @swagger
+ * /api/medical-records/patient/{patientId}/medical-history:
+ *   post:
+ *     summary: Thêm tiền sử bệnh lý
+ *     tags: [Medical Records]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               condition:
+ *                 type: string
+ *               diagnosedDate:
+ *                 type: string
+ *                 format: date
+ *               status:
+ *                 type: string
+ *                 enum: [active, resolved, chronic]
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Thêm thành công
+ */
 router.post(
   '/patient/:patientId/medical-history',
   requireRole(ROLES.DOCTOR, ROLES.NURSE),
@@ -74,6 +304,24 @@ router.post(
   medicalRecordController.addMedicalHistory
 );
 
+/**
+ * @swagger
+ * /api/medical-records/patient/{patientId}/medical-history:
+ *   get:
+ *     summary: Lấy tiền sử bệnh lý
+ *     tags: [Medical Records]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Tiền sử bệnh lý
+ */
 router.get(
   '/patient/:patientId/medical-history',
   requireRole(ROLES.DOCTOR, ROLES.NURSE, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT),

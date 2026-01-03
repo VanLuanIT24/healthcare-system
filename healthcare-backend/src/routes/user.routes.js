@@ -14,10 +14,61 @@ const { ROLES } = require('../constants/roles');
 // CÁ NHÂN (Dành cho mọi người dùng đã login) - Từ userAPI.js
 // ==================================================================
 
-// Lấy profile cá nhân
+/**
+ * @swagger
+ * /api/users/profile:
+ *   get:
+ *     summary: Lấy thông tin profile cá nhân
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Thông tin profile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/profile', authMiddleware, userController.getUserProfile);
 
-// Cập nhật profile cá nhân
+/**
+ * @swagger
+ * /api/users/profile:
+ *   put:
+ *     summary: Cập nhật profile cá nhân
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               address:
+ *                 type: string
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.put('/profile',
   authMiddleware,
   validate(schemas.updateUserProfileBody, 'body'),
@@ -25,7 +76,37 @@ router.put('/profile',
   userController.updateUserProfile
 );
 
-// Thay đổi mật khẩu
+/**
+ * @swagger
+ * /api/users/change-password:
+ *   post:
+ *     summary: Thay đổi mật khẩu
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - oldPassword
+ *               - newPassword
+ *             properties:
+ *               oldPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *     responses:
+ *       200:
+ *         description: Đổi mật khẩu thành công
+ *       400:
+ *         description: Mật khẩu cũ không đúng
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.post('/change-password',
   authMiddleware,
   validate({
@@ -36,7 +117,30 @@ router.post('/change-password',
   userController.changePassword
 );
 
-// Upload avatar
+/**
+ * @swagger
+ * /api/users/avatar:
+ *   post:
+ *     summary: Upload avatar
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Upload thành công
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.post('/avatar',
   authMiddleware,
   uploadMiddleware.single('avatar'),
@@ -44,19 +148,71 @@ router.post('/avatar',
   userController.uploadProfilePicture
 );
 
-// Xác thực email
+/**
+ * @swagger
+ * /api/users/verify-email:
+ *   post:
+ *     summary: Xác thực email
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Email đã được xác thực
+ *       400:
+ *         description: Token không hợp lệ
+ */
 router.post('/verify-email',
   validate(schemas.verifyEmailBody, 'body'),
   userController.verifyEmail
 );
 
-// Gửi lại email xác thực
+/**
+ * @swagger
+ * /api/users/resend-verification:
+ *   post:
+ *     summary: Gửi lại email xác thực
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Email xác thực đã được gửi lại
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.post('/resend-verification',
   authMiddleware,
   userController.resendVerificationEmail
 );
 
-// Đăng ký bệnh nhân tự do
+/**
+ * @swagger
+ * /api/users/register/patient:
+ *   post:
+ *     summary: Đăng ký bệnh nhân tự do
+ *     tags: [Users]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterRequest'
+ *     responses:
+ *       201:
+ *         description: Đăng ký thành công
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ */
 router.post('/register/patient',
   validate(schemas.createUserBody, 'body'),
   userController.registerPatient
@@ -66,7 +222,64 @@ router.post('/register/patient',
 // QUẢN LÝ NGƯỜI DÙNG (Dành cho admin) - Từ adminAPI.js
 // ==================================================================
 
-// Danh sách users
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Lấy danh sách người dùng
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Trang hiện tại
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Số lượng mỗi trang
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *         description: Lọc theo role
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [active, inactive, suspended]
+ *         description: Lọc theo trạng thái
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Tìm kiếm theo tên, email
+ *     responses:
+ *       200:
+ *         description: Danh sách người dùng
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/Pagination'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/',
   authMiddleware,
   roleMiddleware([ROLES.HOSPITAL_ADMIN, ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN]),
@@ -74,7 +287,22 @@ router.get('/',
   userController.listUsers
 );
 
-// Danh sách users đã xóa
+/**
+ * @swagger
+ * /api/users/deleted:
+ *   get:
+ *     summary: Lấy danh sách người dùng đã xóa
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Danh sách người dùng đã xóa
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ */
 router.get('/deleted',
   authMiddleware,
   roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN]),

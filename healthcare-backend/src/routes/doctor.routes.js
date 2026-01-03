@@ -6,6 +6,13 @@ const { authenticate } = require('../middlewares/auth.middleware');
 const { ROLES } = require('../constants/roles');
 
 /**
+ * @swagger
+ * tags:
+ *   name: Doctors
+ *   description: 👨‍⚕️ Quản lý bác sĩ
+ */
+
+/**
  * Doctor Management Routes
  * Base: /api/admin/doctors
  */
@@ -22,8 +29,59 @@ const requireAdminRole = (req, res, next) => {
 // ============ ADMIN ONLY ROUTES ============
 
 /**
- * GET /api/admin/doctors
- * Get all doctors with filters and pagination
+ * @swagger
+ * /api/admin/doctors:
+ *   get:
+ *     summary: Lấy danh sách bác sĩ
+ *     tags: [Doctors]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: specialization
+ *         schema:
+ *           type: string
+ *         description: Lọc theo chuyên khoa
+ *       - in: query
+ *         name: department
+ *         schema:
+ *           type: string
+ *         description: Lọc theo khoa
+ *       - in: query
+ *         name: isAvailable
+ *         schema:
+ *           type: boolean
+ *         description: Lọc theo trạng thái sẵn sàng
+ *     responses:
+ *       200:
+ *         description: Danh sách bác sĩ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Doctor'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/Pagination'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
  */
 router.get(
   '/',
@@ -33,8 +91,34 @@ router.get(
 );
 
 /**
- * GET /api/admin/doctors/stats
- * Get all doctors statistics
+ * @swagger
+ * /api/admin/doctors/stats:
+ *   get:
+ *     summary: Lấy thống kê bác sĩ
+ *     tags: [Doctors]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Thống kê bác sĩ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     totalDoctors:
+ *                       type: integer
+ *                     availableDoctors:
+ *                       type: integer
+ *                     bySpecialization:
+ *                       type: object
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
   '/stats',
@@ -44,8 +128,54 @@ router.get(
 );
 
 /**
- * POST /api/admin/doctors
- * Create new doctor
+ * @swagger
+ * /api/admin/doctors:
+ *   post:
+ *     summary: Tạo bác sĩ mới
+ *     tags: [Doctors]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - fullName
+ *               - specialization
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *               fullName:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               specialization:
+ *                 type: string
+ *                 example: Nội khoa
+ *               department:
+ *                 type: string
+ *               licenseNumber:
+ *                 type: string
+ *               experience:
+ *                 type: integer
+ *                 example: 5
+ *               consultationFee:
+ *                 type: number
+ *                 example: 300000
+ *     responses:
+ *       201:
+ *         description: Tạo bác sĩ thành công
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.post(
   '/',
@@ -55,8 +185,33 @@ router.post(
 );
 
 /**
- * GET /api/admin/doctors/:doctorId
- * Get single doctor by ID
+ * @swagger
+ * /api/admin/doctors/{doctorId}:
+ *   get:
+ *     summary: Lấy thông tin bác sĩ theo ID
+ *     tags: [Doctors]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Thông tin bác sĩ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Doctor'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
   '/:doctorId',
@@ -66,8 +221,41 @@ router.get(
 );
 
 /**
- * PUT /api/admin/doctors/:doctorId
- * Update doctor
+ * @swagger
+ * /api/admin/doctors/{doctorId}:
+ *   put:
+ *     summary: Cập nhật thông tin bác sĩ
+ *     tags: [Doctors]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               fullName:
+ *                 type: string
+ *               specialization:
+ *                 type: string
+ *               department:
+ *                 type: string
+ *               consultationFee:
+ *                 type: number
+ *               isAvailable:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.put(
   '/:doctorId',
@@ -77,8 +265,24 @@ router.put(
 );
 
 /**
- * DELETE /api/admin/doctors/:doctorId
- * Delete doctor (soft delete)
+ * @swagger
+ * /api/admin/doctors/{doctorId}:
+ *   delete:
+ *     summary: Xóa bác sĩ
+ *     tags: [Doctors]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Xóa thành công
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete(
   '/:doctorId',
@@ -88,8 +292,22 @@ router.delete(
 );
 
 /**
- * PATCH /api/admin/doctors/:doctorId/disable
- * Disable doctor
+ * @swagger
+ * /api/admin/doctors/{doctorId}/disable:
+ *   patch:
+ *     summary: Vô hiệu hóa bác sĩ
+ *     tags: [Doctors]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Vô hiệu hóa thành công
  */
 router.patch(
   '/:doctorId/disable',
@@ -99,8 +317,22 @@ router.patch(
 );
 
 /**
- * PATCH /api/admin/doctors/:doctorId/enable
- * Enable doctor
+ * @swagger
+ * /api/admin/doctors/{doctorId}/enable:
+ *   patch:
+ *     summary: Kích hoạt bác sĩ
+ *     tags: [Doctors]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Kích hoạt thành công
  */
 router.patch(
   '/:doctorId/enable',

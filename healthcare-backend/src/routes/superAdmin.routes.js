@@ -18,6 +18,20 @@ const superAdminLimiter = rateLimit({
 });
 
 /**
+ * @swagger
+ * /api/super-admin/status:
+ *   get:
+ *     summary: Kiểm tra trạng thái Super Admin
+ *     tags: [Super Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Trạng thái Super Admin
+ *       403:
+ *         description: Không có quyền truy cập
+ */
+/**
  * @route   GET /api/super-admin/status
  * @desc    Kiểm tra trạng thái Super Admin (Chỉ Super Admin)
  * @access  Private (Super Admin only)
@@ -43,6 +57,20 @@ router.get(
   }
 );
 
+/**
+ * @swagger
+ * /api/super-admin/reset:
+ *   post:
+ *     summary: Reset Super Admin (chỉ Development)
+ *     tags: [Super Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Reset thành công
+ *       403:
+ *         description: Không cho phép trong production
+ */
 /**
  * @route   POST /api/super-admin/reset
  * @desc    Reset Super Admin (Chỉ Development)
@@ -83,6 +111,31 @@ router.post(
   }
 );
 
+/**
+ * @swagger
+ * /api/super-admin/system-health:
+ *   get:
+ *     summary: Kiểm tra sức khỏe hệ thống (Super Admin)
+ *     tags: [Super Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Thông tin sức khỏe hệ thống
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 nodeVersion:
+ *                   type: string
+ *                 platform:
+ *                   type: string
+ *                 memory:
+ *                   type: object
+ *                 uptime:
+ *                   type: number
+ */
 /**
  * @route   GET /api/super-admin/system-health
  * @desc    Kiểm tra sức khỏe hệ thống (Super Admin dashboard)

@@ -17,6 +17,31 @@ const { PERMISSIONS } = require('../constants/roles');
 // Áp dụng xác thực cho tất cả routes
 router.use(authenticate);
 
+/**
+ * @swagger
+ * /api/beds/rooms:
+ *   get:
+ *     summary: Lấy danh sách phòng
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: department
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: floor
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Danh sách phòng
+ */
 // Lấy danh sách phòng (PHẢI TRƯỚC /:id để không bị nhầm)
 router.get(
   '/rooms',
@@ -25,6 +50,36 @@ router.get(
   bedController.getRooms
 );
 
+/**
+ * @swagger
+ * /api/beds:
+ *   post:
+ *     summary: Tạo giường mới
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - bedNumber
+ *               - roomId
+ *             properties:
+ *               bedNumber:
+ *                 type: string
+ *               roomId:
+ *                 type: string
+ *               bedType:
+ *                 type: string
+ *               dailyRate:
+ *                 type: number
+ *     responses:
+ *       201:
+ *         description: Tạo giường thành công
+ */
 // Tạo giường mới
 router.post(
   '/',
@@ -33,6 +88,39 @@ router.post(
   bedController.createBed
 );
 
+/**
+ * @swagger
+ * /api/beds/rooms:
+ *   post:
+ *     summary: Tạo phòng mới
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - roomNumber
+ *               - department
+ *               - floor
+ *             properties:
+ *               roomNumber:
+ *                 type: string
+ *               department:
+ *                 type: string
+ *               floor:
+ *                 type: integer
+ *               roomType:
+ *                 type: string
+ *               capacity:
+ *                 type: integer
+ *     responses:
+ *       201:
+ *         description: Tạo phòng thành công
+ */
 // Tạo phòng mới
 router.post(
   '/rooms',
@@ -41,6 +129,38 @@ router.post(
   bedController.createRoom
 );
 
+/**
+ * @swagger
+ * /api/beds:
+ *   get:
+ *     summary: Lấy danh sách giường
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: roomId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [available, occupied, reserved, maintenance]
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Danh sách giường
+ */
 // Lấy danh sách giường
 router.get(
   '/',
@@ -49,6 +169,26 @@ router.get(
   bedController.getBeds
 );
 
+/**
+ * @swagger
+ * /api/beds/{id}:
+ *   get:
+ *     summary: Lấy thông tin giường theo ID
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Thông tin giường
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
 // Lấy giường theo ID (PHẢI SAU các route cụ thể)
 router.get(
   '/:id',
@@ -57,6 +197,38 @@ router.get(
   bedController.getBedById
 );
 
+/**
+ * @swagger
+ * /api/beds/{bedId}/status:
+ *   patch:
+ *     summary: Cập nhật trạng thái giường
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bedId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [available, occupied, reserved, maintenance]
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Cập nhật thành công
+ */
 // Cập nhật trạng thái giường
 router.patch(
   '/:bedId/status',
@@ -66,6 +238,40 @@ router.patch(
   bedController.updateBedStatus
 );
 
+/**
+ * @swagger
+ * /api/beds/{bedId}/assign:
+ *   post:
+ *     summary: Phân bổ giường cho bệnh nhân
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bedId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - patientId
+ *             properties:
+ *               patientId:
+ *                 type: string
+ *               admissionDate:
+ *                 type: string
+ *                 format: date-time
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Phân bổ thành công
+ */
 // Phân bổ giường
 router.post(
   '/:bedId/assign',
@@ -75,6 +281,37 @@ router.post(
   bedController.assignBed
 );
 
+/**
+ * @swagger
+ * /api/beds/{bedId}/transfer:
+ *   patch:
+ *     summary: Chuyển bệnh nhân sang giường khác
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bedId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - targetBedId
+ *             properties:
+ *               targetBedId:
+ *                 type: string
+ *               reason:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Chuyển giường thành công
+ */
 // Chuyển giường
 router.patch(
   '/:bedId/transfer',
@@ -84,6 +321,32 @@ router.patch(
   bedController.transferBed
 );
 
+/**
+ * @swagger
+ * /api/beds/{bedId}/discharge:
+ *   patch:
+ *     summary: Giải phóng giường (xuất viện)
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bedId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               dischargeNotes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Giải phóng thành công
+ */
 // Giải phóng giường
 router.patch(
   '/:bedId/discharge',
@@ -93,6 +356,18 @@ router.patch(
   bedController.dischargeFromBed
 );
 
+/**
+ * @swagger
+ * /api/beds/occupancy:
+ *   get:
+ *     summary: Lấy tỷ lệ chiếm dụng giường
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Tỷ lệ chiếm dụng
+ */
 // Lấy tỷ lệ chiếm dụng
 router.get(
   '/occupancy',
@@ -100,6 +375,27 @@ router.get(
   bedController.getOccupancyRate
 );
 
+/**
+ * @swagger
+ * /api/beds/available:
+ *   get:
+ *     summary: Lấy danh sách giường khả dụng
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: roomType
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: department
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Danh sách giường khả dụng
+ */
 // Lấy giường khả dụng
 router.get(
   '/available',
@@ -108,6 +404,18 @@ router.get(
   bedController.getAvailableBeds
 );
 
+/**
+ * @swagger
+ * /api/beds/stats:
+ *   get:
+ *     summary: Lấy thống kê giường
+ *     tags: [Beds]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Thống kê giường
+ */
 // Lấy thống kê giường
 router.get(
   '/stats',

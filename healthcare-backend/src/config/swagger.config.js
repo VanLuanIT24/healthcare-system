@@ -425,8 +425,10 @@ const options = {
       { name: 'Users', description: '👥 Quản lý người dùng' },
       { name: 'Patients', description: '🏥 Quản lý bệnh nhân' },
       { name: 'Doctors', description: '👨‍⚕️ Quản lý bác sĩ' },
+      { name: 'Doctor Schedule', description: '📆 Lịch làm việc bác sĩ' },
       { name: 'Appointments', description: '📅 Đặt lịch khám' },
       { name: 'Queue', description: '🎫 Quản lý hàng đợi' },
+      { name: 'Clinical', description: '🩺 Lâm sàng - phiên khám và chẩn đoán' },
       { name: 'Medical Records', description: '📋 Hồ sơ bệnh án' },
       { name: 'Prescriptions', description: '💊 Đơn thuốc' },
       { name: 'Laboratory', description: '🔬 Xét nghiệm' },
@@ -435,10 +437,12 @@ const options = {
       { name: 'Beds', description: '🛏️ Quản lý giường bệnh' },
       { name: 'Inventory', description: '📦 Quản lý kho' },
       { name: 'Notifications', description: '🔔 Thông báo' },
+      { name: 'Messages', description: '💬 Tin nhắn và hội thoại' },
       { name: 'Reports', description: '📊 Báo cáo thống kê' },
       { name: 'Dashboard', description: '📈 Dashboard và thống kê' },
       { name: 'Settings', description: '⚙️ Cài đặt hệ thống' },
       { name: 'Admin', description: '🔧 Quản trị viên' },
+      { name: 'Admin Reports', description: '📑 Báo cáo quản trị' },
       { name: 'Super Admin', description: '👑 Super Admin' }
     ]
   },

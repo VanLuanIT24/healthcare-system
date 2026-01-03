@@ -12,7 +12,37 @@ const { ROLES } = require('../constants/roles');
 // QUẢN LÝ LỊCH HẸN - Dành cho tất cả vai trò liên quan
 // ==================================================================
 
-// Tạo lịch hẹn
+/**
+ * @swagger
+ * /api/appointments:
+ *   post:
+ *     summary: Tạo lịch hẹn mới
+ *     tags: [Appointments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateAppointmentRequest'
+ *     responses:
+ *       201:
+ *         description: Tạo lịch hẹn thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/Appointment'
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.post('/',
   authMiddleware,
   roleMiddleware([ROLES.PATIENT, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
@@ -21,7 +51,67 @@ router.post('/',
   appointmentController.createAppointment
 );
 
-// Lấy tất cả lịch hẹn
+/**
+ * @swagger
+ * /api/appointments:
+ *   get:
+ *     summary: Lấy danh sách lịch hẹn
+ *     tags: [Appointments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, confirmed, completed, cancelled, no-show]
+ *       - in: query
+ *         name: doctorId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: patientId
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: fromDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: toDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Danh sách lịch hẹn
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Appointment'
+ *                 pagination:
+ *                   $ref: '#/components/schemas/Pagination'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/',
   authMiddleware,
   roleMiddleware([ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
@@ -32,7 +122,25 @@ router.get('/',
 
 // 🎯 SPECIFIC ROUTES MUST COME BEFORE /:id (IMPORTANT!)
 
-// Lấy lịch hẹn hôm nay
+/**
+ * @swagger
+ * /api/appointments/today:
+ *   get:
+ *     summary: Lấy lịch hẹn hôm nay
+ *     tags: [Appointments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: doctorId
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Danh sách lịch hẹn hôm nay
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/today',
   authMiddleware,
   validate(schemas.getTodayAppointments, 'query'),
@@ -41,7 +149,26 @@ router.get('/today',
   appointmentController.getTodayAppointments
 );
 
-// Lấy lịch hẹn sắp tới
+/**
+ * @swagger
+ * /api/appointments/upcoming:
+ *   get:
+ *     summary: Lấy lịch hẹn sắp tới
+ *     tags: [Appointments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *     responses:
+ *       200:
+ *         description: Danh sách lịch hẹn sắp tới
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/upcoming',
   authMiddleware,
   validate(schemas.getUpcomingAppointments, 'query'),
@@ -50,7 +177,49 @@ router.get('/upcoming',
   appointmentController.getUpcomingAppointments
 );
 
-// Lấy slot thời gian khả dụng
+/**
+ * @swagger
+ * /api/appointments/available-slots:
+ *   get:
+ *     summary: Lấy slot thời gian khả dụng của bác sĩ
+ *     tags: [Appointments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: date
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Danh sách slot khả dụng
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       slot:
+ *                         type: string
+ *                         example: "09:00-09:30"
+ *                       available:
+ *                         type: boolean
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/available-slots',
   authMiddleware,
   roleMiddleware([ROLES.PATIENT, ROLES.RECEPTIONIST, ROLES.HOSPITAL_ADMIN]),
@@ -58,7 +227,51 @@ router.get('/available-slots',
   appointmentController.getAvailableSlots
 );
 
-// Lấy thống kê lịch hẹn
+/**
+ * @swagger
+ * /api/appointments/stats:
+ *   get:
+ *     summary: Lấy thống kê lịch hẹn
+ *     tags: [Appointments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: fromDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: toDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Thống kê lịch hẹn
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     total:
+ *                       type: integer
+ *                     pending:
+ *                       type: integer
+ *                     confirmed:
+ *                       type: integer
+ *                     completed:
+ *                       type: integer
+ *                     cancelled:
+ *                       type: integer
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/stats',
   authMiddleware,
   roleMiddleware([ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN, ROLES.PATIENT, ROLES.SUPER_ADMIN, ROLES.SYSTEM_ADMIN, ROLES.CLINICAL_ADMIN]),
@@ -67,7 +280,36 @@ router.get('/stats',
   appointmentController.getAppointmentStats
 );
 
-// Export lịch hẹn (PDF)
+/**
+ * @swagger
+ * /api/appointments/export/pdf:
+ *   get:
+ *     summary: Xuất lịch hẹn dạng PDF
+ *     tags: [Appointments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: fromDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: toDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: File PDF
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/export/pdf',
   authMiddleware,
   roleMiddleware([ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
@@ -76,7 +318,36 @@ router.get('/export/pdf',
   appointmentController.exportAppointmentsPDF
 );
 
-// Export lịch hẹn (Excel)
+/**
+ * @swagger
+ * /api/appointments/export/excel:
+ *   get:
+ *     summary: Xuất lịch hẹn dạng Excel
+ *     tags: [Appointments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: fromDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: toDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: File Excel
+ *         content:
+ *           application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/export/excel',
   authMiddleware,
   roleMiddleware([ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
@@ -85,7 +356,36 @@ router.get('/export/excel',
   appointmentController.exportAppointmentsExcel
 );
 
-// Lấy lịch làm việc của bác sĩ
+/**
+ * @swagger
+ * /api/appointments/schedules/doctor/{doctorId}:
+ *   get:
+ *     summary: Lấy lịch làm việc của bác sĩ
+ *     tags: [Appointments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: fromDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: toDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *     responses:
+ *       200:
+ *         description: Lịch làm việc của bác sĩ
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/schedules/doctor/:doctorId',
   authMiddleware,
   roleMiddleware([ROLES.PATIENT, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
@@ -95,7 +395,26 @@ router.get('/schedules/doctor/:doctorId',
   appointmentController.getDoctorSchedule
 );
 
-// Lấy lịch hẹn của bác sĩ
+/**
+ * @swagger
+ * /api/appointments/doctor/{doctorId}:
+ *   get:
+ *     summary: Lấy lịch hẹn của bác sĩ
+ *     tags: [Appointments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Danh sách lịch hẹn của bác sĩ
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ */
 router.get('/doctor/:doctorId',
   authMiddleware,
   roleMiddleware([ROLES.DOCTOR, ROLES.DEPARTMENT_HEAD, ROLES.HOSPITAL_ADMIN]),
