@@ -13,20 +13,46 @@ const options = {
       title: '🏥 Healthcare System API',
       version: '1.0.0',
       description: `
-## Hệ thống Quản lý Y tế - API Documentation
+# 🏥 Hệ thống Quản lý Y tế - API Documentation
 
-Đây là tài liệu API cho hệ thống quản lý y tế bao gồm:
-- 🔐 **Authentication**: Đăng nhập, đăng ký, quản lý token
-- 👥 **Users**: Quản lý người dùng hệ thống
-- 🏥 **Patients**: Quản lý hồ sơ bệnh nhân
-- 👨‍⚕️ **Doctors**: Quản lý bác sĩ và lịch làm việc
-- 📅 **Appointments**: Đặt lịch khám
-- 💊 **Prescriptions**: Quản lý đơn thuốc
-- 🔬 **Laboratory**: Xét nghiệm và kết quả
-- 💰 **Billing**: Thanh toán và hóa đơn
-- 🛏️ **Beds**: Quản lý giường bệnh
-- 📦 **Inventory**: Quản lý kho và thuốc
-- 📊 **Reports**: Báo cáo và thống kê
+## 📋 Tổng quan
+Đây là tài liệu API đầy đủ cho Hệ thống Quản lý Y tế (Healthcare Management System). 
+Hệ thống cung cấp các API RESTful để quản lý toàn bộ quy trình khám chữa bệnh.
+
+## 🔑 Xác thực
+Hầu hết các API yêu cầu xác thực bằng JWT Token. Click nút **Authorize** ở trên và nhập token:
+\`\`\`
+Bearer <your_access_token>
+\`\`\`
+
+## 📚 Nhóm API
+
+| Nhóm | Mô tả |
+|------|-------|
+| 🌐 **Public** | API công khai, không cần đăng nhập |
+| 🔐 **Auth** | Đăng nhập, đăng ký, quản lý phiên |
+| 👥 **Users** | Quản lý tài khoản người dùng |
+| 🏥 **Patients** | Hồ sơ bệnh nhân |
+| 👨‍⚕️ **Doctors** | Quản lý bác sĩ |
+| 📅 **Appointments** | Đặt lịch khám |
+| 🩺 **Clinical** | Khám bệnh, chẩn đoán |
+| 💊 **Prescriptions** | Đơn thuốc |
+| 🔬 **Laboratory** | Xét nghiệm |
+| 💰 **Billing** | Thanh toán |
+| 🛏️ **Beds** | Giường bệnh |
+| 📦 **Inventory** | Kho vật tư |
+| 🔔 **Notifications** | Thông báo |
+| 📊 **Reports** | Báo cáo thống kê |
+
+## 🚀 Bắt đầu nhanh
+1. Đăng nhập qua \`POST /api/auth/login\`
+2. Lấy \`accessToken\` từ response
+3. Nhấn **Authorize** và nhập token
+4. Thử các API!
+
+## 📞 Liên hệ hỗ trợ
+- **Email**: support@healthcare-system.com
+- **GitHub**: [VanLuanIT24/healthcare-system](https://github.com/VanLuanIT24/healthcare-system)
       `,
       contact: {
         name: 'Healthcare Development Team',
@@ -39,12 +65,12 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:5000',
-        description: '🔧 Development Server'
+        url: 'https://healthcare-system-backend-tav7.onrender.com',
+        description: '🚀 Production Server (Render)'
       },
       {
-        url: 'https://api.healthcare-system.com',
-        description: '🚀 Production Server'
+        url: 'http://localhost:5000',
+        description: '🔧 Development Server'
       }
     ],
     components: {
@@ -421,6 +447,7 @@ const options = {
       }
     },
     tags: [
+      { name: 'Public', description: '🌐 API công khai - Không cần đăng nhập' },
       { name: 'Auth', description: '🔐 Xác thực và phân quyền' },
       { name: 'Users', description: '👥 Quản lý người dùng' },
       { name: 'Patients', description: '🏥 Quản lý bệnh nhân' },

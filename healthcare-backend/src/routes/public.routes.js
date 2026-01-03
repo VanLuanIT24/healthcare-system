@@ -11,6 +11,46 @@ const { ROLES } = require('../constants/roles');
  * Các endpoint này dùng cho landing pages
  */
 
+/**
+ * @swagger
+ * /api/public/stats:
+ *   get:
+ *     summary: Lấy thống kê tổng quan cho trang chủ
+ *     description: Trả về số liệu thống kê công khai (bệnh nhân, bác sĩ, lượt khám, độ hài lòng)
+ *     tags: [Public]
+ *     responses:
+ *       200:
+ *         description: Thống kê thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     patients:
+ *                       type: integer
+ *                       description: Tổng số bệnh nhân
+ *                       example: 1500
+ *                     doctors:
+ *                       type: integer
+ *                       description: Tổng số bác sĩ
+ *                       example: 45
+ *                     appointments:
+ *                       type: integer
+ *                       description: Số lượt khám hoàn thành
+ *                       example: 5000
+ *                     satisfaction:
+ *                       type: integer
+ *                       description: Tỷ lệ hài lòng (%)
+ *                       example: 98
+ *       500:
+ *         description: Lỗi server
+ */
 // 🎯 HOMEPAGE STATS - GET /api/public/stats
 router.get('/stats', async (req, res) => {
   try {
@@ -58,6 +98,63 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/public/featured-doctors:
+ *   get:
+ *     summary: Lấy danh sách bác sĩ nổi bật
+ *     description: Trả về danh sách bác sĩ để hiển thị trên trang chủ
+ *     tags: [Public]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 4
+ *         description: Số lượng bác sĩ cần lấy
+ *     responses:
+ *       200:
+ *         description: Danh sách bác sĩ nổi bật
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         example: "507f1f77bcf86cd799439011"
+ *                       name:
+ *                         type: string
+ *                         example: "BS. Nguyễn Văn A"
+ *                       email:
+ *                         type: string
+ *                         example: "doctor@example.com"
+ *                       specialty:
+ *                         type: string
+ *                         example: "Nội khoa"
+ *                       degree:
+ *                         type: string
+ *                         example: "Tiến sĩ Y khoa"
+ *                       experience:
+ *                         type: string
+ *                         example: "10 năm kinh nghiệm"
+ *                       department:
+ *                         type: string
+ *                         example: "Khoa Nội"
+ *                       image:
+ *                         type: string
+ *                         nullable: true
+ *       500:
+ *         description: Lỗi server
+ */
 // 🎯 FEATURED DOCTORS - GET /api/public/featured-doctors
 router.get('/featured-doctors', async (req, res) => {
   try {

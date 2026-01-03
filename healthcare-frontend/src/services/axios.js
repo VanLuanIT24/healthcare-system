@@ -2,8 +2,16 @@
 import { message } from 'antd';
 import axios from 'axios';
 
-// ✅ FIX: URL đúng cho cả dev và production
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// ✅ FIX: Đảm bảo URL luôn có /api suffix
+const getApiUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (!envUrl) return 'http://localhost:5000/api';
+  
+  // Nếu URL đã có /api thì giữ nguyên, nếu không thì thêm vào
+  return envUrl.endsWith('/api') ? envUrl : `${envUrl}/api`;
+};
+
+const API_URL = getApiUrl();
 
 // ✅ Environment check for logging
 const isDev = import.meta.env.DEV;

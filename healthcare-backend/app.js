@@ -167,17 +167,577 @@ app.get('/health', (req, res) => {
   res.status(200).json(healthCheck);
 });
 
-// 📚 SWAGGER API DOCUMENTATION
+// 📚 SWAGGER API DOCUMENTATION - GIAO DIỆN CHUYÊN NGHIỆP
+const swaggerCss = `
+  /* ===== FONTS ===== */
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+  * { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important; }
+  
+  /* ===== BODY ===== */
+  body { 
+    background: #f8fafc;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* ===== MAIN CONTAINER ===== */
+  .swagger-ui { 
+    background: #ffffff;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 40px;
+    min-height: 100vh;
+  }
+  
+  /* ===== HIDE TOPBAR ===== */
+  .swagger-ui .topbar { display: none; }
+  
+  /* ===== HEADER INFO ===== */
+  .swagger-ui .info { 
+    margin: 0 0 32px 0;
+    padding: 0;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 32px;
+  }
+  
+  .swagger-ui .info hgroup.main { margin-bottom: 16px; }
+  
+  .swagger-ui .info .title { 
+    font-size: 32px; 
+    font-weight: 700; 
+    color: #0f172a !important;
+    letter-spacing: -0.5px;
+  }
+  
+  .swagger-ui .info .title small { 
+    background: #0ea5e9;
+    color: #fff !important;
+    padding: 4px 10px; 
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    vertical-align: middle;
+    margin-left: 12px;
+  }
+  
+  .swagger-ui .info .description { 
+    color: #475569 !important;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  
+  .swagger-ui .info .description h1 { font-size: 24px; color: #0f172a !important; font-weight: 700; margin-top: 24px; }
+  .swagger-ui .info .description h2 { font-size: 18px; color: #1e293b !important; font-weight: 600; margin-top: 20px; }
+  .swagger-ui .info .description h3 { font-size: 16px; color: #334155 !important; font-weight: 600; margin-top: 16px; }
+  .swagger-ui .info .description p { color: #475569 !important; margin: 8px 0; }
+  
+  .swagger-ui .info .description code { 
+    background: #f1f5f9 !important; 
+    color: #0369a1 !important;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: 'SF Mono', 'Fira Code', monospace !important;
+  }
+  
+  .swagger-ui .info .description table { 
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .swagger-ui .info .description th { 
+    background: #f8fafc !important; 
+    color: #0f172a !important;
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 13px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .swagger-ui .info .description td { 
+    color: #475569 !important;
+    padding: 12px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  
+  .swagger-ui .info .description a { 
+    color: #0284c7 !important; 
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .swagger-ui .info .description a:hover { text-decoration: underline; }
+  
+  /* ===== SCHEMES & AUTH BAR ===== */
+  .swagger-ui .scheme-container { 
+    background: #f8fafc !important;
+    padding: 16px 20px !important;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    box-shadow: none !important;
+    border: 1px solid #e2e8f0;
+  }
+  
+  /* ===== AUTHORIZE BUTTON ===== */
+  .swagger-ui .btn.authorize { 
+    background: #0f172a !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 10px 20px !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    letter-spacing: 0.3px;
+    transition: all 0.2s ease !important;
+  }
+  
+  .swagger-ui .btn.authorize:hover { 
+    background: #1e293b !important;
+  }
+  
+  .swagger-ui .btn.authorize svg { fill: #fff !important; }
+  
+  .swagger-ui .authorization__btn svg { 
+    fill: #64748b !important;
+  }
+  
+  .swagger-ui .authorization__btn.locked svg { 
+    fill: #059669 !important;
+  }
+  
+  /* ===== TAG SECTIONS ===== */
+  .swagger-ui .opblock-tag-section { 
+    margin-bottom: 8px;
+  }
+  
+  .swagger-ui .opblock-tag { 
+    font-size: 15px !important; 
+    font-weight: 600 !important; 
+    color: #0f172a !important;
+    padding: 16px 0 !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    transition: all 0.15s ease !important;
+  }
+  
+  .swagger-ui .opblock-tag:hover { 
+    color: #0284c7 !important;
+  }
+  
+  .swagger-ui .opblock-tag small { 
+    color: #64748b !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+  }
+  
+  .swagger-ui .opblock-tag svg { fill: #94a3b8 !important; }
+  
+  /* ===== API OPERATIONS ===== */
+  .swagger-ui .opblock { 
+    border-radius: 8px !important;
+    margin: 4px 0 !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+    overflow: hidden;
+    transition: all 0.15s ease !important;
+  }
+  
+  .swagger-ui .opblock:hover { 
+    border-color: #cbd5e1 !important;
+  }
+  
+  .swagger-ui .opblock .opblock-summary { 
+    padding: 12px 16px !important;
+    border: none !important;
+  }
+  
+  /* GET - Blue */
+  .swagger-ui .opblock.opblock-get { 
+    background: #ffffff !important;
+    border-left: 3px solid #3b82f6 !important;
+  }
+  .swagger-ui .opblock.opblock-get .opblock-summary { background: #f8fafc !important; }
+  .swagger-ui .opblock.opblock-get .opblock-summary-method { 
+    background: #3b82f6 !important;
+  }
+  
+  /* POST - Green */
+  .swagger-ui .opblock.opblock-post { 
+    background: #ffffff !important;
+    border-left: 3px solid #22c55e !important;
+  }
+  .swagger-ui .opblock.opblock-post .opblock-summary { background: #f8fafc !important; }
+  .swagger-ui .opblock.opblock-post .opblock-summary-method { 
+    background: #22c55e !important;
+  }
+  
+  /* PUT - Orange */
+  .swagger-ui .opblock.opblock-put { 
+    background: #ffffff !important;
+    border-left: 3px solid #f59e0b !important;
+  }
+  .swagger-ui .opblock.opblock-put .opblock-summary { background: #f8fafc !important; }
+  .swagger-ui .opblock.opblock-put .opblock-summary-method { 
+    background: #f59e0b !important;
+  }
+  
+  /* DELETE - Red */
+  .swagger-ui .opblock.opblock-delete { 
+    background: #ffffff !important;
+    border-left: 3px solid #ef4444 !important;
+  }
+  .swagger-ui .opblock.opblock-delete .opblock-summary { background: #f8fafc !important; }
+  .swagger-ui .opblock.opblock-delete .opblock-summary-method { 
+    background: #ef4444 !important;
+  }
+  
+  /* PATCH - Purple */
+  .swagger-ui .opblock.opblock-patch { 
+    background: #ffffff !important;
+    border-left: 3px solid #a855f7 !important;
+  }
+  .swagger-ui .opblock.opblock-patch .opblock-summary { background: #f8fafc !important; }
+  .swagger-ui .opblock.opblock-patch .opblock-summary-method { 
+    background: #a855f7 !important;
+  }
+  
+  /* Method Badge */
+  .swagger-ui .opblock .opblock-summary-method { 
+    font-weight: 600 !important; 
+    min-width: 70px !important;
+    padding: 6px 0 !important;
+    border-radius: 4px !important;
+    font-size: 11px !important;
+    letter-spacing: 0.5px;
+  }
+  
+  .swagger-ui .opblock .opblock-summary-path { 
+    font-weight: 500 !important;
+    font-size: 14px !important;
+    color: #1e293b !important;
+  }
+  
+  .swagger-ui .opblock .opblock-summary-path__deprecated { 
+    text-decoration: line-through;
+    color: #94a3b8 !important;
+  }
+  
+  .swagger-ui .opblock .opblock-summary-description { 
+    color: #64748b !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+  }
+  
+  /* ===== EXPANDED OPERATION ===== */
+  .swagger-ui .opblock.is-open .opblock-summary { 
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+  
+  .swagger-ui .opblock-body { 
+    background: #fff !important;
+    padding: 20px !important;
+  }
+  
+  .swagger-ui .opblock-section-header { 
+    background: #f8fafc !important;
+    border-radius: 6px !important;
+    padding: 12px 16px !important;
+    margin-bottom: 12px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+  }
+  
+  .swagger-ui .opblock-section-header h4 { 
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    color: #334155 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .swagger-ui .opblock-description-wrapper { 
+    padding: 12px 0 !important;
+  }
+  
+  .swagger-ui .opblock-description-wrapper p { 
+    color: #475569 !important;
+    font-size: 14px !important;
+  }
+  
+  /* ===== PARAMETERS TABLE ===== */
+  .swagger-ui table.parameters { 
+    margin: 0 !important;
+  }
+  
+  .swagger-ui .parameters-col_name { 
+    font-weight: 500 !important;
+    color: #0f172a !important;
+    font-size: 13px !important;
+  }
+  
+  .swagger-ui .parameters-col_description { 
+    color: #475569 !important;
+    font-size: 13px !important;
+  }
+  
+  .swagger-ui .parameter__name { 
+    font-weight: 600 !important;
+    color: #0f172a !important;
+  }
+  
+  .swagger-ui .parameter__name.required::after { 
+    color: #ef4444 !important;
+  }
+  
+  .swagger-ui .parameter__type { 
+    color: #64748b !important;
+    font-size: 12px !important;
+  }
+  
+  /* ===== BUTTONS ===== */
+  .swagger-ui .btn { 
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    font-size: 13px !important;
+    transition: all 0.15s ease !important;
+  }
+  
+  .swagger-ui .btn.execute { 
+    background: #0f172a !important;
+    border: none !important;
+    padding: 10px 24px !important;
+    font-weight: 600 !important;
+  }
+  
+  .swagger-ui .btn.execute:hover { 
+    background: #1e293b !important;
+  }
+  
+  .swagger-ui .btn.cancel { 
+    background: #fff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #475569 !important;
+  }
+  
+  .swagger-ui .btn.cancel:hover { 
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+  }
+  
+  /* ===== TRY IT OUT ===== */
+  .swagger-ui .try-out__btn { 
+    border: 1px solid #e2e8f0 !important;
+    color: #475569 !important;
+    font-weight: 500 !important;
+    padding: 8px 16px !important;
+    background: #fff !important;
+  }
+  
+  .swagger-ui .try-out__btn:hover { 
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+  }
+  
+  /* ===== RESPONSES ===== */
+  .swagger-ui .responses-wrapper { 
+    padding: 0 !important;
+  }
+  
+  .swagger-ui .responses-inner { 
+    padding: 0 !important;
+  }
+  
+  .swagger-ui table.responses-table { 
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    overflow: hidden;
+  }
+  
+  .swagger-ui .responses-table thead tr { 
+    background: #f8fafc !important;
+  }
+  
+  .swagger-ui .responses-table thead tr th { 
+    color: #334155 !important;
+    font-weight: 600 !important;
+    font-size: 12px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+  
+  .swagger-ui .responses-table tbody tr td { 
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    color: #475569 !important;
+  }
+  
+  .swagger-ui .response-col_status { 
+    font-weight: 600 !important;
+    color: #0f172a !important;
+  }
+  
+  .swagger-ui .response-col_description { 
+    color: #475569 !important;
+  }
+  
+  /* ===== CODE BLOCKS ===== */
+  .swagger-ui .highlight-code { 
+    border-radius: 6px !important;
+    overflow: hidden;
+  }
+  
+  .swagger-ui .highlight-code pre { 
+    background: #0f172a !important;
+    padding: 16px !important;
+    margin: 0 !important;
+    border-radius: 6px !important;
+  }
+  
+  .swagger-ui .highlight-code code { 
+    color: #e2e8f0 !important;
+    font-family: 'SF Mono', 'Fira Code', monospace !important;
+    font-size: 13px !important;
+  }
+  
+  /* ===== MODELS SECTION ===== */
+  .swagger-ui section.models { 
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    margin-top: 32px;
+  }
+  
+  .swagger-ui section.models h4 { 
+    font-size: 15px !important; 
+    font-weight: 600 !important;
+    padding: 16px 20px !important; 
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    margin: 0 !important;
+  }
+  
+  .swagger-ui section.models .model-container { 
+    padding: 16px 20px !important;
+    margin: 0 !important;
+    background: #fff !important;
+  }
+  
+  .swagger-ui .model-title { 
+    font-weight: 600 !important;
+    color: #0f172a !important;
+  }
+  
+  .swagger-ui .model { 
+    font-size: 13px !important;
+    color: #475569 !important;
+  }
+  
+  /* ===== FILTER INPUT ===== */
+  .swagger-ui .filter-container { 
+    margin: 0 0 24px 0 !important;
+  }
+  
+  .swagger-ui .filter-container input { 
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 10px 16px !important;
+    font-size: 14px !important;
+    background: #fff !important;
+    color: #0f172a !important;
+    transition: all 0.15s ease !important;
+    width: 300px !important;
+  }
+  
+  .swagger-ui .filter-container input::placeholder { 
+    color: #94a3b8 !important;
+  }
+  
+  .swagger-ui .filter-container input:focus { 
+    border-color: #3b82f6 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  }
+  
+  /* ===== INPUTS ===== */
+  .swagger-ui input[type=text], 
+  .swagger-ui textarea,
+  .swagger-ui select { 
+    border-radius: 6px !important;
+    border: 1px solid #e2e8f0 !important;
+    padding: 10px 12px !important;
+    font-size: 13px !important;
+    color: #0f172a !important;
+    background: #fff !important;
+    transition: all 0.15s ease !important;
+  }
+  
+  .swagger-ui input[type=text]:focus, 
+  .swagger-ui textarea:focus,
+  .swagger-ui select:focus { 
+    border-color: #3b82f6 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  }
+  
+  /* ===== LOADING ===== */
+  .swagger-ui .loading-container { 
+    padding: 40px !important;
+  }
+  
+  /* ===== COPY BUTTON ===== */
+  .swagger-ui .copy-to-clipboard { 
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 4px !important;
+  }
+  
+  .swagger-ui .copy-to-clipboard button { 
+    background: transparent !important;
+  }
+  
+  /* ===== MARKDOWN ===== */
+  .swagger-ui .markdown p, 
+  .swagger-ui .markdown li { 
+    color: #475569 !important;
+  }
+  
+  .swagger-ui .markdown code { 
+    background: #f1f5f9 !important;
+    color: #0369a1 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+  }
+`;
+
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: '🏥 Healthcare API Documentation',
-  customfavIcon: '/favicon.ico',
+  customCss: swaggerCss,
+  customSiteTitle: 'Healthcare System API',
+  customfavIcon: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
   swaggerOptions: {
     persistAuthorization: true,
     displayRequestDuration: true,
     filter: true,
     showExtensions: true,
-    showCommonExtensions: true
+    showCommonExtensions: true,
+    docExpansion: 'none',
+    defaultModelsExpandDepth: 0,
+    defaultModelExpandDepth: 1,
+    tagsSorter: 'alpha',
+    operationsSorter: 'alpha',
+    tryItOutEnabled: true
   }
 }));
 

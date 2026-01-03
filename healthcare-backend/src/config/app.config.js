@@ -115,7 +115,10 @@ const appConfig = {
   },
 
   cors: {
-    origin: env.CORS_ORIGIN,
+    // Parse comma-separated origins to array, or use single origin
+    origin: env.CORS_ORIGIN.includes(',') 
+      ? env.CORS_ORIGIN.split(',').map(o => o.trim())
+      : env.CORS_ORIGIN,
   },
 
   email: {
