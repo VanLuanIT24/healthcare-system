@@ -113,6 +113,20 @@ const MedicalRecords = () => {
         })
         .sort((a, b) => new Date(b.lastVisit) - new Date(a.lastVisit));
 
+      // Thêm bệnh nhân mẫu nếu danh sách trống để người dùng demo xem được giao diện chi tiết
+      if (patientList.length === 0) {
+        patientList.push({
+          _id: 'preview',
+          name: 'Nguyễn Văn A (Demo)',
+          email: 'demo@healthcare.vn',
+          phone: '0901234567',
+          avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+          lastVisit: new Date(),
+          status: 'outpatient',
+          appointmentId: 'demo_apt_1',
+        });
+      }
+
       setPatients(patientList);
     } catch (error) {
       console.error('Error loading patients:', error);

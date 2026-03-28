@@ -1,0 +1,233 @@
+/* ============================================================
+   Doctor Profile Page — Medlink-style
+   ============================================================ */
+
+.doctor-profile-page {
+  padding: 4px 0;
+}
+
+/* ─── Doctor Card (Left Column) ────────────────────────────── */
+.doctor-card {
+  border-radius: 16px !important;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+}
+
+.doctor-card .ant-card-body {
+  padding: 0 !important;
+}
+
+/* Photo / gradient area */
+.doctor-card__photo-area {
+  position: relative;
+  height: 140px;
+}
+
+.doctor-card__photo-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #ccfbf1 0%, #a5f3fc 50%, #ddd6fe 100%);
+  border-radius: 0;
+}
+
+.doctor-card__avatar-wrap {
+  position: absolute;
+  bottom: -50px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.doctor-card__avatar {
+  border: 4px solid #fff !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+  background-color: #e0f7f4 !important;
+}
+
+.doctor-card__edit-avatar {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #14b8a6;
+  color: #fff;
+  border: 2px solid #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.doctor-card__edit-avatar:hover {
+  background: #0d9488;
+}
+
+/* Info section */
+.doctor-card__info {
+  margin-top: 56px;
+  padding: 0 20px 0;
+  text-align: center;
+}
+
+.doctor-card__id-tag {
+  border-radius: 20px;
+  font-size: 11px;
+  padding: 2px 10px;
+  background: #ccfbf1 !important;
+  color: #0d9488 !important;
+  border-color: #99f6e4 !important;
+}
+
+.doctor-card__name {
+  margin: 8px 0 4px !important;
+  color: #1e293b !important;
+  font-size: 17px !important;
+}
+
+.doctor-card__meta {
+  display: flex;
+  justify-content: space-around;
+  margin: 16px 0 4px;
+  gap: 8px;
+}
+
+.doctor-card__meta-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.doctor-card__meta-label {
+  font-size: 10px !important;
+  color: #94a3b8 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.doctor-card__meta-value {
+  font-size: 13px !important;
+  color: #1e293b !important;
+}
+
+/* Action buttons */
+.doctor-card__actions {
+  padding: 0 20px 20px;
+}
+
+.doctor-card__btn-edit {
+  background: linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%) !important;
+  border: none !important;
+}
+
+/* ─── Center Info Card ──────────────────────────────────────── */
+.profile-info-card {
+  border-radius: 16px !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06) !important;
+}
+
+.profile-info-card .ant-card-body {
+  padding: 20px !important;
+}
+
+.profile-info-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.profile-info-card__edit-btn {
+  color: #14b8a6 !important;
+  font-size: 12px;
+}
+
+.profile-info-card__about {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #64748b !important;
+}
+
+/* Info detail grid */
+.profile-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+  margin-top: 4px;
+}
+
+.profile-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profile-detail-label {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.profile-detail-value {
+  font-size: 13px !important;
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+/* Skills / progress */
+.skill-item .ant-progress-bg {
+  border-radius: 8px;
+}
+
+/* ─── Right Stats Cards ─────────────────────────────────────── */
+.stats-card {
+  border-radius: 16px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+}
+
+.stats-card .ant-card-body {
+  padding: 16px 20px !important;
+}
+
+.stats-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+/* Gauge / progress */
+.stats-card__gauge {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 8px;
+}
+
+.stats-card__gauge .ant-progress-circle-trail {
+  stroke: #e2e8f0;
+}
+
+/* Feedback */
+.feedback-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* ─── Responsive ────────────────────────────────────────────── */
+@media (max-width: 992px) {
+  .profile-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .doctor-card__meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}

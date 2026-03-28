@@ -16,6 +16,9 @@ import {
   MessageOutlined,
   SettingOutlined,
   UserOutlined,
+  BookOutlined,
+  TeamOutlined,
+  FileProtectOutlined
 } from '@ant-design/icons';
 import { Avatar, Badge, Breadcrumb, Button, Dropdown, Layout, Menu } from 'antd';
 import { useEffect, useRef, useState } from 'react';
@@ -63,6 +66,24 @@ const DoctorLayout = ({ children }) => {
       key: '/doctor/messages',
       icon: <MessageOutlined />,
       label: 'Tin nhắn',
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: '/doctor/consiliums',
+      icon: <TeamOutlined />,
+      label: 'Hội chẩn & Chuyển tuyến',
+    },
+    {
+      key: '/doctor/certificates',
+      icon: <FileProtectOutlined />,
+      label: 'Biểu mẫu & Pháp lý',
+    },
+    {
+      key: '/doctor/library',
+      icon: <BookOutlined />,
+      label: 'Thư viện Y khoa',
     },
     {
       type: 'divider',

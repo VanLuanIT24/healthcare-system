@@ -1,25 +1,48 @@
-// src/pages/doctor/Messages.jsx - Tin nhắn / Trao đổi
-import { Avatar, Badge, Button, Card, Col, Divider, Empty, Input, List, Row, Space, Spin, Tag, Tooltip, message } from 'antd';
+// src/pages/doctor/Messages.jsx - Giao diện Chat (Dark Theme Template - Real Data & Interactive UI)
+import { Avatar, Button, Input, Dropdown, Menu, Tooltip, Empty, Spin } from 'antd';
 import {
-  LoadingOutlined,
   PhoneOutlined,
-  PlusOutlined,
-  SearchOutlined,
+  VideoCameraOutlined,
+  MoreOutlined,
+  PaperClipOutlined,
+  SmileOutlined,
   SendOutlined,
-  UserOutlined,
+  AudioOutlined,
+  LeftOutlined,
+  RightOutlined,
+  MessageOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import 'dayjs/locale/vi';
 import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import DoctorLayout from '@/components/layout/doctor/DoctorLayout';
 import messageAPI from '@/services/api/messageAPI';
 import { useAuth } from '@/contexts/AuthContext';
 
 dayjs.extend(relativeTime);
 dayjs.locale('vi');
+
+// --- COLORS ---
+const colors = {
+  bgApp: '#151b2c',
+  bgPanel: '#1a233a',
+  bgBubbleFriend: '#27314f',
+  bgBubbleMe: '#6754e2',
+  textMain: '#ffffff',
+  textMuted: '#8b9bb4',
+  textAccent: '#6754e2',
+  border: '#2a3553',
+};
+
+// Dummy Data for Calendar Sidebar events
+const initialEvents = [
+  { date: '8 March', title: 'Họp giao ban viện' },
+  { date: '9 March', title: 'Hạn nộp báo cáo nghiên cứu' },
+  { date: '10 March', title: 'Hội chẩn ca phẫu thuật tim mạch' },
+  { date: '11 March', title: 'Công tác tại bệnh viện đa khoa' },
+];
 
 const Messages = () => {
   const { user } = useAuth();
@@ -29,10 +52,14 @@ const Messages = () => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [messageText, setMessageText] = useState('');
-  const [searchText, setSearchText] = useState('');
+
+  // Interactive UI states
+  const [activeTab, setActiveTab] = useState('chat');
+  const [currentDate, setCurrentDate] = useState(dayjs());
+
   const messagesEndRef = useRef(null);
 
-  // Load conversations from API
+  // Load conversations
   const loadConversations = async () => {
     try {
       setLoading(true);
@@ -47,20 +74,16 @@ const Messages = () => {
 
         return {
           ...conv,
-          participantName: info.firstName ? `${info.firstName} ${info.lastName}` : (otherParticipant?.user?.fullName || 'Người dùng'),
+          participantName: info.firstName ? `${info.lastName || ''} ${info.firstName}`.trim() : (otherParticipant?.user?.fullName || 'Bệnh nhân'),
           participantRole: u.role || otherParticipant?.role || 'patient',
           lastMessageText: conv.lastMessage?.text || 'Bắt đầu trò chuyện',
-          lastMessageTime: conv.lastMessage?.createdAt || conv.updatedAt
+          lastMessageTime: conv.lastMessage?.createdAt || conv.updatedAt,
+          unreadCount: conv.unreadCount || 0,
         };
       });
 
-      console.log('📬 Formatted conversations:', formatted);
-
       let finalConversations = [...formatted];
-
-      // Handle direct patient messaging from location state
       const targetPatientId = location.state?.patientId;
-      console.log('🎯 Target patient ID from state:', targetPatientId);
 
       if (targetPatientId) {
         const existingConv = formatted.find(conv =>
@@ -68,27 +91,23 @@ const Messages = () => {
         );
 
         if (existingConv) {
-          console.log('✅ Found existing conversation:', existingConv._id);
           setSelectedConversation(existingConv);
         } else {
-          console.log('🆕 Creating temporary conversation for patient:', targetPatientId);
           const tempConv = {
             _id: 'temp',
-            participantName: location.state?.patientName || 'Bệnh nhân',
+            participantName: location.state?.patientName || 'Bệnh nhân mới',
             participantRole: 'patient',
             participants: [
               { user: { _id: user?._id, role: user?.role } },
               { user: { _id: targetPatientId, role: 'PATIENT' } }
             ],
             isNew: true,
-            lastMessageText: 'Tin nhắn mới',
-            lastMessageTime: new Date()
+            lastMessageText: 'Chưa có tin nhắn',
+            lastMessageTime: new Date(),
+            unreadCount: 0,
           };
-
           setSelectedConversation(tempConv);
           setMessages([]);
-
-          // Prepend to list so it shows in sidebar
           finalConversations = [tempConv, ...finalConversations];
         }
       } else if (formatted.length > 0 && !selectedConversation) {
@@ -97,39 +116,35 @@ const Messages = () => {
 
       setConversations(finalConversations);
     } catch (error) {
-      console.error('Error loading conversations:', error);
-      message.error('Không thể tải danh sách cuộc trò chuyện. Vui lòng thử lại sau.');
+      console.error('Error fetching conversations:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Load messages for selected conversation
   const loadMessages = async (convId) => {
     try {
       const res = await messageAPI.getMessages(convId);
       setMessages(res.data?.data || []);
     } catch (error) {
-      console.error('Error loading messages:', error);
-      message.error('Không thể tải tin nhắn.');
+      console.error('Error fetching messages:', error);
     }
   };
 
   useEffect(() => {
+    document.body.style.backgroundColor = colors.bgApp;
     if (user?._id || user?.id) {
       loadConversations();
     }
-  }, [user?._id, user?.id, location.key]);
+    return () => {
+      document.body.style.backgroundColor = '';
+    };
+  }, [user?._id, location.key]);
 
   useEffect(() => {
     if (selectedConversation?._id && selectedConversation._id !== 'temp') {
       loadMessages(selectedConversation._id);
-
-      // Setup polling for new messages (simple real-time substitute)
-      const interval = setInterval(() => {
-        loadMessages(selectedConversation._id);
-      }, 5000);
-
+      const interval = setInterval(() => loadMessages(selectedConversation._id), 5000);
       return () => clearInterval(interval);
     } else if (selectedConversation?._id === 'temp') {
       setMessages([]);
@@ -148,311 +163,321 @@ const Messages = () => {
     if (!messageText.trim() || !selectedConversation) return;
 
     try {
-      const recipient = selectedConversation.participants.find(p => p.user?._id?.toString() !== user?._id?.toString());
-      if (!recipient || !recipient.user) {
-        console.error('Cannot find recipient in conversation:', selectedConversation);
-        return;
-      }
+      const recipient = selectedConversation.participants?.find(p => p.user?._id?.toString() !== user?._id?.toString());
+      if (!recipient || !recipient.user) return;
 
-      const res = await messageAPI.sendMessage({
-        recipientId: recipient.user._id,
-        text: messageText
-      });
-
+      const res = await messageAPI.sendMessage({ recipientId: recipient.user._id, text: messageText });
       const newMessage = res.data?.data;
       if (newMessage) {
         setMessages([...messages, newMessage]);
         setMessageText('');
-        // Refresh conversations to update last message
         loadConversations();
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      message.error('Không thể gửi tin nhắn.');
     }
   };
 
-  const filteredConversations = conversations.filter((conv) =>
-    (conv.participantName || '').toLowerCase().includes(searchText.toLowerCase())
-  );
+  // Calendar logic
+  const handlePrevMonth = () => setCurrentDate(currentDate.subtract(1, 'month'));
+  const handleNextMonth = () => setCurrentDate(currentDate.add(1, 'month'));
 
-  const renderMessage = (msg) => {
-    const isDoctor = (msg.sender?._id || msg.sender) === user?._id;
-    return (
-      <motion.div
-        key={msg._id}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-        style={{
-          display: 'flex',
-          justifyContent: isDoctor ? 'flex-end' : 'flex-start',
-          marginBottom: '12px',
-        }}
-      >
-        <div
-          style={{
-            maxWidth: '60%',
-            padding: '8px 12px',
-            borderRadius: '8px',
-            backgroundColor: isDoctor ? '#1890ff' : '#f0f0f0',
-            color: isDoctor ? 'white' : 'black',
-            wordBreak: 'break-word',
-          }}
-        >
-          <div>{msg.text}</div>
-          <div
-            style={{
-              fontSize: '11px',
-              marginTop: '4px',
-              opacity: 0.7,
-            }}
-          >
-            {dayjs(msg.createdAt).format('HH:mm')}
-          </div>
-        </div>
-      </motion.div>
-    );
-  };
+  const startOfMonth = currentDate.startOf('month');
+  const daysInMonth = currentDate.daysInMonth();
+  const dayOfWeek = startOfMonth.day(); // 0 is Sunday
+
+  const moreIconMenu = (
+    <Menu theme="dark" style={{ backgroundColor: colors.bgPanel }}>
+      <Menu.Item key="1">Xóa cuộc trò chuyện</Menu.Item>
+      <Menu.Item key="2">Tắt thông báo</Menu.Item>
+    </Menu>
+  );
 
   return (
     <DoctorLayout>
       <div
-        style={{
-          padding: '24px',
-          maxWidth: '1200px',
-          margin: '0 auto',
-          backgroundColor: '#f5f5f5',
-          minHeight: '100vh',
-        }}
+        className="h-[calc(100vh-64px)] w-full p-4 lg:p-6 grid grid-cols-1 md:grid-cols-12 gap-6 overflow-hidden"
+        style={{ backgroundColor: colors.bgApp, fontFamily: 'sans-serif' }}
       >
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          style={{ marginBottom: '20px' }}
-        >
-          <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold' }}>
-            💬 Tin nhắn
-          </h1>
-        </motion.div>
 
-        {/* Main Layout */}
-        <Card
-          style={{
-            borderRadius: '8px',
-            height: 'calc(100vh - 200px)',
-            overflow: 'hidden',
-          }}
+        {/* LEFT COLUMN: CHAT LIST */}
+        <div
+          className="col-span-1 md:col-span-4 lg:col-span-3 rounded-lg flex flex-col overflow-hidden shadow-lg border"
+          style={{ backgroundColor: colors.bgPanel, borderColor: colors.border }}
         >
-          <Row style={{ height: '100%' }} gutter={0}>
-            {/* Conversations List */}
-            <Col
-              xs={24}
-              sm={8}
+          {/* Tabs */}
+          <div className="flex border-b" style={{ borderColor: colors.border }}>
+            <div
+              onClick={() => setActiveTab('chat')}
+              className={`flex-1 py-3 text-center text-sm font-semibold cursor-pointer transition-colors ${activeTab === 'chat' ? '' : 'hover:bg-white/5'}`}
               style={{
-                borderRight: '1px solid #f0f0f0',
-                display: 'flex',
-                flexDirection: 'column',
-                maxHeight: '100%',
+                backgroundColor: activeTab === 'chat' ? colors.textAccent : 'transparent',
+                color: activeTab === 'chat' ? colors.textMain : colors.textMuted
               }}
             >
-              {/* Search */}
-              <div style={{ padding: '12px', borderBottom: '1px solid #f0f0f0' }}>
-                <Input
-                  placeholder="Tìm kiếm trò chuyện..."
-                  prefix={<SearchOutlined />}
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
+              Chat
+            </div>
+            <div
+              onClick={() => setActiveTab('new')}
+              className={`flex-1 py-3 text-center text-sm font-semibold cursor-pointer transition-colors ${activeTab === 'new' ? '' : 'hover:bg-white/5'}`}
+              style={{
+                backgroundColor: activeTab === 'new' ? colors.textAccent : 'transparent',
+                color: activeTab === 'new' ? colors.textMain : colors.textMuted
+              }}
+            >
+              Mới
+            </div>
+          </div>
+
+          {/* List */}
+          <div className="flex-1 overflow-y-auto hide-scrollbar">
+            {activeTab === 'new' ? (
+              <div className="flex justify-center items-center h-full flex-col opacity-60 p-4">
+                <MessageOutlined className="text-4xl mb-3" style={{ color: colors.textMuted }} />
+                <span className="text-center text-sm" style={{ color: colors.textMuted }}>Danh sách người liên hệ mới<br />(Đang phát triển)</span>
+              </div>
+            ) : loading ? (
+              <div className="flex justify-center items-center h-full">
+                <Spin />
+              </div>
+            ) : conversations.length === 0 ? (
+              <div className="flex justify-center items-center h-full opacity-50 p-4">
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={<span style={{ color: colors.textMuted }}>Không có cuộc trò chuyện</span>}
                 />
               </div>
-
-              {/* Conversations */}
-              <div
-                style={{
-                  flex: 1,
-                  overflow: 'auto',
-                  paddingTop: '8px',
-                }}
-              >
-                {loading ? (
-                  <div style={{ textAlign: 'center', padding: '20px' }}>
-                    <Spin size="small" />
-                  </div>
-                ) : filteredConversations.length === 0 ? (
-                  <Empty description="Chưa có tin nhắn" style={{ padding: '20px' }} />
-                ) : (
-                  <List
-                    dataSource={filteredConversations}
-                    renderItem={(conv) => (
-                      <List.Item
-                        style={{
-                          padding: '12px',
-                          cursor: 'pointer',
-                          backgroundColor:
-                            selectedConversation?._id === conv._id
-                              ? '#e6f7ff'
-                              : 'transparent',
-                          borderBottom: '1px solid #f0f0f0',
-                        }}
-                        onClick={() => {
-                          setSelectedConversation(conv);
-                        }}
-                      >
-                        <List.Item.Meta
-                          avatar={
-                            <Badge
-                              count={conv.unreadCount}
-                              color="#ff4d4f"
-                            >
-                              <Avatar
-                                size="large"
-                                icon={<UserOutlined />}
-                                style={{
-                                  backgroundColor:
-                                    conv.participantRole === 'staff'
-                                      ? '#52c41a'
-                                      : '#1890ff',
-                                }}
-                              >
-                                {(conv.participantName || 'U').charAt(0)}
-                              </Avatar>
-                            </Badge>
-                          }
-                          title={
-                            <div
-                              style={{
-                                fontWeight: selectedConversation?._id === conv._id ? 600 : 400,
-                              }}
-                            >
-                              {conv.participantName}
-                              {conv.participantRole === 'staff' && (
-                                <Tag
-                                  color="green"
-                                  style={{ marginLeft: '8px', fontSize: '10px' }}
-                                >
-                                  Staff
-                                </Tag>
-                              )}
-                            </div>
-                          }
-                          description={
-                            <div style={{ fontSize: '12px', color: '#666' }}>
-                              <div
-                                style={{
-                                  whiteSpace: 'nowrap',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  marginBottom: '4px',
-                                }}
-                              >
-                                {conv.lastMessageText}
-                              </div>
-                              <div style={{ color: '#999' }}>
-                                {dayjs(conv.lastMessageTime).fromNow()}
-                              </div>
-                            </div>
-                          }
-                        />
-                      </List.Item>
-                    )}
-                  />
-                )}
-              </div>
-            </Col>
-
-            {/* Chat Area */}
-            <Col xs={24} sm={16} style={{ display: 'flex', flexDirection: 'column' }}>
-              {selectedConversation ? (
-                <>
-                  {/* Header */}
+            ) : (
+              conversations.map((conv, idx) => {
+                const active = selectedConversation?._id === conv._id;
+                return (
                   <div
+                    key={conv._id || idx}
+                    onClick={() => setSelectedConversation(conv)}
+                    className="flex items-center px-4 py-3 cursor-pointer transition-colors border-b last:border-0"
                     style={{
-                      padding: '16px',
-                      borderBottom: '1px solid #f0f0f0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
+                      backgroundColor: active ? 'rgba(255,255,255,0.03)' : 'transparent',
+                      borderColor: 'rgba(255,255,255,0.05)'
                     }}
                   >
-                    <Space>
-                      <Avatar
-                        size="large"
-                        icon={<UserOutlined />}
-                        style={{
-                          backgroundColor:
-                            selectedConversation.participantRole === 'staff'
-                              ? '#52c41a'
-                              : '#1890ff',
-                        }}
-                      >
-                        {(selectedConversation.participantName || 'U').charAt(0)}
-                      </Avatar>
-                      <div>
-                        <div style={{ fontWeight: 600 }}>
-                          {selectedConversation.participantName}
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#666' }}>
-                          {selectedConversation.participantRole === 'patient'
-                            ? 'Bệnh nhân'
-                            : 'Nhân viên'}
+                    <Avatar
+                      size={40}
+                      className="shrink-0 font-bold bg-blue-600 border border-blue-400"
+                    >
+                      {conv.participantName.charAt(0)}
+                    </Avatar>
+                    <div className="ml-3 flex-1 min-w-0">
+                      <div className="flex justify-between items-center mb-1">
+                        <h4 className="m-0 text-sm font-medium truncate" style={{ color: active ? colors.textMain : '#e5e7eb' }}>
+                          {conv.participantName}
+                        </h4>
+                        <span className="text-[10px]" style={{ color: colors.textMuted }}>
+                          {dayjs(conv.lastMessageTime).format('HH:mm')}
+                        </span>
+                      </div>
+                      <p className="m-0 text-xs truncate" style={{ color: colors.textMuted }}>
+                        {conv.lastMessageText}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* CENTER COLUMN: CHAT HISTORY */}
+        <div
+          className="col-span-1 md:col-span-8 lg:col-span-6 rounded-lg flex flex-col overflow-hidden shadow-lg border"
+          style={{ backgroundColor: colors.bgPanel, borderColor: colors.border }}
+        >
+          {selectedConversation ? (
+            <>
+              {/* Header */}
+              <div className="flex justify-between items-center px-6 py-4 border-b" style={{ borderColor: colors.border }}>
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Avatar size={40} className="font-bold bg-blue-600 border border-blue-400">
+                      {selectedConversation.participantName.charAt(0)}
+                    </Avatar>
+                    <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 rounded-full border-2" style={{ borderColor: colors.bgPanel }}></div>
+                  </div>
+                  <div>
+                    <h3 className="m-0 text-base font-medium" style={{ color: colors.textMain }}>
+                      {selectedConversation.participantName}
+                    </h3>
+                    <p className="m-0 text-xs" style={{ color: colors.textMuted }}>Đang trực tuyến</p>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <Tooltip title="Gọi điện">
+                    <PhoneOutlined className="text-xl hover:opacity-80 cursor-pointer" style={{ color: colors.textMuted }} />
+                  </Tooltip>
+                  <Tooltip title="Gọi video">
+                    <VideoCameraOutlined className="text-xl hover:opacity-80 cursor-pointer" style={{ color: colors.textMuted }} />
+                  </Tooltip>
+                  <Dropdown overlay={moreIconMenu} trigger={['click']}>
+                    <MoreOutlined className="text-xl hover:opacity-80 cursor-pointer" style={{ color: colors.textMuted }} />
+                  </Dropdown>
+                </div>
+              </div>
+
+              {/* Messages Area */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 hide-scrollbar relative bg-[#1c243b]">
+                {messages.length === 0 ? (
+                  <div className="flex justify-center h-full items-center opacity-40">
+                    <div className="text-center">
+                      <MessageOutlined className="text-4xl mb-2" style={{ color: colors.textMuted }} />
+                      <p style={{ color: colors.textMuted }}>Hãy gửi tin nhắn đầu tiên để bắt đầu tư vấn.</p>
+                    </div>
+                  </div>
+                ) : (
+                  messages.map((msg, index) => {
+                    const isDoctor = (msg.sender?._id || msg.sender) === user?._id;
+                    const bubbleColor = isDoctor ? colors.bgBubbleMe : colors.bgBubbleFriend;
+                    const alignMsg = isDoctor ? 'justify-end' : 'justify-start';
+                    const senderName = isDoctor ? 'Bác sĩ' : (msg.sender?.name || selectedConversation.participantName);
+
+                    return (
+                      <div key={msg._id || index} className={`flex ${alignMsg} w-full`}>
+                        <div
+                          className="rounded-lg p-3 sm:p-4 shadow-sm max-w-[85%] sm:max-w-[70%]"
+                          style={{ backgroundColor: bubbleColor }}
+                        >
+                          <div className="flex justify-between items-center mb-2 border-b border-white/10 pb-2 gap-4">
+                            <div className="flex items-center gap-2">
+                              <Avatar size={20} className={isDoctor ? "bg-white text-blue-600" : "bg-gray-400"}>
+                                {senderName.charAt(0)}
+                              </Avatar>
+                              <span className="text-sm font-medium" style={{ color: colors.textMain }}>{senderName}</span>
+                            </div>
+                            <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.6)' }}>
+                              {dayjs(msg.createdAt).format('HH:mm')}
+                            </span>
+                          </div>
+                          <div className="text-sm tracking-wide leading-relaxed" style={{ color: 'rgba(255,255,255,0.9)', wordBreak: 'break-word' }}>
+                            {msg.text}
+                          </div>
                         </div>
                       </div>
-                    </Space>
-                    <Button type="primary" icon={<PhoneOutlined />} disabled>
-                      Gọi
-                    </Button>
-                  </div>
+                    );
+                  })
+                )}
+                <div ref={messagesEndRef} />
+              </div>
 
-                  {/* Messages */}
-                  <div
-                    style={{
-                      flex: 1,
-                      overflow: 'auto',
-                      padding: '16px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                    }}
-                  >
-                    {messages.map((msg) => renderMessage(msg))}
-                    <div ref={messagesEndRef} />
+              {/* Input Area */}
+              <div className="p-4 bg-[#1c243b]">
+                <div
+                  className="flex items-center rounded-lg pl-3 pr-1 py-1 border overflow-hidden"
+                  style={{ backgroundColor: colors.bgApp, borderColor: '#354366' }}
+                >
+                  <Tooltip title="Đính kèm file/ảnh">
+                    <Button type="text" shape="circle" icon={<PaperClipOutlined style={{ color: colors.textMuted }} />} className="mr-1" />
+                  </Tooltip>
+                  <Input
+                    bordered={false}
+                    placeholder="Nhập tin nhắn..."
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    onPressEnter={handleSendMessage}
+                    className="flex-1 bg-transparent text-sm"
+                    style={{ color: colors.textMain }}
+                  />
+                  <div className="flex items-center gap-1 mx-1">
+                    <Button type="text" shape="circle" icon={<SmileOutlined style={{ color: colors.textMuted }} />} className="hidden sm:inline-flex" />
                   </div>
-
-                  {/* Input */}
-                  <div
-                    style={{
-                      padding: '12px',
-                      borderTop: '1px solid #f0f0f0',
-                      display: 'flex',
-                      gap: '8px',
-                    }}
-                  >
-                    <Input
-                      placeholder="Nhập tin nhắn..."
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      onPressEnter={handleSendMessage}
-                    />
-                    <Button
-                      type="primary"
-                      icon={<SendOutlined />}
-                      onClick={handleSendMessage}
-                      disabled={!messageText.trim()}
-                    >
-                      Gửi
-                    </Button>
-                  </div>
-                </>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-                  <Empty description="Chọn cuộc trò chuyện để bắt đầu" />
+                  <Button
+                    type="primary"
+                    icon={<SendOutlined />}
+                    onClick={handleSendMessage}
+                    disabled={!messageText.trim()}
+                    className="border-none shadow-none h-10 w-12 rounded"
+                    style={{ backgroundColor: messageText.trim() ? colors.textAccent : '#3b4b72' }}
+                  />
                 </div>
-              )}
-            </Col>
-          </Row>
-        </Card>
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center bg-[#1c243b] opacity-60">
+              <MessageOutlined className="text-6xl mb-4" style={{ color: colors.textMuted }} />
+              <span className="text-lg" style={{ color: colors.textMuted }}>Theo dõi cuộc trò chuyện từ danh sách</span>
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN: EVENTS (INTERACTIVE CALENDAR) - ONLY VISIBLE ON LARGE SCREENS */}
+        <div
+          className="hidden lg:flex lg:col-span-3 rounded flex-col overflow-hidden shadow-lg border p-5"
+          style={{ backgroundColor: colors.bgPanel, borderColor: colors.border }}
+        >
+          <div className="flex justify-between items-center mb-6">
+            <h4 className="m-0 text-base font-semibold" style={{ color: colors.textMain }}>Lịch khám nội bộ</h4>
+            <MoreOutlined style={{ color: colors.textMuted }} className="cursor-pointer" />
+          </div>
+
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-4 text-sm font-medium" style={{ color: colors.textMain }}>
+              <span className="capitalize">{currentDate.format('MMMM yyyy')}</span>
+              <div className="flex gap-1">
+                <Button onClick={handlePrevMonth} size="small" type="text" icon={<LeftOutlined />} style={{ color: colors.textMain, backgroundColor: colors.textAccent, borderRadius: '4px' }} />
+                <Button onClick={handleNextMonth} size="small" type="text" icon={<RightOutlined />} style={{ color: colors.textMain, backgroundColor: colors.textAccent, borderRadius: '4px' }} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center text-xs mb-2 font-medium" style={{ color: colors.textMuted }}>
+              <span>CN</span><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span>
+            </div>
+            <div className="grid grid-cols-7 gap-1 text-center text-sm" style={{ color: colors.textMain }}>
+              {Array.from({ length: dayOfWeek }).map((_, i) => <div key={`empty-${i}`}></div>)}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1;
+                const isToday = day === dayjs().date() && currentDate.isSame(dayjs(), 'month');
+                return (
+                  <div
+                    key={day}
+                    className="py-2.5 rounded-lg flex items-center justify-center relative cursor-pointer hover:bg-white/5 transition-colors"
+                    style={{ backgroundColor: isToday ? colors.textAccent : 'transparent' }}
+                  >
+                    {day}
+                    {isToday && <span className="absolute -bottom-1 text-[8px] bg-red-500 px-1 rounded font-bold">10:29</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto pr-2 space-y-4 hide-scrollbar">
+            {initialEvents.map((ev, i) => (
+              <div key={i} className="pt-2 border-t border-white/5 first:border-0 border-dashed">
+                <h5 className="m-0 text-sm font-semibold" style={{ color: colors.textMain }}>{ev.date}</h5>
+                <p className="m-0 text-xs mt-1" style={{ color: colors.textMuted }}>{ev.title}</p>
+              </div>
+            ))}
+          </div>
+
+          <Button
+            className="w-full mt-4 border-none font-semibold text-sm h-10 rounded shadow-none hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#212d4d', color: colors.textMain }}
+          >
+            THÊM LỊCH MỚI
+          </Button>
+        </div>
+
       </div>
+
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .hide-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .hide-scrollbar::-webkit-scrollbar-thumb {
+          background: #2a3553;
+          border-radius: 4px;
+        }
+      `}</style>
     </DoctorLayout>
   );
 };

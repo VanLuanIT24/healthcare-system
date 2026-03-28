@@ -43,6 +43,9 @@ import DoctorPrescriptions from '@/pages/doctor/Prescriptions';
 import DoctorProfile from '@/pages/doctor/Profile';
 import DoctorSchedule from '@/pages/doctor/Schedule';
 import DoctorSettings from '@/pages/doctor/Settings';
+import DoctorConsiliums from '@/pages/doctor/Consiliums';
+import DoctorCertificates from '@/pages/doctor/Certificates';
+import DoctorLibrary from '@/pages/doctor/Library';
 
 // Staff Portal
 import { StaffDashboard } from '@/pages/staff';
@@ -237,6 +240,30 @@ const AppRouter = () => {
           element={
             <ProtectedRoute requiredRoles={['DOCTOR']}>
               <DoctorSettings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/doctor/consiliums"
+          element={
+            <ProtectedRoute requiredRoles={['DOCTOR']}>
+              <DoctorConsiliums />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/doctor/certificates"
+          element={
+            <ProtectedRoute requiredRoles={['DOCTOR']}>
+              <DoctorCertificates />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/doctor/library"
+          element={
+            <ProtectedRoute requiredRoles={['DOCTOR']}>
+              <DoctorLibrary />
             </ProtectedRoute>
           }
         />
